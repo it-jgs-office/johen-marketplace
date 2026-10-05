@@ -54,6 +54,18 @@
       <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}">Leaderboard</a>
     </nav>
 
+    @php
+        // Hanya untuk user login: keranjang disimpan per user di database.
+        $cartCount = Auth::check() ? app(\App\Services\CartService::class)->countItems(Auth::id()) : 0;
+    @endphp
+    <a href="{{ route('cart.index') }}" class="nav-cart-btn {{ request()->routeIs('cart.*') || request()->routeIs('checkout.*') ? 'active' : '' }}" aria-label="Keranjang">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+      </svg>
+      <span class="nav-cart-badge" data-role="cart-badge" @if($cartCount < 1) hidden @endif>{{ $cartCount > 99 ? '99+' : $cartCount }}</span>
+    </a>
+
     @auth
       <div class="auth-user">
         <div class="auth-dropdown">
@@ -123,6 +135,14 @@
     <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}">Jual Beli Akun</a>
     <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">Cek Transaksi</a>
     <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}">Leaderboard</a>
+    <a href="{{ route('cart.index') }}" class="mobile-menu__cart {{ request()->routeIs('cart.*') || request()->routeIs('checkout.*') ? 'active' : '' }}">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
+        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
+      </svg>
+      <span>Keranjang</span>
+      <span class="nav-cart-badge nav-cart-badge--inline" data-role="cart-badge" @if($cartCount < 1) hidden @endif>{{ $cartCount > 99 ? '99+' : $cartCount }}</span>
+    </a>
     <button type="button" class="pwa-install-btn pwa-install-mobile-btn" data-pwa-install-trigger aria-label="Install App" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
       <span>Install App</span>
@@ -453,6 +473,8 @@ html:not([data-theme="light"]) .mobile-theme-btn .icon-moon {
 
 <script>
   window.ZONE_BRANDS = @json(\App\Models\Brand::where('requires_zone_id', true)->where('is_active', true)->pluck('name'));
+  // Dipakai topup.js untuk menyegarkan angka keranjang tanpa reload halaman.
+  window.CART_STATE_URL = @json(\Illuminate\Support\Facades\Route::has('cart.state') ? route('cart.state') : null);
 </script>
   <script src="{{ pwa_asset('js/topup.js') }}"></script>
 

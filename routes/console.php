@@ -23,3 +23,10 @@ Schedule::command('jba:sync-johengaming')->dailyAt('02:30');
  * dikembalikan ke user.
  */
 Schedule::command('digiflazz:reconcile')->everyFiveMinutes()->withoutOverlapping();
+
+/*
+ * Settlement checkout keranjang berjalan lewat queue (butuh `queue:work`).
+ * Command ini hanya jaring pengaman: kalau worker sempat mati, order anak yang
+ * menggantung di status "pending" akan diantrikan ulang.
+ */
+Schedule::command('checkout:retry')->everyTenMinutes()->withoutOverlapping();

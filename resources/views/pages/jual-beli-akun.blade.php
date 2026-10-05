@@ -44,7 +44,7 @@
     </div>
     <div class="jba-transfer-text">
       <strong>Informasi Transfer</strong>
-      <span>Pembayaran hanya melalui transfer ke rekening <strong>BCA 1234567890 a/n Johen Gaming</strong>. Kami tidak pernah meminta transfer ke rekening lain.</span>
+      <span>Pembayaran hanya melalui transfer ke rekening <strong>BRI 114101707070565 a/n JOSIA HENDRICO SIMANUNGKALIT</strong>. Kami tidak pernah meminta transfer ke rekening lain.</span>
     </div>
   </div>
 @endif

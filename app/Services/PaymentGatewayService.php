@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AccountOrder;
+use App\Models\Checkout;
 use App\Models\Order;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -179,8 +180,52 @@ class PaymentGatewayService
     }
 
     /**
+     * Buat charge gateway untuk satu charge gabungan dari keranjang.
+     *
+     * Checkout memegang seluruh nominal, jadi amount-nya `total` dan
+     * reference-nya `checkout_ref`. Run charge menulis kolom gateway langsung ke
+     * model Checkout karena nama kolomnya sengaja dibuat sama dengan orders.
+     */
+    public function chargeCheckout(Checkout $checkout, string $method, array $gatewayMeta = []): bool
+    {
+        $resolved = $this->resolve($method);
+        $type = $resolved['gateway_type'];
+        $total = (int) $checkout->total;
+
+        $ctx = [
+            'amount' => $total,
+            'reference_id' => $checkout->checkout_ref,
+            'item_name' => $gatewayMeta['item_name'] ?? ($checkout->item_count.' item Johen Gaming'),
+            'unit_price' => $total,
+            'customer_number' => (string) ($checkout->phone ?: $checkout->email),
+            'customer_name' => Auth::check()
+                ? (string) Auth::user()->name
+                : (string) ($gatewayMeta['customer_name'] ?? 'JOHEM'),
+            'customer_phone' => (string) ($checkout->phone ?? ''),
+            'email' => (string) ($checkout->email ?: 'guest@johengaming.id'),
+            'quantity' => 1,
+            'category' => 'Top Up Game',
+            'redirect_url' => route('checkout.payment', $checkout),
+        ];
+
+        $checkout->update([
+            'payment_method' => $this->normalizeMethodCode($method),
+            'gateway_type' => $type,
+        ]);
+
+        $charged = $this->runCharge($checkout, $type, $resolved, $ctx);
+
+        if (! $charged) {
+            $checkout->update(['gateway_type' => null]);
+        }
+
+        return $charged;
+    }
+
+    /**
      * Jalankan charge sesuai tipe gateway dengan konteks payload yang seragam.
-     * Konteks memisahkan data order (Order vs AccountOrder) dari logika charge.
+     * Konteks memisahkan data order (Order vs AccountOrder vs Checkout) dari
+     * logika charge.
      */
     protected function runCharge(object $order, string $type, array $resolved, array $ctx): bool
     {

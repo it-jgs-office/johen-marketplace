@@ -514,6 +514,190 @@ function showToast(msg, isError = false) {
   toastTimer = setTimeout(() => toast.classList.remove('show'), 3500);
 }
 
+// ============ CART BADGE ============
+// Dipanggil setelah tambah/hapus keranjang supaya angka di header ikut berubah
+// tanpa perlu reload halaman.
+function setCartBadge(count) {
+  const value = Math.max(0, parseInt(count, 10) || 0);
+  document.querySelectorAll('[data-role="cart-badge"]').forEach((badge) => {
+    const wasHidden = badge.hasAttribute('hidden');
+    badge.textContent = value > 99 ? '99+' : String(value);
+    if (value > 0) {
+      badge.removeAttribute('hidden');
+      if (wasHidden) {
+        badge.classList.remove('bump');
+        void badge.offsetWidth;
+        badge.classList.add('bump');
+      }
+    } else {
+      badge.setAttribute('hidden', 'hidden');
+    }
+  });
+}
+
+// ============ CART STATE (REALTIME) ============
+// Semua angka keranjang (badge navbar, "N item di keranjang", subtotal, total,
+// status stok per baris) disegarkan dari satu payload yang sama supaya tidak
+// perlu reload halaman.
+//
+// Elemen yang bisa diperbarui ditandai lewat data-role:
+//   cart-badge         -> angka badge di header (dipakai setCartBadge)
+//   cart-summary-qty   -> teks "N item di keranjang" (semua item)
+//   cart-payable-qty   -> jumlah item yang ikut ditagih (stok habis dikecualikan)
+//   cart-summary-items -> teks "N item dari M produk" (checkout)
+//   cart-subtotal      -> nominal subtotal
+//   cart-total         -> nominal total
+//   cart-unavailable   -> blok peringatan item stok habis
+//   cart-checkout-btn  -> tombol lanjut checkout (dinonaktifkan saat ada item bermasalah)
+//   cart-empty         -> tampilan keranjang kosong
+//   cart-filled        -> isi halaman keranjang
+//   cart-note          -> catatan "Di keranjang: N item" di detail game
+//   row-out-note       -> catatan "stok habis" pada satu baris keranjang
+//   row-flash-note     -> catatan "harga flash" pada satu baris keranjang
+function formatRupiah(value) {
+  const number = Math.max(0, parseInt(value, 10) || 0);
+  return 'Rp ' + number.toLocaleString('id-ID');
+}
+
+function applyCartState(state) {
+  if (!state || typeof state !== 'object') return null;
+
+  const count = Math.max(0, parseInt(state.count, 10) || 0);
+  const unavailable = Math.max(0, parseInt(state.unavailable, 10) || 0);
+
+  // Badge di header (desktop + isi hamburger menu).
+  setCartBadge(count);
+
+  // Jumlah item pada teks halaman keranjang & checkout.
+  document.querySelectorAll('[data-role="cart-summary-qty"]').forEach((el) => {
+    el.textContent = count;
+  });
+
+  document.querySelectorAll('[data-role="cart-summary-items"]').forEach((el) => {
+    const products = Array.isArray(state.items) ? state.items.length : 0;
+    el.textContent = count + ' item dari ' + products + ' produk';
+  });
+
+  // Jumlah item yang benar-benar ikut ditagih (stok habis tidak dihitung).
+  const payableQty = Math.max(0, parseInt(state.total_qty, 10) || 0);
+  document.querySelectorAll('[data-role="cart-payable-qty"]').forEach((el) => {
+    el.textContent = payableQty;
+  });
+
+  // Nominal subtotal & total.
+  document.querySelectorAll('[data-role="cart-subtotal"]').forEach((el) => {
+    el.textContent = formatRupiah(state.subtotal);
+  });
+
+  document.querySelectorAll('[data-role="cart-total"]').forEach((el) => {
+    el.textContent = formatRupiah(state.subtotal);
+  });
+
+  // Peringatan item yang tidak bisa dibayar.
+  document.querySelectorAll('[data-role="cart-unavailable"]').forEach((el) => {
+    el.hidden = unavailable < 1;
+    const text = el.querySelector('[data-role="cart-unavailable-count"]');
+    if (text) text.textContent = unavailable;
+  });
+
+  // Tombol lanjut ke checkout tidak boleh aktif selama masih ada item bermasalah.
+  document.querySelectorAll('[data-role="cart-checkout-btn"]').forEach((btn) => {
+    const blocked = unavailable > 0;
+    btn.classList.toggle('btn-disabled', blocked);
+
+    if (blocked) {
+      btn.setAttribute('href', '#');
+    } else if (btn.dataset.checkoutUrl) {
+      btn.setAttribute('href', btn.dataset.checkoutUrl);
+    }
+  });
+
+  // Detail tiap baris keranjang: status stok, qty, line total, dan batas tombol "+".
+  (Array.isArray(state.items) ? state.items : []).forEach((item) => {
+    const row = document.querySelector('[data-item="' + item.id + '"]');
+    if (!row) return;
+
+    const out = item.unavailable === true;
+    row.classList.toggle('cart-item-out', out);
+    row.dataset.max = parseInt(item.max, 10) || 0;
+
+    const outNote = row.querySelector('[data-role="row-out-note"]');
+    if (outNote) outNote.hidden = !out;
+
+    const flashNote = row.querySelector('[data-role="row-flash-note"]');
+    if (flashNote) flashNote.hidden = out || item.flash_deal !== true;
+
+    const qtyEl = row.querySelector('[data-role="qty"]');
+    if (qtyEl) qtyEl.textContent = item.quantity;
+
+    const lineEl = row.querySelector('[data-role="line-total"]');
+    if (lineEl) lineEl.textContent = out ? '—' : formatRupiah(item.line_total);
+
+    // Harga coret dari flash deal: disembunyikan kalau tidak ada diskon.
+    const oldEl = row.querySelector('[data-role="line-old"]');
+    if (oldEl) {
+      const original = parseInt(item.original_price, 10) || 0;
+      oldEl.textContent = formatRupiah(original * (parseInt(item.quantity, 10) || 0));
+      oldEl.hidden = out || original <= (parseInt(item.unit_price, 10) || 0);
+    }
+
+    const max = parseInt(item.max, 10) || 0;
+    const limit = max > 0 ? Math.min(max, 99) : 99;
+
+    row.querySelectorAll('.cart-qty button').forEach((btn) => {
+      const inc = btn.dataset.act === 'inc';
+      // Stok habis: quantity tidak bisa diubah dari halaman ini.
+      btn.disabled = out || (inc && item.quantity >= limit);
+    });
+  });
+
+  // Catatan "Di keranjang: N item" di halaman detail game disembunyikan
+  // saat keranjang kosong, dan muncul lagi begitu ada item.
+  document.querySelectorAll('[data-role="cart-note"]').forEach((el) => {
+    el.hidden = count < 1;
+  });
+
+  // Tampilan keranjang kosong & isi keranjang tidak perlu reload setelah item
+  // terakhir dihapus atau keranjang dikosongkan.
+  const emptyEl = document.querySelector('[data-role="cart-empty"]');
+  const filledEl = document.querySelector('[data-role="cart-filled"]');
+
+  if (emptyEl || filledEl) {
+    const isEmpty = count < 1;
+    if (emptyEl) emptyEl.hidden = !isEmpty;
+    if (filledEl) filledEl.hidden = isEmpty;
+  }
+
+  window.__cartState = state;
+
+  document.dispatchEvent(new CustomEvent('cart:state', { detail: state }));
+
+  return state;
+}
+
+// Tarik state terbaru dari server. Dipakai halaman yang tidak punya tombol
+// ubah keranjang sendiri (mis. checkout) supaya angka tidak basi setelah user
+// mengubah keranjang lalu kembali ke halaman ini.
+function refreshCartState() {
+  const url = window.CART_STATE_URL;
+  if (!url) return Promise.resolve(null);
+
+  return fetch(url, {
+    headers: {
+      'Accept': 'application/json',
+      'X-Requested-With': 'XMLHttpRequest',
+    },
+    credentials: 'same-origin',
+  })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((json) => (json ? applyCartState(json.state || json) : null))
+    .catch(() => null);
+}
+
+window.applyCartState = applyCartState;
+window.refreshCartState = refreshCartState;
+window.formatCartRupiah = formatRupiah;
+
 // ============ FLASH MESSAGES ============
 (function showFlashMessages() {
   const flash = document.getElementById('flash-data');

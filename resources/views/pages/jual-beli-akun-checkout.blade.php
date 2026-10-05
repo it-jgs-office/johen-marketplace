@@ -179,7 +179,7 @@
         </div>
         <div class="jco-trust-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 9v6"/><path d="M9 12h6"/></svg>
-          <span>Transfer ke <strong>BCA 1234567890</strong> a/n Johen Gaming</span>
+          <span>Transfer ke <strong>BRI 114101707070565</strong> a/n JOSIA HENDRICO SIMANUNGKALIT</span>
         </div>
       </div>
     </div>

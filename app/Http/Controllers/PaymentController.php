@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\AccountOrder;
 use App\Models\Brand;
+use App\Models\Checkout;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Review;
 use App\Services\BalanceService;
+use App\Services\CheckoutSettlementService;
 use App\Services\DigiflazzService;
 use App\Services\TopupSettlementService;
 use App\Services\XenditService;
@@ -24,16 +26,20 @@ class PaymentController extends Controller
 
     protected BalanceService $balance;
 
+    protected CheckoutSettlementService $checkoutSettlement;
+
     public function __construct(
         DigiflazzService $digiflazz,
         XenditService $xendit,
         TopupSettlementService $settlement,
         BalanceService $balance,
+        CheckoutSettlementService $checkoutSettlement,
     ) {
         $this->digiflazz = $digiflazz;
         $this->xendit = $xendit;
         $this->settlement = $settlement;
         $this->balance = $balance;
+        $this->checkoutSettlement = $checkoutSettlement;
     }
 
     public function detail(Order $order)
@@ -103,6 +109,13 @@ class PaymentController extends Controller
             $payload = $request->all();
             $event = (string) ($payload['event'] ?? '');
 
+            // Checkout keranjang: satu charge untuk banyak order, jadi reference
+            // yang dicari bukan orders.order_id melainkan checkouts.checkout_ref.
+            // Dicoba lebih dulu supaya tidak ikut tertangkap pencarian order biasa.
+            if ($this->handleCheckoutWebhook($payload)) {
+                return response()->json(['status' => 'ok']);
+            }
+
             // Webhook QR Code ("qr.payment") — body berisi data bersarang.
             if (str_contains($event, 'qr.')) {
                 return $this->handleQrCallback($payload);
@@ -171,6 +184,63 @@ class PaymentController extends Controller
 
             return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Proses webhook Xendit yang-update milik checkout keranjang.
+     *
+     * Mengembalikan true bila reference-nya ketemu sebuah checkout, supaya
+     * pemanggil berhenti dan tidak mencari order biasa lagi.
+     */
+    private function handleCheckoutWebhook(array $payload): bool
+    {
+        $reference = $payload['external_id']
+            ?? $payload['reference_id']
+            ?? $payload['payment_id']
+            ?? ($payload['data']['reference_id'] ?? null)
+            ?? ($payload['data']['external_id'] ?? null)
+            ?? ($payload['data']['id'] ?? null);
+
+        if (! $reference) {
+            return false;
+        }
+
+        $checkout = Checkout::where('checkout_ref', $reference)
+            ->orWhere('gateway_invoice_id', $reference)
+            ->first();
+
+        if (! $checkout) {
+            return false;
+        }
+
+        $status = strtoupper((string) (
+            $payload['payment_status']
+            ?? ($payload['data']['status'] ?? null)
+            ?? ($payload['status'] ?? '')
+        ));
+
+        if (in_array($status, ['PAID', 'SETTLED', 'SUCCEEDED', 'COMPLETED', 'CAPTURED'], true)) {
+            $this->checkoutSettlement->markPaid($checkout);
+
+            Log::info('Checkout lunas via webhook Xendit', ['checkout_ref' => $checkout->checkout_ref]);
+
+            return true;
+        }
+
+        if (in_array($status, ['EXPIRED', 'FAILED', 'CANCELLED', 'VOIDED'], true)) {
+            $this->checkoutSettlement->markFailed($checkout, 'Pembayaran '.$status.' di gateway');
+
+            Log::info('Checkout gagal via webhook Xendit', [
+                'checkout_ref' => $checkout->checkout_ref,
+                'status' => $status,
+            ]);
+
+            return true;
+        }
+
+        // Event lain (mis. qc.created) — reference-nya checkout kita tapi belum
+        // ada perubahan status, biarkan handler utama yang memproses.
+        return false;
     }
 
     private function handleQrCallback(array $payload)

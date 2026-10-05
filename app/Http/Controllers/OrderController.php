@@ -3,19 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Brand;
-use App\Models\FlashDeal;
 use App\Models\Order;
 use App\Models\Product;
-use App\Models\Transaction;
-use App\Models\Voucher;
 use App\Services\BalanceService;
 use App\Services\DigiflazzService;
 use App\Services\PaymentGatewayService;
+use App\Services\TopupOrderBuilder;
 use App\Services\XenditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Str;
 
 class OrderController extends Controller
 {
@@ -23,17 +20,20 @@ class OrderController extends Controller
     protected XenditService $xendit;
     protected PaymentGatewayService $gateway;
     protected BalanceService $balance;
+    protected TopupOrderBuilder $builder;
 
     public function __construct(
         DigiflazzService $digiflazz,
         XenditService $xendit,
         PaymentGatewayService $gateway,
-        BalanceService $balance
+        BalanceService $balance,
+        TopupOrderBuilder $builder
     ) {
         $this->digiflazz = $digiflazz;
         $this->xendit = $xendit;
         $this->gateway = $gateway;
         $this->balance = $balance;
+        $this->builder = $builder;
     }
 
     public function create(Product $product)
@@ -170,81 +170,35 @@ class OrderController extends Controller
         return DB::transaction(function () use ($product, $input, $quantity, $customerNumber, $zoneId, $customerName, $customerPhone, $email) {
             // Resolve flash deal aktif secara atomik. Jika kuota tersisa,
             // order memakai harga flash dan kuota terkunci untuk pesanan ini.
-            $flash = FlashDeal::active()
-                ->lockForUpdate()
-                ->where('product_id', $product->id)
-                ->first();
+            $locked = $this->builder->lockItem($product, $quantity);
 
-            $unitPrice = (int) $product->selling_price;
-            $originalPrice = null;
-            $flashDealId = null;
-
-            if ($flash) {
-                $unitPrice = $flash->flash_price;
-                $originalPrice = (int) $product->selling_price;
-                $flashDealId = $flash->id;
-                $flash->consumeQty($quantity);
-            }
-
-            $subtotal = $unitPrice * $quantity;
+            $subtotal = $locked['line_total'];
 
             $voucherId = null;
             $voucher = null;
 
             if (! empty($input['promo_code'])) {
-                $code = strtoupper(trim((string) $input['promo_code']));
+                ['discount' => $discount, 'voucher' => $voucher] = $this->builder->voucherDiscount(
+                    (string) $input['promo_code'],
+                    $subtotal
+                );
 
-                if ($code === 'JOHENI10' || $code === 'JOHENGAMING10') {
-                    $subtotal = (int) round($subtotal * 0.9);
-                } else {
-                    $voucher = Voucher::whereRaw('UPPER(code) = ?', [$code])->lockForUpdate()->first();
-
-                    if (! $voucher) {
-                        throw new \RuntimeException('Kode voucher tidak ditemukan. Periksa kembali kodenya.');
-                    }
-
-                    if ($voucher->is_expired) {
-                        throw new \RuntimeException('Masa berlaku voucher '.$code.' sudah habis.');
-                    }
-
-                    if ($voucher->is_exhausted) {
-                        throw new \RuntimeException('Voucher '.$code.' sudah habis dipakai.');
-                    }
-
-                    $discount = $voucher->discountFor($subtotal);
-
-                    if ($discount < 1) {
-                        throw new \RuntimeException($voucher->min_spend > 0
-                            ? 'Voucher ini berlaku untuk belanja minimal Rp'.number_format($voucher->min_spend, 0, ',', '.').'.'
-                            : 'Voucher '.$code.' tidak bisa dipakai untuk pesanan ini.');
-                    }
-
-                    $subtotal -= $discount;
-                    $voucherId = $voucher->id;
-                }
+                $subtotal -= $discount;
+                $voucherId = $voucher?->id;
             }
 
-            $orderId = 'TUP-' . strtoupper(Str::random(10));
-
-            $order = Order::create([
-                'user_id' => Auth::id(),
-                'order_id' => $orderId,
-                'buyer_sku_code' => $product->buyer_sku_code,
+            $order = $this->builder->createOrder([
+                'product' => $product,
+                'user' => Auth::user(),
+                'quantity' => $quantity,
                 'customer_number' => $customerNumber,
                 'zone_id' => $zoneId,
                 'customer_name' => $customerName,
-                'customer_phone' => $customerPhone,
+                'phone' => $customerPhone,
                 'email' => $email,
-                'product_name' => $product->product_name,
-                'brand' => $product->brand,
-                'category' => $product->category,
                 'price' => $subtotal,
-                'original_price' => $originalPrice,
-                'flash_deal_id' => $flashDealId,
                 'voucher_id' => $voucherId,
-                'quantity' => $quantity,
-                'status' => 'pending',
-            ]);
+            ], $locked);
 
             if ($voucher) {
                 $voucher->markUsed($order);
@@ -255,7 +209,7 @@ class OrderController extends Controller
 
                 $charged = $this->gateway->charge($order, $method, [
                     'item_name' => $product->product_name,
-                    'unit_price' => $unitPrice,
+                    'unit_price' => $locked['unit_price'],
                 ]);
 
                 if (!$charged) {
@@ -266,12 +220,6 @@ class OrderController extends Controller
                     throw new \RuntimeException($message);
                 }
             }
-
-            Transaction::create([
-                'order_id' => $order->id,
-                'gross_amount' => $subtotal,
-                'status' => 'pending',
-            ]);
 
             return $order;
         });

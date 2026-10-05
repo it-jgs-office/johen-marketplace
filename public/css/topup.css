@@ -203,6 +203,32 @@ img{max-width:100%;display:block;}
 .main-nav a.active:hover{transform:translateY(-1px);}
 @keyframes bgPulse{0%,100%{box-shadow:0 0 70px -2px color-mix(in srgb,var(--purple-light) 65%,transparent), inset 0 0 0 1px color-mix(in srgb,var(--purple-light) 4%,transparent)}50%{box-shadow:0 0 100px 0 color-mix(in srgb,var(--purple-light) 8%,transparent), inset 0 0 0 1px color-mix(in srgb,var(--purple-light) 55%,transparent)}}
 
+/* tombol keranjang di header */
+.nav-cart-btn{
+  position:relative;display:flex;align-items:center;justify-content:center;
+  width:36px;height:36px;border-radius:10px;flex-shrink:0;
+  color:var(--text-dim);text-decoration:none;transition:all .2s ease;
+  border:1px solid transparent;
+}
+.nav-cart-btn svg{width:19px;height:19px;}
+.nav-cart-btn:hover{color:var(--purple-light);background:color-mix(in srgb,var(--purple) 10%,transparent);border-color:color-mix(in srgb,var(--purple-light) 22%,transparent);}
+.nav-cart-btn.active{color:var(--purple-light);}
+.nav-cart-badge{
+  position:absolute;top:-2px;right:-3px;min-width:17px;height:17px;padding:0 4px;
+  border-radius:999px;background:var(--gold);color:#1a1330;
+  font-family:var(--font-display);font-size:.62rem;font-weight:800;line-height:17px;
+  text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.35);
+}
+.nav-cart-badge[hidden]{display:none;}
+.nav-cart-badge--inline{position:static;margin-left:.4rem;box-shadow:none;display:inline-block;vertical-align:middle;}
+/* Baris keranjang di dalam hamburger: ikon + label kiri, badge kanan. */
+.mobile-menu__cart{display:flex;align-items:center;gap:.65rem;}
+.mobile-menu__cart > svg{width:18px;height:18px;flex-shrink:0;opacity:.8;}
+.mobile-menu__cart .nav-cart-badge--inline{margin-left:auto;}
+.mobile-menu__cart.active > svg{opacity:1;}
+.nav-cart-badge.bump{animation:cartBump .32s ease;}
+@keyframes cartBump{0%{transform:scale(1)}45%{transform:scale(1.45)}100%{transform:scale(1)}}
+
 .auth-buttons{display:flex;gap:.7rem;flex-shrink:0;}
 .auth-user{display:flex;align-items:center;gap:.6rem;}
 .auth-avatar{
@@ -1005,7 +1031,7 @@ img{max-width:100%;display:block;}
 }
 
 @media (max-width:920px){
-  .main-nav,.auth-buttons,.auth-user{display:none;}
+  .main-nav,.auth-buttons,.auth-user,.nav-cart-btn{display:none;}
   .hamburger{display:flex;}
   .search-wrap{max-width:none;}
   .mobile-menu{display:flex;}
@@ -1221,6 +1247,16 @@ img{max-width:100%;display:block;}
 .gd-summary-total span:last-child{font-family:var(--font-display);font-weight:800;font-size:1.2rem;color:var(--gold);}
 .gd-summary-empty{text-align:center;padding:1rem .5rem;color:var(--text-mute);font-size:.85rem;font-weight:500;}
 
+/* catatan jumlah item di keranjang (diperbarui realtime setelah add to cart) */
+.gd-cart-note{
+  display:flex;align-items:center;gap:.45rem;margin-top:.75rem;
+  font-size:.78rem;color:var(--text-mute);
+}
+.gd-cart-note[hidden]{display:none;}
+.gd-cart-note svg{width:14px;height:14px;flex-shrink:0;}
+.gd-cart-note b{color:var(--text);font-weight:700;}
+.gd-cart-note a{margin-left:auto;color:var(--purple);font-weight:600;text-decoration:underline;text-underline-offset:3px;}
+
 /* package groups */
 .gd-group{
   background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);
@@ -1399,6 +1435,7 @@ img{max-width:100%;display:block;}
 .gd-mobile-bar-label{font-size:.68rem;color:var(--text-dim);display:block;line-height:1.2;}
 .gd-mobile-bar-total{font-family:var(--font-display);font-size:1.05rem;font-weight:800;color:var(--gold);display:block;margin-top:.05rem;}
 .gd-mobile-bar-btn{flex-shrink:0;padding:.65rem 1.2rem;font-size:.82rem;white-space:nowrap;}
+.gd-mobile-bar-btn--cart{padding:.65rem .8rem;display:flex;align-items:center;justify-content:center;}
 
 /* accordion panel (slides up from bar) */
 .gd-mobile-panel{overflow:hidden;transition:max-height .35s ease,opacity .25s ease;max-height:0;opacity:0;}

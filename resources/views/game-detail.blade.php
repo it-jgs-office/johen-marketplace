@@ -396,7 +396,17 @@
           <div class="gd-summary-line"><span>Biaya Layanan</span><strong id="sumFeeDesktop">Rp 0</strong></div>
           <div class="gd-summary-total"><span>Total Pembayaran</span><span id="sumTotalDesktop">Rp 0</span></div>
         </div>
-        <button class="btn btn-solid btn-full" id="orderNowBtn" style="margin-top:1rem">Pesan Sekarang</button>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:1rem;">
+          <button class="btn btn-outline btn-full" id="addToCartBtn" type="button">Keranjang</button>
+          <button class="btn btn-solid btn-full" id="orderNowBtn">Pesan Sekarang</button>
+        </div>
+        {{-- Angka realtime jumlah item di keranjang; disembunyikan saat keranjang kosong. --}}
+        @php($cartCount = auth()->check() ? app(\App\Services\CartService::class)->countItems(auth()->id()) : 0)
+        <p class="gd-cart-note" data-role="cart-note" @if($cartCount < 1) hidden @endif>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+          <span>Di keranjang: <b data-role="cart-summary-qty">{{ $cartCount }}</b> item</span>
+          <a href="{{ route('cart.index') }}">Lihat</a>
+        </p>
       </div>
     </div>
   </div>
@@ -438,6 +448,9 @@
       <span class="gd-mobile-bar-label">Total Pembayaran</span>
       <strong class="gd-mobile-bar-total" id="mobileSumTotal">Rp 0</strong>
     </div>
+    <button class="btn btn-outline gd-mobile-bar-btn gd-mobile-bar-btn--cart" id="addToCartBtnMobile" type="button" aria-label="Tambah ke keranjang">
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+    </button>
     <button class="btn btn-solid gd-mobile-bar-btn" id="orderNowBtnMobile">Pesan Sekarang</button>
   </div>
 </div>
@@ -857,6 +870,77 @@ async function handleOrder(btn) {
 
 $('#orderNowBtn').addEventListener('click', function() { handleOrder(this); });
 $('#orderNowBtnMobile').addEventListener('click', function() { handleOrder(this); });
+
+
+/* ---------- tambah ke keranjang ---------- */
+const cartStoreUrl = @json(route('cart.store'));
+const cartLoginUrl = @json(route('login'));
+const isAuthed = @json(auth()->check());
+let cartBusy = false;
+
+async function addToCart(btn, isMobile) {
+    if (cartBusy) return;
+
+    if (!selectedPkg) { showToast('Pilih nominal dulu ya', false); return; }
+    if (!isAuthed) { window.location.href = cartLoginUrl; return; }
+
+    cartBusy = true;
+    const label = isMobile ? btn.innerHTML : btn.textContent;
+
+    if (!isMobile) btn.textContent = 'Menyimpan...';
+    btn.disabled = true;
+
+    const fd = new FormData();
+    fd.append('product_id', selectedPkg.id);
+    fd.append('quantity', qty);
+
+    try {
+        const res = await fetch(cartStoreUrl, {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content || '',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            body: fd
+        });
+
+        if (res.status === 401 || res.status === 419) { window.location.href = cartLoginUrl; return; }
+
+        const data = await res.json();
+
+        if (data.success) {
+            // Satu payload state memperbarui badge header sekaligus catatan
+            // "Di keranjang: N item" di halaman ini.
+            if (typeof applyCartState === 'function') applyCartState(data.state);
+            else setCartBadge(data.count);
+            showToast(data.message || 'Masuk ke keranjang');
+
+            // Umpan balik singkat tanpa mengubah layout tombol.
+            if (!isMobile) btn.textContent = 'Ditambahkan';
+            setTimeout(function() {
+                if (isMobile) btn.innerHTML = label;
+                else btn.textContent = 'Keranjang';
+            }, 1400);
+            return;
+        }
+
+        showToast(data.message || 'Gagal menambah ke keranjang', false);
+    } catch(e) {
+        showToast('Gagal menambah ke keranjang: ' + e.message, false);
+    } finally {
+        btn.disabled = false;
+        cartBusy = false;
+        if (isMobile) btn.innerHTML = label;
+    }
+}
+
+const addToCartBtn = $('#addToCartBtn');
+if (addToCartBtn) addToCartBtn.addEventListener('click', function() { addToCart(this, false); });
+
+// Mobile bar hanya dirender kalau halaman punya produk.
+const addToCartBtnMobile = $('#addToCartBtnMobile');
+if (addToCartBtnMobile) addToCartBtnMobile.addEventListener('click', function() { addToCart(this, true); });
 
 
 /* ---------- promo ---------- */

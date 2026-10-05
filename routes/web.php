@@ -11,6 +11,8 @@ use App\Http\Controllers\Admin\PushSubscriptionController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminGachaPrizeController;
 use App\Http\Controllers\AdminVoucherController;
+use App\Http\Controllers\CartController;
+use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\GachaController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\LiveChatController;
@@ -106,6 +108,30 @@ Route::get('/orders/create/{product}', [OrderController::class, 'create'])->name
 Route::post('/orders', [OrderController::class, 'store'])->name('orders.store');
 Route::post('/orders/reorder/{order}', [OrderController::class, 'reorder'])->name('orders.reorder');
 Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
+
+/*
+ * Keranjang belanja + checkout.
+ *
+ * Wajib login (auth:web): keranjang disimpan di database supaya tidak hilang
+ * saat ganti perangkat, dan isi keranjang selalu punya user_id untuk retrace
+ * pesanan. Alur top-up yang lebih lama (Beli Sekarang / pesan inline di
+ * game-detail) tetap terbuka untuk guest.
+ */
+Route::middleware('auth:web')->group(function () {
+    Route::get('/keranjang', [CartController::class, 'index'])->name('cart.index');
+    Route::post('/keranjang', [CartController::class, 'store'])->name('cart.store');
+    Route::post('/keranjang/kosongkan', [CartController::class, 'clear'])->name('cart.clear');
+    Route::get('/keranjang/jumlah', [CartController::class, 'count'])->name('cart.count');
+Route::get('/keranjang/state', [CartController::class, 'state'])->name('cart.state');
+    Route::patch('/keranjang/item/{item}', [CartController::class, 'update'])->name('cart.update');
+    Route::delete('/keranjang/item/{item}', [CartController::class, 'destroy'])->name('cart.destroy');
+
+    Route::get('/checkout', [CheckoutController::class, 'create'])->name('checkout.create');
+    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
+    Route::get('/checkout/{checkout}/status', [CheckoutController::class, 'status'])->name('checkout.status');
+    Route::post('/checkout/{checkout}/simulasi', [CheckoutController::class, 'simulate'])->name('checkout.simulate');
+    Route::get('/checkout/{checkout}/pembayaran', [CheckoutController::class, 'payment'])->name('checkout.payment');
+});
 
 Route::get('/payment/detail/{order}', [PaymentController::class, 'detail'])->name('payment.detail');
 Route::get('/payment/success/{order}', [PaymentController::class, 'success'])->name('payment.success');
