@@ -739,6 +739,19 @@ function showAccountNotFound() {
     togglePayLock();
 }
 
+function showAccountCheckUnavailable() {
+    clearAccountFeedback();
+    const message = 'Pengecekan akun sedang tidak tersedia. Coba lagi beberapa saat.';
+    if (userIdOk) {
+        userIdOk.className = 'gd-field-ok bad show';
+        userIdOk.textContent = message;
+    }
+    if (mlRegionNotice) {
+        mlRegionNotice.hidden = false;
+        mlRegionNotice.textContent = message;
+    }
+}
+
 function scheduleAccountCheck() {
     clearTimeout(accountCheckTimer);
     if (accountCheckAbort) accountCheckAbort.abort();
@@ -780,18 +793,14 @@ async function runAccountCheck() {
         const data = await res.json();
         if (myAbort !== accountCheckAbort) return; /* respons basi */
         if (data.checked === false) {
-            clearAccountFeedback();
-            if (mlRegionNotice) {
-                mlRegionNotice.hidden = false;
-                mlRegionNotice.textContent = 'Pengecekan akun belum berhasil. Silakan coba lagi sebentar.';
-            }
+            showAccountCheckUnavailable();
             return;
         }
         if (data.valid) showAccountValid(data.nickname, data.region);
         else showAccountNotFound();
     } catch (e) {
         if (e.name !== 'AbortError' && myAbort === accountCheckAbort) {
-            clearAccountFeedback(); /* gagal jaringan → netral */
+            showAccountCheckUnavailable();
         }
     } finally {
         if (mlCheckAccountBtn && myAbort === accountCheckAbort) {

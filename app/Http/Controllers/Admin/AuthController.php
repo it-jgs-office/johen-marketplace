@@ -22,7 +22,15 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        if (Auth::guard('admin')->attempt($request->only('username', 'password'), $request->boolean('remember'))) {
+        $credentials = $request->only('username', 'password');
+
+        // Izinkan login menggunakan username atau email akun.
+        if (filter_var($credentials['username'], FILTER_VALIDATE_EMAIL)) {
+            $credentials['email'] = $credentials['username'];
+            unset($credentials['username']);
+        }
+
+        if (Auth::guard('admin')->attempt($credentials, $request->boolean('remember'))) {
             $user = Auth::guard('admin')->user();
 
             if ($user->isAdmin()) {

@@ -330,10 +330,10 @@
                 @csrf
 
                 <div class="field">
-                    <label for="username">Username</label>
+                    <label for="username">Username atau Email</label>
                     <div class="input">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
-                        <input id="username" type="text" name="username" value="{{ old('username') }}" required autofocus autocomplete="username" placeholder="username admin" class="{{ $errors->has('username') ? 'error' : '' }}">
+                        <input id="username" type="text" name="username" value="{{ old('username') }}" required autofocus autocomplete="username" placeholder="Username atau email admin" class="{{ $errors->has('username') ? 'error' : '' }}">
                     </div>
                     @error('username')
                         <div class="error-text">

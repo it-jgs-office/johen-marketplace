@@ -8,7 +8,6 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
-use Illuminate\Support\Str;
 
 class GameAccountService
 {
@@ -29,7 +28,7 @@ class GameAccountService
         }
 
         $resolver = $this->matchBrand($brand);
-        $isMl = ($resolver['type'] ?? null) === 'digiflazz_ml';
+        $isMl = str_starts_with(mb_strtolower($brand), 'mobile legends');
 
         // Mode simulasi pembayaran: selalu terdeteksi agar UI bisa dites lokal.
         if (config('services.payment.simulation')) {
@@ -77,7 +76,7 @@ class GameAccountService
             return $this->result(false, null, false);
         }
 
-        $ttl = $isMl ? (int) config('gameaccount.digiflazz_ml_cache_ttl', 30) : (int) config('gameaccount.cache_ttl', 5);
+        $ttl = $isMl ? (int) config('gameaccount.mobile_legends_cache_ttl', 30) : (int) config('gameaccount.cache_ttl', 5);
         Cache::put($cacheKey, $checked, now()->addMinutes($ttl));
 
         return $checked;
@@ -142,7 +141,6 @@ class GameAccountService
     {
         try {
             return match ($resolver['type']) {
-                'digiflazz_ml' => $this->checkDigiflazzMl($userId, (string) $zoneId),
                 'enka' => $this->checkEnka($resolver, $userId),
                 'isan' => $this->checkIsan($resolver, $userId, $zoneId),
                 'gopay' => $this->checkGopay($resolver, $userId, $zoneId),
@@ -153,80 +151,6 @@ class GameAccountService
 
             return null;
         }
-    }
-
-    protected function checkDigiflazzMl(string $userId, string $zoneId): array
-    {
-        $sku = (string) config('gameaccount.digiflazz_ml_sku', 'usrnameml-johen');
-        $transactionKey = 'gameaccount:ml:transaction:'.md5($userId.'|'.$zoneId);
-        $refId = Cache::get($transactionKey);
-        $digiflazz = app(DigiflazzService::class);
-
-        if (is_string($refId) && $refId !== '') {
-            // Respons pending/timeout dicek ulang dengan ref yang sama;
-            // jangan mengirim transaksi SKU pengecekan yang kedua.
-            $response = $digiflazz->checkStatus($sku, $userId, $refId, $zoneId);
-        } else {
-            $refId = 'MLCHECK-'.strtoupper(Str::random(16));
-            Cache::put($transactionKey, $refId, now()->addMinutes(30));
-            $response = $digiflazz->topUp($sku, $userId, $refId, $zoneId);
-        }
-        $data = $response['data'] ?? [];
-
-        if (! is_array($data) || ! in_array(strtolower((string) ($data['status'] ?? '')), ['sukses', 'success'], true)) {
-            // Pending/error tidak boleh dibaca sebagai akun invalid atau IDN.
-            return $this->result(false, null, false);
-        }
-
-        $sn = trim((string) ($data['sn'] ?? ''));
-        $lookupText = $sn.' | '.trim((string) ($data['message'] ?? ''));
-        $nickname = $this->firstText($data, ['nickname', 'username', 'customer_name', 'name'])
-            ?? $this->labelFromSn($lookupText, '(?:username|nickname|nick|nama(?: akun)?)');
-        $regionRaw = $this->firstText($data, ['region', 'country', 'country_name', 'country_code', 'server_region'])
-            ?? $this->labelFromSn($lookupText, '(?:region|negara|country)');
-
-        return $this->result(true, $nickname, true, $this->countryName($regionRaw));
-    }
-
-    private function firstText(array $data, array $keys): ?string
-    {
-        foreach ($keys as $key) {
-            $value = trim((string) ($data[$key] ?? ''));
-            if ($value !== '') {
-                return $value;
-            }
-        }
-
-        return null;
-    }
-
-    private function labelFromSn(string $sn, string $label): ?string
-    {
-        if (preg_match('/\b'.$label.'\s*[:=]\s*([^|;,\/\r\n]+)/iu', $sn, $matches)) {
-            return trim($matches[1]);
-        }
-
-        return null;
-    }
-
-    private function countryName(?string $value): ?string
-    {
-        $value = trim((string) $value);
-        if ($value === '') {
-            return null;
-        }
-
-        $names = [
-            'id' => 'Indonesia', 'idn' => 'Indonesia', 'indonesia' => 'Indonesia',
-            'my' => 'Malaysia', 'mys' => 'Malaysia', 'malaysia' => 'Malaysia',
-            'ph' => 'Filipina', 'phl' => 'Filipina', 'philippines' => 'Filipina', 'filipina' => 'Filipina',
-            'sg' => 'Singapura', 'sgp' => 'Singapura', 'singapore' => 'Singapura', 'singapura' => 'Singapura',
-            'th' => 'Thailand', 'tha' => 'Thailand', 'thailand' => 'Thailand',
-            'vn' => 'Vietnam', 'vnm' => 'Vietnam', 'vietnam' => 'Vietnam',
-            'us' => 'Amerika Serikat', 'usa' => 'Amerika Serikat', 'united states' => 'Amerika Serikat',
-        ];
-
-        return $names[mb_strtolower($value)] ?? mb_convert_case($value, MB_CASE_TITLE, 'UTF-8');
     }
 
     protected function checkEnka(array $resolver, string $userId): array
@@ -285,7 +209,7 @@ class GameAccountService
             return $this->result(false, null);
         }
 
-        return $this->result(true, $nickname);
+        return $this->result(true, $nickname, true, $resolver['region'] ?? null);
     }
 
     /**
