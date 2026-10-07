@@ -110,7 +110,7 @@
     @else
       <div class="auth-buttons">
         <a href="{{ route('login') }}" class="btn btn-outline">Masuk</a>
-        <a href="{{ route('register') }}" class="btn btn-solid">Daftar</a>
+        <a href="{{ route('register') }}" class="btn btn-solid" style="background:linear-gradient(135deg,var(--purple-light),var(--purple));">Daftar</a>
       </div>
     @endauth
 
@@ -163,7 +163,7 @@
     @else
       <div class="mobile-auth">
         <a href="{{ route('login') }}" class="btn btn-outline" style="flex:1;justify-content:center;">Masuk</a>
-        <a href="{{ route('register') }}" class="btn btn-solid" style="flex:1;justify-content:center;">Daftar</a>
+        <a href="{{ route('register') }}" class="btn btn-solid" style="flex:1;justify-content:center;background:linear-gradient(135deg,var(--purple-light),var(--purple));">Daftar</a>
       </div>
     @endauth
   </div>

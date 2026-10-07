@@ -186,7 +186,7 @@
 
 <style>
 :root {
-  --jba-accent: #9d5cf5;
+  --jba-accent: #2563eb;
 }
 .jba-detail-page {
   max-width: 1200px;
@@ -569,13 +569,13 @@
   padding: .85rem 1rem;
   margin: 2rem 0 .5rem;
   border-radius: 12px;
-  background: rgba(157, 92, 245, .08);
-  border: 1px solid rgba(157, 92, 245, .25);
+  background: rgba(37, 99, 235, .08);
+  border: 1px solid rgba(37, 99, 235, .25);
   animation: jbaGlowPulse 2s ease-in-out infinite;
 }
 @keyframes jbaGlowPulse {
-  0%, 100% { border-color: rgba(157, 92, 245, .25); box-shadow: 0 0 6px rgba(157, 92, 245, .08); }
-  50% { border-color: rgba(157, 92, 245, .7); box-shadow: 0 0 14px rgba(157, 92, 245, .25); }
+  0%, 100% { border-color: rgba(37, 99, 235, .25); box-shadow: 0 0 6px rgba(37, 99, 235, .08); }
+  50% { border-color: rgba(37, 99, 235, .7); box-shadow: 0 0 14px rgba(37, 99, 235, .25); }
 }
 .jba-transfer-icon {
   flex-shrink: 0;
@@ -585,7 +585,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(157, 92, 245, .15);
+  background: rgba(37, 99, 235, .15);
   color: var(--jba-accent);
 }
 .jba-transfer-text {
