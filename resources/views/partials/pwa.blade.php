@@ -1,4 +1,4 @@
-<meta name="theme-color" content="#000000">
+<meta name="theme-color" content="#01203c">
 <meta name="application-name" content="Johen Gaming Marketplace">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">

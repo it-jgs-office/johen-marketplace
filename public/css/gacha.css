@@ -21,7 +21,7 @@
   max-height: 92vh;
   display: flex;
   flex-direction: column;
-  background: var(--surface, #1e1136);
+  background: var(--surface, #0A1E50);
   border: 1px solid var(--border, rgba(255,255,255,.08));
   border-radius: 20px;
   box-shadow: 0 20px 60px rgba(0,0,0,.45);
@@ -386,7 +386,7 @@
   height: 14px;
   border-radius: 50%;
   background: #22c55e;
-  border: 2px solid var(--surface, #1e1136);
+  border: 2px solid var(--surface, #0A1E50);
 }
 
 /* ---------- Toast internal ---------- */

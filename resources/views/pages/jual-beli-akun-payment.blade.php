@@ -50,8 +50,8 @@
           <div class="jpay-method-result" id="jpayMethodResult">
             <div class="jpay-method-result-head">
               <div class="jpay-method-result-icon">
-                @if($paymentMethod && $paymentMethod->photo_url)
-                  <img data-src-dark="{{ $paymentMethod->photo_url }}" data-src-light="{{ $paymentMethod->photo_light_url ?? $paymentMethod->photo_url }}" alt="{{ $paymentMethod->name }}" class="jpay-method-logo jpay-pay-themeable">
+                @if(payment_logo_asset($accountOrder->payment_method ?? $paymentMethod?->code))
+                  <img src="{{ payment_logo_asset($accountOrder->payment_method ?? $paymentMethod?->code) }}" alt="{{ $paymentMethod?->name ?? $accountOrder->payment_method }}" class="jpay-method-logo">
                 @elseif($paymentMethod && $paymentMethod->icon)
                   <span>{{ $paymentMethod->icon }}</span>
                 @else
@@ -309,8 +309,8 @@
 
 .jpay-method-result { padding: 1.2rem; }
 .jpay-method-result-head { display: flex; align-items: center; gap: .7rem; margin-bottom: 1.2rem; }
-.jpay-method-result-icon { flex-shrink: 0; line-height: 0; }
-.jpay-method-result-icon .jpay-method-logo { width: 26px; height: 26px; object-fit: contain; border-radius: 6px; }
+.jpay-method-result-icon { width: 34px; height: 34px; flex-shrink: 0; line-height: 0; display: flex; align-items: center; justify-content: center; background: #fff; border: 1px solid rgba(15,23,42,.12); border-radius: 8px; }
+.jpay-method-result-icon .jpay-method-logo { width: 26px; height: 26px; object-fit: contain; border-radius: 5px; }
 .jpay-method-result-label { font-size: .72rem; color: var(--text-mute); }
 .jpay-method-result-name { font-weight: 700; font-size: .9rem; }
 

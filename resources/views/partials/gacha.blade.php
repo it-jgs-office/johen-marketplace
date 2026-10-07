@@ -5,6 +5,12 @@
         && $gachaService->activePrizes()->isNotEmpty();
 @endphp
 @if($gachaVisible)
+<link rel="stylesheet" href="{{ pwa_asset('css/gacha.css') }}">
+<style>
+/* Critical state: modal tetap tersembunyi selama CSS widget sedang dimuat. */
+#gc-overlay:not(.active),#gc-modal:not(.active){opacity:0!important;visibility:hidden!important;pointer-events:none!important}
+</style>
+
 <div id="gc-overlay" class="gc-overlay" aria-hidden="true"></div>
 
 <div id="gc-modal" class="gc-modal" role="dialog" aria-modal="true" aria-labelledby="gcTitle" aria-hidden="true">
@@ -64,6 +70,5 @@
     login: @json(route('login'))
   };
 </script>
-  <link rel="stylesheet" href="{{ pwa_asset('css/gacha.css') }}">
-  <script src="{{ pwa_asset('js/gacha.js') }}" defer></script>
+<script src="{{ pwa_asset('js/gacha.js') }}" defer></script>
 @endif

@@ -35,20 +35,7 @@
   ];
   $methodCode = strtolower((string) $paymentMethod);
   $methodCode = $codeAliases[$methodCode] ?? $methodCode;
-  $payMethodModel = \App\Models\PaymentMethod::where('code', $methodCode)->first();
-  $fallbackLogos = [
-    'shopeepay' => 'https://i.imgur.com/sXK3l5l.png',
-    'gopay' => 'https://i.imgur.com/ZUw3GLr.png',
-    'dana' => 'https://i.imgur.com/7PmQx5M.png',
-    'qris' => 'https://i.imgur.com/6PQ8R0T.png',
-    'bca_va' => 'https://i.imgur.com/QJ6qXzj.png',
-    'bni_va' => 'https://i.imgur.com/9d5GqCj.png',
-    'bri_va' => 'https://i.imgur.com/5Py3H0p.png',
-    'mandiri_va' => 'https://i.imgur.com/CwT1dKO.png',
-    'permata_va' => 'https://i.imgur.com/mXHsgdY.png',
-  ];
-  $paymentLogo = $payMethodModel?->photo_url ?: ($fallbackLogos[$methodCode] ?? null);
-  $paymentLogoLight = $payMethodModel?->photo_light_url;
+  $paymentLogo = payment_logo_asset($methodCode);
 @endphp
 
 <div class="pd-wrap">
@@ -144,7 +131,7 @@
             <div class="pd-detail-item">
               <span class="pd-detail-label">Metode</span>
               <span class="pd-detail-value">
-                @if($paymentLogo)<img src="{{ $paymentLogo }}" alt="" class="pd-detail-paylogo"@if($paymentLogoLight) data-light="{{ $paymentLogoLight }}"@endif>@endif
+                @if($paymentLogo)<img src="{{ $paymentLogo }}" alt="" class="pd-detail-paylogo">@endif
                 <span id="pdDetailMethod">{{ $methodLabel }}</span>
               </span>
             </div>
@@ -231,7 +218,7 @@
           <div class="pd-method-result" id="pdMethodResult" style="display:none">
             <div class="pd-method-result-head">
               <div class="pd-method-result-icon" id="pdMethodIcon">
-                @if($paymentLogo)<img src="{{ $paymentLogo }}" alt="" style="width:100%;height:100%;object-fit:contain;"@if($paymentLogoLight) data-light="{{ $paymentLogoLight }}"@endif>
+                @if($paymentLogo)<img src="{{ $paymentLogo }}" alt="" style="width:100%;height:100%;object-fit:contain;">
                 @else<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--purple-light)" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
                 @endif
               </div>
@@ -435,7 +422,7 @@
 .pd-detail-label{color:var(--text-dim);font-size:.82rem;white-space:nowrap;flex-shrink:0;}
 .pd-detail-value{color:var(--text);font-size:.84rem;font-weight:500;text-align:right;display:inline-flex;align-items:center;gap:.45rem;min-width:0;justify-content:flex-end;}
 .pd-detail-mono{font-family:var(--font-display);font-weight:600;}
-.pd-detail-paylogo{width:18px;height:18px;object-fit:contain;border-radius:4px;flex-shrink:0;}
+.pd-detail-paylogo{width:22px;height:22px;object-fit:contain;border-radius:5px;flex-shrink:0;background:#fff;padding:2px;border:1px solid rgba(15,23,42,.12);}
 .pd-detail-badge{display:inline-flex;align-items:center;gap:.35rem;padding:.25rem .65rem;border-radius:6px;font-size:.72rem;font-weight:700;white-space:nowrap;}
 .pd-detail-badge-dot{width:6px;height:6px;border-radius:50%;display:inline-block;}
 

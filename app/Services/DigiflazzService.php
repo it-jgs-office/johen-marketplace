@@ -26,10 +26,13 @@ class DigiflazzService
 
     public function __construct()
     {
-        $this->username = (string) (SiteSetting::get('digiflazz_username') ?? config('digiflazz.username', ''));
-        $this->key = (string) (SiteSetting::get('digiflazz_key') ?? config('digiflazz.key', ''));
+        // Kredensial API hanya dibaca dari .env/config, bukan dari database.
+        // Ini sesuai dengan panel admin dan mencegah key lama di SiteSetting
+        // diam-diam menimpa konfigurasi deployment.
+        $this->username = (string) config('digiflazz.username', '');
+        $this->key = (string) config('digiflazz.key', '');
         $this->baseUrl = (string) config('digiflazz.base_url', 'https://api.digiflazz.com/v1');
-        $this->production = (bool) (SiteSetting::get('digiflazz_production') === '1' || config('digiflazz.production', false));
+        $this->production = (bool) config('digiflazz.production', false);
         $this->simulation = (bool) config('services.payment.simulation', false);
         $this->marginPercent = self::readMarginPercent();
     }
@@ -222,7 +225,7 @@ class DigiflazzService
 
     public function getPriceList(bool $forceRefresh = false): array
     {
-        $cacheKey = 'digiflazz_pricelist_'.md5($this->username);
+        $cacheKey = 'digiflazz_pricelist_games_'.md5($this->username);
 
         if (! $forceRefresh && Cache::has($cacheKey)) {
             return (array) Cache::get($cacheKey);
@@ -237,6 +240,7 @@ class DigiflazzService
         try {
             $response = Http::post($this->baseUrl.'/price-list', [
                 'cmd' => 'prepaid',
+                'category' => 'Games',
                 'username' => $this->username,
                 'sign' => $sign,
             ]);
@@ -263,11 +267,17 @@ class DigiflazzService
 
             $list = $data['data'] ?? [];
 
+            // Filter API dapat tertunda; jangan percayakan batas katalog pada
+            // parameter request saja. Katalog dan cache hanya berisi game.
+            $list = is_array($list) ? array_values(array_filter($list, fn ($item) =>
+                is_array($item) && mb_strtolower(trim((string) ($item['category'] ?? ''))) === 'games'
+            )) : [];
+
             if (! empty($list)) {
                 Cache::put($cacheKey, $list, now()->addHour());
             }
 
-            return is_array($list) ? $list : [];
+            return $list;
         } catch (\Exception $e) {
             Log::error('Digiflazz getPriceList failed: '.$e->getMessage());
 
@@ -284,68 +294,105 @@ class DigiflazzService
                 return ['success' => false, 'message' => 'Digiflazz belum dikonfigurasi.'];
             }
 
-            return ['success' => false, 'message' => 'Gagal mengambil data dari Digiflazz. Periksa username & key.'];
+            return ['success' => false, 'message' => 'Tidak ada produk kategori Games yang dapat diambil dari Digiflazz. Periksa akses API dan katalog akun Anda.'];
         }
 
-        $gameBrands = $this->gameBrandNames();
+        $brands = Brand::query()->get(['name', 'catalog_group']);
+        $gameBrands = [];
+        $otherBrands = [];
+        foreach ($brands as $brand) {
+            $key = $this->normalizeBrand($brand->name);
+            if ($brand->catalog_group === 'game') {
+                $gameBrands[$key] = $brand->name;
+            } else {
+                $otherBrands[$key] = true;
+            }
+        }
 
-        // Dihitung SEBELUM upsert. Kalau dihitung sesudahnya, produk yang baru
-        // diimpor ikut terhitung dan pengaman selalu ikut terpicu.
-        $activeBefore = Product::query()->where('is_active', true)->count();
+        // Hitung sebelum upsert supaya pengaman auto-deactivate tetap berguna.
+        // Produk lama bisa memakai category "moba", jadi patokannya adalah
+        // brand game, bukan category produk yang pernah diisi manual.
+        $activeBefore = Product::query()
+            ->where('is_active', true)
+            ->whereIn(DB::raw('LOWER(brand)'), array_map('mb_strtolower', array_values($gameBrands)))
+            ->where('type', '!=', 'joki')
+            ->count();
 
         $count = 0;
         $skipped = 0;
+        $brandsCreated = 0;
         $seenSkus = [];
 
         Log::info('Digiflazz sync: processing '.count($data).' products from API.');
 
         foreach ($data as $item) {
             $sku = $item['buyer_sku_code'] ?? null;
+            $sourceBrand = trim((string) ($item['brand'] ?? ''));
+            $brandKey = $this->normalizeBrand($sourceBrand);
 
-            if (! $sku) {
+            if (! $sku || strcasecmp((string) $sku, (string) config('gameaccount.digiflazz_ml_sku', 'usrnameml-johen')) === 0 || $brandKey === '') {
                 $skipped++;
 
                 continue;
             }
 
-            // Katalog Digiflazz mencampur game dan pulsa/kuota. Hanya brand
-            // yang terdaftar sebagai game di tabel brands yang diimpor.
-            if ($gameBrands !== [] && ! $this->brandIsGame((string) ($item['brand'] ?? ''), $gameBrands)) {
+            // Jangan ubah brand non-game yang sudah ada menjadi game.
+            if (! isset($gameBrands[$brandKey]) && isset($otherBrands[$brandKey])) {
                 $skipped++;
 
                 continue;
+            }
+
+            if (! isset($gameBrands[$brandKey])) {
+                Brand::create([
+                    'name' => $sourceBrand,
+                    'category' => 'Games',
+                    'service_type' => 'topup',
+                    'catalog_group' => 'game',
+                    'is_active' => true,
+                ]);
+                $gameBrands[$brandKey] = $sourceBrand;
+                $brandsCreated++;
             }
 
             $seenSkus[] = $sku;
 
-            $stock = $item['stock'] ?? null;
             $unlimited = (bool) ($item['unlimited_stock'] ?? false);
+            $stock = $unlimited ? 9999 : max(0, (int) ($item['stock'] ?? 0));
+            $buyerActive = filter_var($item['buyer_product_status'] ?? false, FILTER_VALIDATE_BOOLEAN);
+            $sellerActive = filter_var($item['seller_product_status'] ?? true, FILTER_VALIDATE_BOOLEAN);
 
-            Product::updateOrCreate(
-                ['buyer_sku_code' => $sku],
-                [
-                    'brand' => $item['brand'],
-                    'category' => $item['category'],
-                    'product_name' => $item['product_name'],
-                    'price' => $this->resolveCost($item),
-                    'selling_price' => $this->resolveSellingPrice($item),
-                    'type' => $item['type'],
-                    'is_active' => ($item['buyer_product_status'] === true || $item['buyer_product_status'] === 1 || $item['buyer_product_status'] === '1'),
-                    'stock' => $stock !== null ? (int) $stock : ($unlimited ? 9999 : 0),
-                ]
-            );
+            $product = Product::firstOrNew(['buyer_sku_code' => $sku]);
+            $product->fill([
+                'brand' => $gameBrands[$brandKey],
+                'category' => $item['category'],
+                'product_name' => $item['product_name'],
+                'price' => $this->resolveCost($item),
+                'selling_price' => $this->resolveProductSellingPrice($product, $item),
+                // `type` Digiflazz berisi subkategori seperti "Indonesia";
+                // `type` aplikasi menentukan alur top up atau joki.
+                'type' => 'instant',
+                'region' => $this->productRegion($item),
+                'is_active' => $buyerActive && $sellerActive,
+                'stock' => $stock,
+            ]);
+            $product->save();
             $count++;
         }
 
-        $orphan = $this->deactivateOrphanedProducts($seenSkus, $gameBrands, $activeBefore);
+        if ($seenSkus === []) {
+            return ['success' => false, 'message' => 'Tidak ada SKU produk game yang valid dari Digiflazz; katalog lama tidak diubah.'];
+        }
+
+        $orphan = $this->deactivateOrphanedProducts($seenSkus, array_values($gameBrands), $activeBefore);
         $deactivated = $orphan['count'];
 
         SiteSetting::set('digiflazz_last_sync', now()->toDateTimeString());
         SiteSetting::set('digiflazz_product_count', (string) $count);
 
-        Log::info("Digiflazz sync completed: {$count} products synced, {$skipped} skipped, {$deactivated} products deactivated.");
+        Log::info("Digiflazz sync completed: {$count} products synced, {$brandsCreated} game brands created, {$skipped} skipped, {$deactivated} products deactivated.");
 
-        $message = "{$count} produk berhasil disinkronisasi.";
+        $message = "{$count} produk game berhasil disinkronisasi. {$brandsCreated} game baru ditambahkan.";
 
         if ($skipped > 0) {
             $message .= " {$skipped} dilewati (di luar katalog game).";
@@ -359,63 +406,47 @@ class DigiflazzService
             $message .= " Auto-deactivate dilewati: {$orphan['reason']}.";
         }
 
-        return ['success' => true, 'message' => $message, 'count' => $count, 'skipped' => $skipped, 'deactivated' => $deactivated, 'deactivate_skipped' => $orphan['skipped']];
+        return ['success' => true, 'message' => $message, 'count' => $count, 'brands_created' => $brandsCreated, 'skipped' => $skipped, 'deactivated' => $deactivated, 'deactivate_skipped' => $orphan['skipped']];
     }
 
-    /**
-     * Nama brand (lowercase) yang ditandai sebagai katalog game.
-     * Brand Digiflazz dan brand di tabel brands tidak selalu sama kapitalisasinya.
-     *
-     * @return array<int, string>
-     */
-    protected function gameBrandNames(): array
-    {
-        return Brand::query()
-            ->where('catalog_group', 'game')
-            ->pluck('name')
-            ->map(fn ($name) => mb_strtolower(trim((string) $name)))
-            ->all();
-    }
-
-    /**
-     * Normalisasi nama brand: lowercase, hanya huruf & angka.
-     *
-     * Nama brand di price list Digiflazz tidak konsisten — publisher sering
-     * ikut disertakan dan tanda baca vary:
-     *   "Konami eFootball" vs brand "E-Football"
-     *   "miHoYo Genshin Impact" vs brand "Genshin Impact"
-     *   "MOBILE LEGENDS" vs brand "Mobile Legends"
-     */
+    /** Samakan kapitalisasi dan tanda baca tanpa menggabungkan game berbeda. */
     protected function normalizeBrand(string $brand): string
     {
         return (string) preg_replace('/[^a-z0-9]+/', '', mb_strtolower(trim($brand)));
     }
 
-    /**
-     * Cocokkan nama brand dari price list Digiflazz ke tabel brands.
-     */
-    protected function brandIsGame(string $digiflazzBrand, array $gameBrands): bool
+    protected function productRegion(array $item): ?string
     {
-        $needle = $this->normalizeBrand($digiflazzBrand);
-
-        if ($needle === '') {
-            return false;
+        $sku = mb_strtolower((string) ($item['buyer_sku_code'] ?? ''));
+        if (preg_match('/-(idn|mys|phl)$/', $sku, $match)) {
+            return ['idn' => 'ID', 'mys' => 'MY', 'phl' => 'PH'][$match[1]];
         }
 
-        foreach ($gameBrands as $brand) {
-            $candidate = $this->normalizeBrand($brand);
+        return match (mb_strtolower(trim((string) ($item['type'] ?? '')))) {
+            'indonesia' => 'ID',
+            'malaysia' => 'MY',
+            'philippines', 'filipina' => 'PH',
+            default => null,
+        };
+    }
 
-            // Nama pendek (mis. "MLBB") rawan false positive, jadi minimal 4 karakter.
-            if (strlen($candidate) < 4) {
-                continue;
-            }
+    /** Tentukan harga jual sambil mempertahankan aturan harga yang dibuat admin. */
+    protected function resolveProductSellingPrice(Product $product, array $item): float
+    {
+        $cost = $this->resolveCost($item);
+        $markup = $product->selling_markup_value;
 
-            if (str_contains($needle, $candidate) || str_contains($candidate, $needle)) {
-                return true;
-            }
+        if ($product->selling_markup_type === 'rupiah' && $markup !== null) {
+            return round(max(0, $cost + (float) $markup), 2);
         }
 
-        return false;
+        if ($product->selling_markup_type === 'persentase' && $markup !== null) {
+            return round(max(0, $cost * (1 + ((float) $markup / 100))), 2);
+        }
+
+        return $product->selling_price_override !== null
+            ? (float) $product->selling_price_override
+            : $this->resolveSellingPrice($item);
     }
 
     /**
@@ -431,15 +462,10 @@ class DigiflazzService
             return ['count' => 0, 'skipped' => true, 'reason' => 'tidak ada SKU game yang cocok di price list'];
         }
 
-        $orphanQuery = Product::query()->where('is_active', true);
-
-        if ($gameBrands !== []) {
-            $allBrands = Brand::query()->pluck('name')->map(fn ($n) => mb_strtolower(trim((string) $n)))->all();
-            $orphanQuery->whereIn(
-                DB::raw('LOWER(brand)'),
-                $allBrands !== [] ? $allBrands : ['__none__']
-            );
-        }
+        $orphanQuery = Product::query()
+            ->where('is_active', true)
+            ->whereIn(DB::raw('LOWER(brand)'), array_map('mb_strtolower', $gameBrands))
+            ->where('type', '!=', 'joki');
 
         // Pengaman: bila data yang masuk jauh lebih sedikit dari katalog aktif
         // sebelum sinkronisasi, ini hampir pasti respons terpotong, rate-limit,
@@ -476,7 +502,7 @@ class DigiflazzService
         $sign = md5($this->username.$this->key.$refId);
 
         try {
-            $response = Http::post($this->baseUrl.'/transaction', [
+            $response = Http::timeout(15)->post($this->baseUrl.'/transaction', [
                 'cmd' => 'topup',
                 'username' => $this->username,
                 'buyer_sku_code' => $buyerSkuCode,
@@ -506,7 +532,7 @@ class DigiflazzService
         $sign = md5($this->username.$this->key.$refId);
 
         try {
-            $response = Http::post($this->baseUrl.'/transaction', [
+            $response = Http::timeout(15)->post($this->baseUrl.'/transaction', [
                 'cmd' => 'status',
                 'username' => $this->username,
                 'buyer_sku_code' => $buyerSkuCode,

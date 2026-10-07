@@ -29,6 +29,18 @@
             @enderror
         </div>
 
+        @if($requiresZoneId)
+        <div class="mb-4">
+            <label class="block text-sm font-medium mb-2" for="zone_id">Zone ID</label>
+            <input type="text" id="zone_id" name="zone_id" placeholder="Masukkan Zone ID" required
+                   value="{{ old('zone_id', request('zone_id')) }}"
+                   class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500">
+            @error('zone_id')
+                <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
+            @enderror
+        </div>
+        @endif
+
         <div class="mb-4">
             <label class="block text-sm font-medium mb-2">Nickname (opsional)</label>
             <input type="text" name="customer_name" placeholder="Nickname game"
@@ -68,10 +80,8 @@
                             <input type="radio" name="payment_method" value="{{ $pm->code }}"
                                    @if(old('payment_method', 'qris') === $pm->code) checked @endif
                                    class="accent-purple-500">
-                            @if($pm->photo_light_url)
-                                <img src="{{ $pm->photo_light_url }}" alt="{{ $pm->name }}" class="h-7 object-contain">
-                            @elseif($pm->photo_url)
-                                <img src="{{ $pm->photo_url }}" alt="{{ $pm->name }}" class="h-7 object-contain">
+                            @if(payment_logo_asset($pm->code))
+                                <img src="{{ payment_logo_asset($pm->code) }}" alt="{{ $pm->name }}" class="h-7 object-contain">
                             @endif
                             <span class="text-sm text-gray-200">{{ $pm->name }}</span>
                         </label>

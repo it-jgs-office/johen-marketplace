@@ -21,6 +21,12 @@ let selectedNominal = null;
 let selectedPay = null;
 let paymentMethods = [];
 
+function staticPaymentLogo(method) {
+  const raw = typeof method === 'string' ? method : (method.code || method.name || '');
+  const code = String(raw).trim().toLowerCase().replace(/[\s-]+/g, '_');
+  return (window.STATIC_PAYMENT_LOGOS || {})[code] || '';
+}
+
 // ============ HEADER SCROLL ============
 const header = document.getElementById('siteHeader');
 if (header) {
@@ -283,8 +289,7 @@ async function openTopupModal(brand) {
   if (paySelectGrid) {
     if (payments.length) {
       paySelectGrid.innerHTML = payments.map(p => {
-        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-        const photo = (isLight && p.photo_light_url) ? p.photo_light_url : (p.photo_url || '');
+        const photo = staticPaymentLogo(p);
         const icon = p.icon || '';
         const content = photo ? `<img src="${photo}" alt="${p.name}" class="pay-opt-img">` : (icon ? `<span class="pay-opt-icon">${icon}</span><span class="pay-opt-name">${p.name}</span>` : p.name);
         return `<div class="pay-opt" data-pay="${p.name}">${content}</div>`;
@@ -459,13 +464,13 @@ function isLightTheme() {
 
 function renderPaymentMarquee(methods) {
   if (!paymentTrack) return;
-  const items = methods.map(m => typeof m === 'string' ? { name: m, photo_url: null, photo_light_url: null, icon: null } : m);
+  const items = methods.map(m => typeof m === 'string' ? { name: m, code: m, icon: null } : m);
   const doubled = [...items, ...items];
   paymentTrack.innerHTML = '';
   doubled.forEach(p => {
     const badge = document.createElement('div');
     badge.className = 'pay-badge';
-    const imgUrl = isLightTheme() && p.photo_light_url ? p.photo_light_url : p.photo_url;
+    const imgUrl = staticPaymentLogo(p);
     if (imgUrl) {
       badge.innerHTML = `<img src="${imgUrl}" alt="${p.name}" class="pay-badge-img">`;
     } else if (p.icon) {

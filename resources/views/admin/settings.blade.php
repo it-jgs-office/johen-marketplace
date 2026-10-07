@@ -215,14 +215,14 @@
                 <i class="fas fa-image" style="color:#f59e0b;font-size:0.85rem"></i>
                 <span>Hero Banner</span>
             </h3>
-            <p style="color:var(--text-dim);font-size:0.72rem;margin-bottom:0.75rem">Slider halaman utama. Maks 3 banner.</p>
+            <p style="color:var(--text-dim);font-size:0.72rem;margin-bottom:0.75rem">Slider halaman utama. Maks 3 banner. Rekomendasi 1920 × 750 px (rasio 64:25).</p>
             @php
                 $bannerLabels = ['Banner 1 (Utama)', 'Banner 2', 'Banner 3'];
                 $bannerKeys = ['site_hero_banner', 'site_hero_banner_2', 'site_hero_banner_3'];
             @endphp
             @foreach($bannerLabels as $i => $label)
             <div class="flex items-center gap-3 {{ $i > 0 ? 'mt-3 pt-3 border-t' : '' }}" style="border-color:var(--border)">
-                <div style="width:88px;height:50px;border-radius:8px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+                <div style="width:112px;aspect-ratio:64/25;border-radius:8px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
                     @if(!empty($settings[$bannerKeys[$i]]))
                         <img src="{{ media_url($settings[$bannerKeys[$i]]) }}" alt="{{ $label }}" style="width:100%;height:100%;object-fit:cover">
                     @else
@@ -243,14 +243,14 @@
                 <i class="fas fa-image" style="color:#f59e0b;font-size:0.85rem"></i>
                 <span>Hero Banner (Jual Beli Akun)</span>
             </h3>
-            <p style="color:var(--text-dim);font-size:0.72rem;margin-bottom:0.75rem">Slider halaman Jual Beli Akun. Maks 3 banner.</p>
+            <p style="color:var(--text-dim);font-size:0.72rem;margin-bottom:0.75rem">Slider halaman Jual Beli Akun. Maks 3 banner. Rekomendasi 1920 × 750 px (rasio 64:25).</p>
             @php
                 $jbaBannerLabels = ['Banner 1 (Utama)', 'Banner 2', 'Banner 3'];
                 $jbaBannerKeys = ['jba_hero_banner', 'jba_hero_banner_2', 'jba_hero_banner_3'];
             @endphp
             @foreach($jbaBannerLabels as $i => $label)
             <div class="flex items-center gap-3 {{ $i > 0 ? 'mt-3 pt-3 border-t' : '' }}" style="border-color:var(--border)">
-                <div style="width:88px;height:50px;border-radius:8px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
+                <div style="width:112px;aspect-ratio:64/25;border-radius:8px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
                     @if(!empty($settings[$jbaBannerKeys[$i]]))
                         <img src="{{ media_url($settings[$jbaBannerKeys[$i]]) }}" alt="{{ $label }}" style="width:100%;height:100%;object-fit:cover">
                     @else

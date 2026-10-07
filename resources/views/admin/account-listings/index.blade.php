@@ -9,9 +9,9 @@
         <span class="badge badge-neutral">{{ $listings->total() }} total</span>
     </div>
     <div class="flex items-center gap-3">
-        <form action="{{ route('admin.account-listings.sync') }}" method="POST" onsubmit="return confirm('Sinkronkan semua listing dari johengaming.id? Import bisa memakan beberapa menit untuk pertama kali.')">
+        <form action="{{ route('admin.account-listings.sync') }}" method="POST" onsubmit="return confirm('Sinkronkan semua listing dari johengaming.id? Proses berjalan di latar belakang dan bisa memakan beberapa menit.')">
             @csrf
-            <button type="submit" class="btn btn-ghost">
+            <button type="submit" class="btn btn-ghost" @if(($syncStatus['state'] ?? null) === 'running') disabled @endif>
                 <i class="fas fa-sync"></i>
                 <span>Sinkron dari johengaming.id</span>
             </button>
@@ -22,6 +22,42 @@
         </button>
     </div>
 </div>
+
+<div id="johen-sync-status" role="status" aria-live="polite" class="mb-5 text-sm" @if(!isset($syncStatus['state']) || $syncStatus['state'] === 'idle') hidden @endif>
+    @if(($syncStatus['state'] ?? null) === 'running')
+        Mengambil produk terbaru dari johengaming.id. Halaman ini akan diperbarui saat selesai.
+    @elseif(isset($syncStatus['result']))
+        Sinkronisasi {{ $syncStatus['state'] === 'completed' ? 'selesai' : 'selesai dengan kendala' }}:
+        {{ $syncStatus['result']['created'] }} dibuat, {{ $syncStatus['result']['updated'] }} diperbarui,
+        {{ $syncStatus['result']['unchanged'] }} tidak berubah, {{ $syncStatus['result']['sold'] }} terjual,
+        {{ $syncStatus['result']['errors'] }} gagal.
+        @if($syncStatus['result']['errors'] > 0)
+            {{ implode('; ', array_slice($syncStatus['result']['failed'], 0, 2)) }}
+        @endif
+    @elseif(($syncStatus['state'] ?? null) === 'failed')
+        Sinkronisasi gagal: {{ $syncStatus['message'] ?? 'Lihat log aplikasi.' }}
+    @endif
+</div>
+
+@if(($syncStatus['state'] ?? null) === 'running')
+<script>
+    (() => {
+        const timer = setInterval(async () => {
+            try {
+                const response = await fetch(@json(route('admin.account-listings.sync-status')), { headers: { Accept: 'application/json' } });
+                if (!response.ok) return;
+                const status = await response.json();
+                if (status.state !== 'running') {
+                    clearInterval(timer);
+                    window.location.reload();
+                }
+            } catch (_) {
+                // Kegagalan jaringan sementara tidak menghentikan pemantauan.
+            }
+        }, 5000);
+    })();
+</script>
+@endif
 
 <div class="table-wrap">
     <div class="overflow-x-auto">
@@ -84,7 +120,7 @@
 </div>
 
 <div class="pagination-wrap">
-    {{ $listings->links() }}
+    {{ $listings->links('vendor.pagination.admin') }}
 </div>
 
 <!-- ===== MODAL LISTING AKUN ===== -->

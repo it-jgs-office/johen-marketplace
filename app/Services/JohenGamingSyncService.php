@@ -83,6 +83,13 @@ class JohenGamingSyncService
 
     private string $localSlug = '';
 
+    private ?string $lastFetchError = null;
+
+    public static function gameSlugsSupported(): array
+    {
+        return array_keys(static::GAMES);
+    }
+
     public function sync(?string $gameFilter = null, array $options = []): array
     {
         $this->options = array_merge($this->options, $options);
@@ -120,7 +127,7 @@ class JohenGamingSyncService
      */
     private function gameSlugs(): array
     {
-        $slugs = array_keys(static::GAMES);
+        $slugs = static::gameSlugsSupported();
 
         if ($html = $this->fetchHtml(static::BASE_URL.'/produk/jual-beli-akun')) {
             preg_match_all('#/produk/jual-beli-akun/([a-z0-9_]+)#i', $html, $m);
@@ -144,12 +151,19 @@ class JohenGamingSyncService
 
         $html = $this->fetchHtml(static::BASE_URL."/produk/jual-beli-akun/{$slug}");
         if ($html === null) {
-            $this->fail("{$slug}: halaman kategori tidak dapat diambil.");
+            $this->fail("{$slug}: halaman kategori tidak dapat diambil ({$this->lastFetchError}).");
 
             return;
         }
 
-        foreach ($this->parseCategoryCards($html, $slug) as $card) {
+        $cards = $this->parseCategoryCards($html, $slug);
+        if ($cards === []) {
+            $this->fail("{$slug}: tidak ditemukan kartu produk; struktur halaman sumber mungkin berubah.");
+
+            return;
+        }
+
+        foreach ($cards as $card) {
             // Kartu non-link dengan tanda "Habis"/Selesai: tandai akun terkait.
             if ($card['id'] === null) {
                 $this->markSoldByName($card);
@@ -687,11 +701,21 @@ class JohenGamingSyncService
 
     private function fetchHtml(string $url): ?string
     {
+        $this->lastFetchError = null;
+
         try {
             $resp = $this->client()->get($url);
 
-            return $resp->successful() ? $resp->body() : null;
+            if (! $resp->successful()) {
+                $this->lastFetchError = 'HTTP '.$resp->status();
+
+                return null;
+            }
+
+            return $resp->body();
         } catch (\Throwable $e) {
+            $this->lastFetchError = $e->getMessage();
+
             return null;
         }
     }
@@ -731,7 +755,6 @@ class JohenGamingSyncService
             ->retry((int) $this->options['retries'], 300, null, false)
             ->withOptions([
                 'verify' => true,
-                'http_errors' => true,
                 'headers' => [
                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
                 ],

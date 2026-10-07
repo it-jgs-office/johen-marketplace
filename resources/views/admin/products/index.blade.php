@@ -1,131 +1,124 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Manajemen Produk')
+@section('title', 'Produk ' . $brand->name)
 
 @section('content')
-@php
-    $lastSync = \App\Models\SiteSetting::get('digiflazz_last_sync');
-    $productCount = \App\Models\SiteSetting::get('digiflazz_product_count');
-    $digiflazzReady = app(\App\Services\DigiflazzService::class)->isConfigured();
-@endphp
+@php $lastSync = \App\Models\SiteSetting::get('digiflazz_last_sync'); @endphp
 
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-    <div class="flex items-center space-x-3">
-        <h2 class="text-lg font-semibold">Semua Produk</h2>
-        <span class="badge badge-neutral">{{ $products->total() }} total</span>
-        @if($lastSync)
-            <span style="color:var(--text-dim);font-size:0.78rem">
-                <i class="fas fa-clock" style="margin-right:0.25rem"></i>
-                {{ \Carbon\Carbon::parse($lastSync)->diffForHumans() }}
-            </span>
-        @endif
+    <div>
+        <a href="{{ route('admin.products') }}" style="display:inline-flex;align-items:center;gap:.35rem;color:var(--text-dim);font-size:.78rem;margin-bottom:.4rem">
+            <i class="fas fa-arrow-left"></i> Semua Game Top Up
+        </a>
+        <div class="flex items-center space-x-3">
+            <h2 class="text-lg font-semibold">Produk {{ $brand->name }}</h2>
+            <span class="badge badge-neutral">{{ $products->total() }} nominal</span>
+            @if($lastSync)
+                <span style="color:var(--text-dim);font-size:.78rem"><i class="fas fa-clock"></i> {{ \Carbon\Carbon::parse($lastSync)->diffForHumans() }}</span>
+            @endif
+        </div>
     </div>
-    <div class="flex items-center gap-3">
-        @if(!$digiflazzReady)
-            <span class="badge badge-error" style="font-size:0.75rem">
-                <i class="fas fa-exclamation-triangle"></i> Digiflazz belum config
-            </span>
-        @endif
-        <form action="{{ route('admin.products.sync') }}" method="POST">
-            @csrf
-            <button type="submit" class="btn btn-ghost" {{ $digiflazzReady ? '' : 'disabled' }}>
-                <i class="fas fa-sync"></i>
-                <span>Sinkronisasi Digiflazz</span>
-            </button>
-        </form>
-        <form action="{{ route('admin.products.sync') }}" method="POST" style="display:inline">
-            @csrf
-            <input type="hidden" name="force" value="1">
-            <button type="submit" class="btn btn-ghost" style="color:#f59e0b" {{ $digiflazzReady ? '' : 'disabled' }}>
-                <i class="fas fa-sync-alt"></i>
-                <span>Force Refresh</span>
-            </button>
-        </form>
-        <button type="button" class="btn btn-primary" onclick="openCreateModal()">
-            <i class="fas fa-plus"></i>
-            <span>Tambah Produk</span>
-        </button>
-    </div>
+    <a href="{{ route('admin.products') }}" class="btn btn-ghost"><i class="fas fa-gamepad"></i> Pilih Game Lain</a>
 </div>
 
-<div class="flex gap-2 mb-4 flex-wrap">
-    <select class="input-field" id="typeFilter" style="width:auto;min-width:120px;padding:0.35rem 0.75rem;font-size:0.82rem">
-        <option value="">Semua Tipe</option>
-        <option value="instant" {{ request('type') === 'instant' ? 'selected' : '' }}>Top Up</option>
-        <option value="joki" {{ request('type') === 'joki' ? 'selected' : '' }}>Joki</option>
+<div class="admin-filter-bar">
+    <select class="input-field" id="statusFilter" style="width:auto;min-width:135px;padding:.35rem .75rem;font-size:.82rem">
+        <option value="active" {{ request('status', 'active') === 'active' ? 'selected' : '' }}>Produk Aktif</option>
+        <option value="inactive" {{ request('status') === 'inactive' ? 'selected' : '' }}>Produk Nonaktif</option>
+        <option value="all" {{ request('status') === 'all' ? 'selected' : '' }}>Semua Status</option>
     </select>
-    <select class="input-field" id="brandFilter" style="width:auto;min-width:160px;padding:0.35rem 0.75rem;font-size:0.82rem">
-        <option value="">Semua Game</option>
-        @foreach($brands as $b)
-            <option value="{{ $b }}" {{ request('brand') === $b ? 'selected' : '' }}>{{ $b }}</option>
-        @endforeach
-    </select>
+    <span style="align-self:center;color:var(--text-dim);font-size:.76rem">Harga modal dan detail produk diperbarui otomatis dari Digiflazz.</span>
 </div>
+
+<form id="bulkMarkupForm" action="{{ route('admin.products.markup', $brand) }}" method="POST" class="bulk-markup-panel mb-4">
+    @csrf
+    @method('PATCH')
+    <div class="bulk-markup-panel__heading"><i class="fas fa-wand-magic-sparkles"></i><span>Atur Markup</span></div>
+    <div class="bulk-markup-panel__fields">
+        <select name="mode" id="markupMode" class="input-field" aria-label="Jenis markup">
+            <option value="rupiah">Markup Rupiah (Rp)</option>
+            <option value="persentase">Markup Persentase (%)</option>
+        </select>
+        <div class="bulk-markup-value"><span id="markupPrefix">Rp</span><input type="number" name="value" id="markupValue" min="0" step="0.01" placeholder="Nilai markup" required></div>
+        <button type="submit" class="btn btn-primary" id="applyMarkupBtn"><i class="fas fa-check"></i> Terapkan ke Semua Produk</button>
+    </div>
+    <p class="bulk-markup-panel__hint">Markup berlaku untuk semua produk game ini dan akan dihitung ulang dari harga modal terbaru saat sinkronisasi. Simpan harga jual per produk untuk mengganti markupnya.</p>
+    <p class="bulk-markup-panel__status" id="bulkMarkupStatus" role="status" aria-live="polite"></p>
+</form>
 
 <div class="table-wrap">
     <div class="overflow-x-auto">
-        <table class="w-full">
+        <table class="w-full product-pricing-table">
+            <colgroup>
+                <col class="product-pricing-table__code">
+                <col class="product-pricing-table__name">
+                <col class="product-pricing-table__region">
+                <col class="product-pricing-table__cost">
+                <col class="product-pricing-table__selling">
+                <col class="product-pricing-table__commission">
+                <col class="product-pricing-table__status">
+                <col class="product-pricing-table__action">
+            </colgroup>
             <thead>
                 <tr>
                     <th>Kode</th>
-                    <th>Brand</th>
-                    <th>Nama Produk</th>
-                    <th>Kategori</th>
+                    <th>Nominal / Produk</th>
+                    <th>Region</th>
                     <th class="text-right">Harga Modal</th>
                     <th class="text-right">Harga Jual</th>
-                    <th class="text-center">Stok</th>
+                    <th class="text-right">Komisi</th>
                     <th class="text-center">Status</th>
                     <th class="text-center">Aksi</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($products as $product)
-                <tr>
-                    <td style="font-size:0.82rem;font-family:monospace">{{ $product->buyer_sku_code }}</td>
-                    <td>{{ $product->brand }}</td>
-                    <td style="font-size:0.88rem">{{ $product->product_name }}</td>
-                    <td style="color:var(--text-muted);font-size:0.85rem">{{ $product->category }}</td>
-                    <td class="text-right">Rp {{ number_format($product->price, 0, ',', '.') }}</td>
-                    <td class="text-right font-semibold" style="color:var(--accent)">Rp {{ number_format($product->selling_price, 0, ',', '.') }}</td>
-                    <td class="text-center">
-                        <span class="badge {{ $product->stock > 0 ? 'badge-success' : 'badge-error' }}" data-stock-id="{{ $product->id }}" data-stock-value="{{ $product->stock }}">
-                            {{ $product->stock }}
-                        </span>
+                @php
+                    $commission = (float) $product->selling_price - (float) $product->price;
+                    $commissionRate = (float) $product->price > 0 ? ($commission / (float) $product->price) * 100 : null;
+                @endphp
+                <tr data-product-id="{{ $product->id }}" data-cost-price="{{ (float) $product->price }}">
+                    <td class="product-code">{{ $product->buyer_sku_code }}</td>
+                    <td class="product-name">{{ $product->product_name }}</td>
+                    <td style="color:var(--text-muted);font-size:.85rem">{{ $product->region ?: 'Semua' }}</td>
+                    <td class="text-right product-cost">Rp {{ number_format($product->price, 0, ',', '.') }}</td>
+                    <td class="text-right">
+                        <form action="{{ route('admin.products.selling-price', $product) }}" method="POST" class="selling-price-form" data-product-name="{{ $product->product_name }}" data-current-price="{{ (float) $product->selling_price }}">
+                            @csrf
+                            @method('PATCH')
+                            <div class="selling-price-display">
+                                <span data-selling-price-value>Rp {{ number_format($product->selling_price, 0, ',', '.') }}</span>
+                                <button type="button" class="selling-price-edit" title="Edit harga jual" aria-label="Edit harga jual {{ $product->product_name }}"><i class="fas fa-pencil"></i></button>
+                            </div>
+                            <div class="selling-price-control" hidden>
+                                <span>Rp</span>
+                                <input type="number" name="selling_price" min="0" step="1" value="{{ (int) $product->selling_price }}" aria-label="Harga jual {{ $product->product_name }}">
+                                <button type="submit" class="selling-price-save" title="Simpan harga jual" aria-label="Simpan harga jual"><i class="fas fa-check"></i></button>
+                                <button type="button" class="selling-price-cancel" title="Batal edit" aria-label="Batal edit"><i class="fas fa-xmark"></i></button>
+                            </div>
+                            <small class="selling-price-status" aria-live="polite"></small>
+                        </form>
                     </td>
-                    <td class="text-center">
-                        <span class="badge {{ $product->is_active ? 'badge-success' : 'badge-neutral' }}">
-                            {{ $product->is_active ? 'Aktif' : 'Nonaktif' }}
-                        </span>
+                    <td class="text-right product-commission-cell" data-commission-id="{{ $product->id }}">
+                        <div class="product-commission {{ $commission > 0 ? 'is-profit' : ($commission < 0 ? 'is-loss' : 'is-even') }}">
+                            <strong data-commission-amount>{{ $commission >= 0 ? '+' : '-' }}Rp {{ number_format(abs($commission), 0, ',', '.') }}</strong>
+                            @if($commissionRate !== null)
+                                <span data-commission-rate>{{ rtrim(rtrim(number_format(abs($commissionRate), 2, '.', ''), '0'), '.') }}% {{ $commission < 0 ? 'di bawah modal' : 'margin' }}</span>
+                            @endif
+                        </div>
                     </td>
+                    <td class="text-center"><span class="badge {{ $product->is_active ? 'badge-success' : 'badge-neutral' }}">{{ $product->is_active ? 'Aktif' : 'Nonaktif' }}</span></td>
                     <td>
                         <div class="flex items-center justify-center gap-1.5">
-                            <button type="button" class="btn btn-ghost btn-xs"
-                                data-product='{{ json_encode($product->only(['id','buyer_sku_code','brand','category','product_name','type','region','price','selling_price','stock','is_active'])) }}'
-                                onclick="openEditModal(this)">
-                                <i class="fas fa-edit"></i>
-                            </button>
                             <form action="{{ route('admin.products.toggle', $product) }}" method="POST" class="inline">
-                                @csrf
-                                @method('PATCH')
-                                <button type="submit" class="btn btn-ghost btn-xs" title="{{ $product->is_active ? 'Nonaktifkan' : 'Aktifkan' }}">
-                                    <i class="fas {{ $product->is_active ? 'fa-eye-slash' : 'fa-eye' }}"></i>
-                                </button>
+                                @csrf @method('PATCH')
+                                <button type="submit" class="btn btn-ghost btn-xs" title="{{ $product->is_active ? 'Nonaktifkan' : 'Aktifkan' }}"><i class="fas {{ $product->is_active ? 'fa-eye-slash' : 'fa-eye' }}"></i></button>
                             </form>
-                            <button type="button" class="btn btn-danger btn-xs" onclick="confirmDelete('{{ route('admin.products.destroy', $product) }}', 'Hapus produk {{ $product->product_name }}?')">
-                                <i class="fas fa-trash"></i>
-                            </button>
                         </div>
                     </td>
                 </tr>
                 @empty
-                <tr>
-                    <td colspan="9">
-                        <div class="empty-state">
-                            <i class="fas fa-box-open"></i>
-                            <p>Belum ada produk. Sinkronisasi dari Digiflazz atau tambah manual.</p>
-                        </div>
-                    </td>
-                </tr>
+                <tr><td colspan="8"><div class="empty-state"><i class="fas fa-box-open"></i><p>Belum ada produk {{ $brand->name }} dengan status ini.</p></div></td></tr>
                 @endforelse
             </tbody>
         </table>
@@ -133,282 +126,178 @@
 </div>
 
 {{ $products->links('vendor.pagination.admin') }}
-
-<!-- ===== MODAL PRODUK ===== -->
-<div class="fixed inset-0 z-50 flex items-center justify-center" id="productModal" style="display:none">
-    <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" onclick="closeProductModal()"></div>
-    <div class="relative" style="background:var(--bg-card);border:1px solid var(--glass-border);border-radius:20px;width:100%;max-width:640px;margin:0 1rem;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px -16px rgba(0,0,0,0.5)">
-        <div class="flex items-center justify-between p-5" style="border-bottom:1px solid var(--glass-border)">
-            <h3 class="text-lg font-bold" id="productModalTitle">Tambah Produk</h3>
-            <button type="button" style="background:none;border:none;color:var(--text-muted);font-size:1.4rem;cursor:pointer;line-height:1" onclick="closeProductModal()">&times;</button>
-        </div>
-        <form id="productForm" class="p-5" enctype="multipart/form-data">
-            <input type="hidden" name="_token" value="{{ csrf_token() }}">
-            <input type="hidden" id="formMethod" name="_method" value="POST">
-            <input type="hidden" id="productId" name="product_id" value="">
-            <input type="hidden" id="f_is_active" name="is_active" value="1">
-
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium mb-1.5">Buyer SKU Code</label>
-                    <input type="text" name="buyer_sku_code" id="f_buyer_sku_code" required class="input-field">
-                    <p class="text-red-400 text-xs mt-1 hidden" id="err_buyer_sku_code"></p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1.5">Brand</label>
-                    <input type="text" name="brand" id="f_brand" required class="input-field">
-                    <p class="text-red-400 text-xs mt-1 hidden" id="err_brand"></p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1.5">Kategori</label>
-                    <input type="text" name="category" id="f_category" required class="input-field">
-                    <p class="text-red-400 text-xs mt-1 hidden" id="err_category"></p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1.5">Tipe Produk</label>
-                    <select name="type" id="f_type" required class="input-field">
-                        <option value="instant">Top Up (Instant)</option>
-                        <option value="joki">Joki</option>
-                        <option value="Special Items">Special Items</option>
-                        <option value="First Topup (Double Diamonds)">First Topup (Double Diamonds)</option>
-                    </select>
-                    <p class="text-red-400 text-xs mt-1 hidden" id="err_type"></p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1.5">Region</label>
-                    <select name="region" id="f_region" class="input-field">
-                        <option value="">Semua Region</option>
-                        <option value="ID">Indonesia (ID)</option>
-                        <option value="MY">Malaysia (MY)</option>
-                        <option value="PH">Philippines (PH)</option>
-                    </select>
-                    <p class="text-red-400 text-xs mt-1 hidden" id="err_region"></p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1.5">Nama Produk</label>
-                    <input type="text" name="product_name" id="f_product_name" required class="input-field">
-                    <p class="text-red-400 text-xs mt-1 hidden" id="err_product_name"></p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1.5">Stok</label>
-                    <input type="number" name="stock" id="f_stock" min="0" class="input-field">
-                    <p class="text-red-400 text-xs mt-1 hidden" id="err_stock"></p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1.5">Harga Modal</label>
-                    <input type="number" name="price" id="f_price" required step="0.01" min="0" class="input-field">
-                    <p class="text-red-400 text-xs mt-1 hidden" id="err_price"></p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium mb-1.5">Harga Jual</label>
-                    <input type="number" name="selling_price" id="f_selling_price" step="0.01" min="0" class="input-field">
-                    <p style="color:var(--text-dim);font-size:0.72rem;margin-top:0.25rem">Kosongkan untuk menggunakan harga modal</p>
-                    <p class="text-red-400 text-xs mt-1 hidden" id="err_selling_price"></p>
-                </div>
-            </div>
-
-            <div class="mt-4">
-                <label class="block text-sm font-medium mb-1.5">Foto Produk (opsional)</label>
-                <div class="flex items-center gap-4">
-                    <div id="photoPreview" style="width:80px;height:80px;border-radius:12px;background:var(--bg-input);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0">
-                        <span id="photoPlaceholder" style="font-size:0.72rem;color:var(--text-dim)">Preview</span>
-                        <img id="photoImage" class="hidden" style="width:100%;height:100%;object-fit:cover" src="" alt="preview">
-                    </div>
-                    <div class="flex-1">
-                        <input type="file" name="photo" id="photoInput" accept="image/jpeg,image/png,image/jpg,image/webp"
-                               class="w-full text-sm" style="color:var(--text-muted)">
-                        <p style="color:var(--text-dim);font-size:0.72rem;margin-top:0.25rem" id="photoHint">Maksimal 2MB. Format: JPG, PNG, WebP.</p>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex justify-end gap-3 mt-6">
-                <button type="button" class="btn btn-ghost" onclick="closeProductModal()">Batal</button>
-                <button type="submit" class="btn btn-primary" id="submitBtn">Simpan</button>
-            </div>
-        </form>
-    </div>
-</div>
 @endsection
+
+@push('styles')
+<style>
+.selling-price-form{display:inline-flex;flex-direction:column;align-items:flex-end}.selling-price-display{display:inline-flex;align-items:center;justify-content:flex-end;gap:.4rem;font-weight:600;font-variant-numeric:tabular-nums}.selling-price-display[hidden]{display:none}.selling-price-edit,.selling-price-save,.selling-price-cancel{display:inline-grid;place-items:center;width:25px;height:25px;padding:0;border:1px solid var(--glass-border);border-radius:7px;background:rgba(9,135,245,.04);color:var(--text-dim);cursor:pointer;transition:border-color .15s ease,color .15s ease,background .15s ease}.selling-price-edit:hover,.selling-price-edit:focus-visible{border-color:var(--accent);background:rgba(9,135,245,.1);color:var(--accent);outline:0}.selling-price-save:hover,.selling-price-save:focus-visible{border-color:#34d399;color:#6ee7b7;outline:0}.selling-price-cancel:hover,.selling-price-cancel:focus-visible{border-color:#f87171;color:#fca5a5;outline:0}.selling-price-control{display:inline-flex;align-items:center;justify-content:flex-start;gap:.3rem;padding:.18rem .25rem .18rem .5rem;border:1px solid var(--glass-border);border-radius:9px;background:var(--bg-input)}.selling-price-control[hidden]{display:none}
+.selling-price-control>span{color:var(--text-dim);font-size:.76rem}.selling-price-control input{width:92px;border:0;outline:0;background:transparent;color:var(--text);font-weight:600;text-align:left;direction:ltr;font-size:.82rem;font-variant-numeric:tabular-nums}.selling-price-control:focus-within{border-color:var(--accent)}
+.selling-price-status{display:block;margin-top:.18rem;color:var(--text-dim);font-size:.66rem;text-align:right}.selling-price-status:empty{display:none}.selling-price-status.success{color:#6ee7b7}.selling-price-status.error{color:#fca5a5}
+.product-pricing-table{table-layout:fixed;min-width:1070px}.product-pricing-table__code{width:15%}.product-pricing-table__name{width:23%}.product-pricing-table__region{width:7%}.product-pricing-table__cost{width:13%}.product-pricing-table__selling{width:16%}.product-pricing-table__commission{width:13%}.product-pricing-table__status{width:8%}.product-pricing-table__action{width:5%}.product-pricing-table th,.product-pricing-table td{vertical-align:middle}.product-pricing-table th:nth-child(n+4),.product-pricing-table td:nth-child(n+4){white-space:nowrap}.product-code{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.79rem;color:var(--text-muted)}.product-name{font-size:.86rem;font-weight:600;line-height:1.35;overflow-wrap:anywhere}.product-cost{font-weight:600;font-variant-numeric:tabular-nums}.product-commission{display:inline-flex;min-width:90px;flex-direction:column;align-items:flex-end;gap:.08rem;font-variant-numeric:tabular-nums}.product-commission strong{font-size:.83rem}.product-commission span{font-size:.67rem}.product-commission.is-profit strong{color:#6ee7b7}.product-commission.is-profit span{color:#86efac}.product-commission.is-loss strong{color:#fca5a5}.product-commission.is-loss span{color:#fda4af}.product-commission.is-even strong,.product-commission.is-even span{color:var(--text-dim)}
+.bulk-markup-panel{padding:.9rem 1rem;border:1px solid rgba(129,140,248,.32);border-radius:14px;background:linear-gradient(100deg,rgba(49,46,129,.19),rgba(13,31,61,.62))}.bulk-markup-panel__heading{display:flex;align-items:center;gap:.45rem;color:#c4b5fd;font-size:.84rem;font-weight:700}.bulk-markup-panel__fields{display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;margin-top:.72rem}.bulk-markup-panel select{width:auto;min-width:192px;padding:.43rem .6rem;font-size:.78rem}.bulk-markup-value{display:flex;align-items:center;gap:.3rem;padding:.1rem .55rem;border:1px solid var(--glass-border);border-radius:8px;background:var(--bg-input);color:var(--text-dim);font-size:.78rem}.bulk-markup-value input{width:105px;padding:.33rem 0;border:0;outline:0;background:transparent;color:var(--text);font-size:.82rem}.bulk-markup-panel__hint{margin:.6rem 0 0;color:var(--text-dim);font-size:.72rem}.bulk-markup-panel__status{min-height:17px;margin:.32rem 0 0;color:var(--text-dim);font-size:.72rem}.bulk-markup-panel__status.success{color:#6ee7b7}.bulk-markup-panel__status.error{color:#fca5a5}
+@media (max-width:640px){.bulk-markup-panel__fields{align-items:stretch}.bulk-markup-panel select,.bulk-markup-value{flex:1}.bulk-markup-value input{width:100%}}
+</style>
+@endpush
 
 @push('scripts')
 <script>
-document.getElementById('typeFilter')?.addEventListener('change', function() {
-    const type = this.value;
+document.getElementById('statusFilter')?.addEventListener('change', function() {
     const url = new URL(window.location.href);
     url.searchParams.delete('page');
-    if (type) url.searchParams.set('type', type);
-    else url.searchParams.delete('type');
+    if (this.value === 'active') url.searchParams.delete('status');
+    else url.searchParams.set('status', this.value);
     window.location.href = url.toString();
 });
 
-document.getElementById('brandFilter')?.addEventListener('change', function() {
-    const brand = this.value;
-    const url = new URL(window.location.href);
-    url.searchParams.delete('page');
-    if (brand) url.searchParams.set('brand', brand);
-    else url.searchParams.delete('brand');
-    window.location.href = url.toString();
-});
+const bulkMarkupForm = document.getElementById('bulkMarkupForm');
+const applyMarkupBtn = document.getElementById('applyMarkupBtn');
+const bulkMarkupStatus = document.getElementById('bulkMarkupStatus');
+const markupMode = document.getElementById('markupMode');
+const markupPrefix = document.getElementById('markupPrefix');
 
-(function pollStock() {
-    const cell = document.querySelector('span[data-stock-id]');
-    if (!cell) return;
-
-    async function refresh() {
-        const params = new URLSearchParams();
-        const t = document.getElementById('typeFilter')?.value;
-        const b = document.getElementById('brandFilter')?.value;
-        if (t) params.set('type', t);
-        if (b) params.set('brand', b);
-
-        try {
-            const res = await fetch('{{ route('admin.products.stock') }}?' + params.toString(), {
-                headers: { 'Accept': 'application/json' }
-            });
-            if (!res.ok) return;
-            const data = await res.json();
-            (data.stock || []).forEach(p => {
-                const el = document.querySelector('span[data-stock-id="' + p.id + '"]');
-                if (!el) return;
-                const prev = parseInt(el.dataset.stockValue, 10);
-                if (prev !== p.stock) {
-                    el.textContent = p.stock;
-                    el.dataset.stockValue = p.stock;
-                    el.className = 'badge ' + (p.stock > 0 ? 'badge-success' : 'badge-error');
-                    el.style.transition = 'background .4s';
-                    el.style.animation = 'none';
-                    void el.offsetWidth;
-                    el.style.animation = 'stockFlash .8s';
-                }
-            });
-        } catch (e) { /* ignore polling errors */ }
-    }
-
-    refresh();
-    setInterval(refresh, 10000);
-})();
-
-let editProductId = null;
-const photoInput = document.getElementById('photoInput');
-const photoImage = document.getElementById('photoImage');
-const photoPlaceholder = document.getElementById('photoPlaceholder');
-
-photoInput?.addEventListener('change', function(e) {
-    const file = e.target.files[0];
-    if (file) {
-        const reader = new FileReader();
-        reader.onload = function(ev) {
-            photoImage.src = ev.target.result;
-            photoImage.classList.remove('hidden');
-            photoPlaceholder.classList.add('hidden');
-        };
-        reader.readAsDataURL(file);
-    }
-});
-
-function openCreateModal() {
-    editProductId = null;
-    document.getElementById('productModalTitle').textContent = 'Tambah Produk';
-    document.getElementById('submitBtn').textContent = 'Simpan';
-    document.getElementById('formMethod').value = 'POST';
-    document.getElementById('productId').value = '';
-    document.getElementById('productForm').reset();
-    document.getElementById('photoImage').classList.add('hidden');
-    document.getElementById('photoPlaceholder').classList.remove('hidden');
-    document.getElementById('photoHint').textContent = 'Maksimal 2MB. Format: JPG, PNG, WebP.';
-    clearErrors();
-    document.getElementById('productModal').style.display = 'flex';
+function formatRupiah(value) {
+    return Math.round(Math.abs(Number(value) || 0)).toLocaleString('id-ID');
 }
 
-function openEditModal(btn) {
-    const p = JSON.parse(btn.dataset.product);
-    editProductId = p.id;
-    document.getElementById('productModalTitle').textContent = 'Edit Produk';
-    document.getElementById('submitBtn').textContent = 'Simpan Perubahan';
-    document.getElementById('formMethod').value = 'PUT';
-    document.getElementById('productId').value = p.id;
-    document.getElementById('f_buyer_sku_code').value = p.buyer_sku_code;
-    document.getElementById('f_brand').value = p.brand;
-    document.getElementById('f_category').value = p.category;
-    document.getElementById('f_type').value = p.type;
-    document.getElementById('f_region').value = p.region || '';
-    document.getElementById('f_product_name').value = p.product_name;
-    document.getElementById('f_stock').value = p.stock;
-    document.getElementById('f_price').value = p.price;
-    document.getElementById('f_selling_price').value = p.selling_price;
-    document.getElementById('f_is_active').value = p.is_active ? '1' : '0';
-    document.getElementById('photoImage').classList.add('hidden');
-    document.getElementById('photoPlaceholder').classList.remove('hidden');
-    document.getElementById('photoHint').textContent = 'Kosongkan jika tidak ingin mengubah. Maksimal 2MB.';
-    clearErrors();
-    document.getElementById('productModal').style.display = 'flex';
+function closePriceEditor(form, resetValue = true) {
+    const display = form.querySelector('.selling-price-display');
+    const editor = form.querySelector('.selling-price-control');
+    const input = form.querySelector('input[name="selling_price"]');
+    if (resetValue && input) input.value = Math.round(Number(form.dataset.currentPrice || 0));
+    if (display) display.hidden = false;
+    if (editor) editor.hidden = true;
 }
 
-function closeProductModal() {
-    document.getElementById('productModal').style.display = 'none';
-}
-
-function clearErrors() {
-    document.querySelectorAll('[id^="err_"]').forEach(el => {
-        el.classList.add('hidden');
-        el.textContent = '';
+function openPriceEditor(form) {
+    document.querySelectorAll('.selling-price-form').forEach(other => {
+        if (other !== form) closePriceEditor(other);
     });
+    const display = form.querySelector('.selling-price-display');
+    const editor = form.querySelector('.selling-price-control');
+    const input = form.querySelector('input[name="selling_price"]');
+    const status = form.querySelector('.selling-price-status');
+    if (status) {
+        status.className = 'selling-price-status';
+        status.textContent = '';
+    }
+    if (display) display.hidden = true;
+    if (editor) editor.hidden = false;
+    if (input) {
+        input.value = Math.round(Number(form.dataset.currentPrice || input.value || 0));
+        input.focus();
+        input.select();
+    }
 }
 
-document.getElementById('productForm').addEventListener('submit', async function(e) {
-    e.preventDefault();
-    const btn = document.getElementById('submitBtn');
-    btn.disabled = true;
-    btn.textContent = 'Menyimpan...';
+function setSellingPrice(row, price) {
+    const form = row?.querySelector('.selling-price-form');
+    if (!form) return;
+    const normalized = Math.round(Number(price) || 0);
+    form.dataset.currentPrice = normalized;
+    const value = form.querySelector('[data-selling-price-value]');
+    const input = form.querySelector('input[name="selling_price"]');
+    if (value) value.textContent = 'Rp ' + formatRupiah(normalized);
+    if (input) input.value = normalized;
+    closePriceEditor(form, false);
+}
 
-    const formData = new FormData(this);
-    const isEdit = editProductId !== null;
+function updateCommission(row, sellingPrice) {
+    if (!row) return;
+    const cost = Number(row.dataset.costPrice || 0);
+    const commission = Number(sellingPrice) - cost;
+    const display = row.querySelector('.product-commission');
+    const amount = row.querySelector('[data-commission-amount]');
+    const rate = row.querySelector('[data-commission-rate]');
+    if (!display || !amount) return;
 
-    if (isEdit) {
-        formData.set('_method', 'PUT');
+    display.classList.remove('is-profit', 'is-loss', 'is-even');
+    display.classList.add(commission > 0 ? 'is-profit' : (commission < 0 ? 'is-loss' : 'is-even'));
+    amount.textContent = (commission >= 0 ? '+' : '-') + 'Rp ' + formatRupiah(commission);
+    if (rate) {
+        rate.textContent = cost > 0
+            ? (Math.abs(commission / cost * 100)).toLocaleString('id-ID', { maximumFractionDigits: 2 }) + '% ' + (commission < 0 ? 'di bawah modal' : 'margin')
+            : '';
     }
+}
 
-    const updateUrlTemplate = '{{ route('admin.products.update', '__ID__') }}';
+markupMode?.addEventListener('change', () => { markupPrefix.textContent = markupMode.value === 'rupiah' ? 'Rp' : '%'; });
 
-    const url = isEdit
-        ? updateUrlTemplate.replace('__ID__', editProductId)
-        : '{{ route('admin.products.store') }}';
-
+bulkMarkupForm?.addEventListener('submit', async event => {
+    event.preventDefault();
+    const formData = new FormData(bulkMarkupForm);
+    applyMarkupBtn.disabled = true;
+    bulkMarkupStatus.className = 'bulk-markup-panel__status';
+    bulkMarkupStatus.textContent = 'Menerapkan markup…';
     try {
-        const res = await fetch(url, {
+        const response = await fetch(bulkMarkupForm.action, {
             method: 'POST',
             headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
-            body: formData
+            body: formData,
         });
-        const data = await res.json();
-
-        if (res.ok) {
-            closeProductModal();
-            showModal('success', data.message || (isEdit ? 'Produk berhasil diperbarui' : 'Produk berhasil ditambahkan'));
-            setTimeout(() => location.reload(), 800);
-        } else {
-            const errors = data.errors || {};
-            clearErrors();
-            for (const field in errors) {
-                const el = document.getElementById('err_' + field);
-                if (el) {
-                    el.textContent = errors[field][0];
-                    el.classList.remove('hidden');
-                }
-            }
-            btn.disabled = false;
-            btn.textContent = isEdit ? 'Simpan Perubahan' : 'Simpan';
-        }
-    } catch (err) {
-        showModal('error', 'Terjadi kesalahan. Silakan coba lagi.');
-        btn.disabled = false;
-        btn.textContent = isEdit ? 'Simpan Perubahan' : 'Simpan';
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message || 'Markup tidak dapat diterapkan.');
+        Object.entries(data.prices || {}).forEach(([id, price]) => {
+            const row = document.querySelector('[data-product-id="' + id + '"]');
+            setSellingPrice(row, price);
+            updateCommission(row, price);
+        });
+        bulkMarkupStatus.classList.add('success');
+        bulkMarkupStatus.textContent = data.message;
+    } catch (error) {
+        bulkMarkupStatus.classList.add('error');
+        bulkMarkupStatus.textContent = error.message || 'Gagal menerapkan markup.';
+    } finally {
+        applyMarkupBtn.disabled = false;
     }
 });
 
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeProductModal();
+document.querySelectorAll('.selling-price-form').forEach(form => {
+    form.querySelector('.selling-price-edit')?.addEventListener('click', () => openPriceEditor(form));
+    form.querySelector('.selling-price-cancel')?.addEventListener('click', () => {
+        closePriceEditor(form);
+        const status = form.querySelector('.selling-price-status');
+        status.className = 'selling-price-status';
+        status.textContent = '';
+    });
+    form.querySelector('input[name="selling_price"]')?.addEventListener('keydown', event => {
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            closePriceEditor(form);
+            form.querySelector('.selling-price-edit')?.focus();
+        }
+    });
+
+    form.addEventListener('submit', async event => {
+        event.preventDefault();
+        const button = form.querySelector('.selling-price-save');
+        const status = form.querySelector('.selling-price-status');
+        button.disabled = true;
+        status.className = 'selling-price-status';
+        status.textContent = 'Menyimpan…';
+        try {
+            const response = await fetch(form.action, {
+                method: 'POST',
+                headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content },
+                body: new FormData(form),
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error((data.errors?.selling_price || [data.message || 'Harga tidak valid'])[0]);
+            const row = form.closest('[data-product-id]');
+            setSellingPrice(row, data.selling_price);
+            updateCommission(row, data.selling_price);
+            status.classList.add('success');
+            status.textContent = 'Tersimpan';
+            setTimeout(() => {
+                if (status.textContent === 'Tersimpan') status.textContent = '';
+            }, 1800);
+        } catch (error) {
+            status.classList.add('error');
+            status.textContent = error.message || 'Gagal menyimpan';
+        } finally {
+            button.disabled = false;
+        }
+    });
 });
+
 </script>
 @endpush

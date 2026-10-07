@@ -81,7 +81,7 @@
     </div>
 </div>
 
-<div class="pagination-wrap">{{ $inquiries->links() }}</div>
+<div class="pagination-wrap">{{ $inquiries->links('vendor.pagination.admin') }}</div>
 
 <!-- ===== MODAL DETAIL PESAN ===== -->
 <div class="fixed inset-0 z-50 flex items-center justify-center" id="inquiryModal" style="display:none">

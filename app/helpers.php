@@ -98,3 +98,61 @@ if (! function_exists('pwa_asset')) {
         return asset($path).'?v='.pwa_build();
     }
 }
+
+if (! function_exists('payment_logo_asset')) {
+    /**
+     * Logo kanal pembayaran dari aset publik lokal.
+     * Tidak menggunakan foto metode pembayaran yang diunggah admin supaya
+     * tampilan checkout konsisten dan tetap tersedia tanpa URL eksternal.
+     */
+    function payment_logo_asset(?string $code): ?string
+    {
+        $code = strtolower(trim((string) $code));
+        $logos = [
+            'qris' => 'qris.webp',
+            'dana' => 'dana.webp',
+            'ovo' => 'ovo.webp',
+            'linkaja' => 'LinkAja.webp',
+            'bca' => 'bca.webp',
+            'bca_va' => 'bca.webp',
+            'bni' => 'bni.webp',
+            'bni_va' => 'bni.webp',
+            'mandiri' => 'mandiri.webp',
+            'mandiri_va' => 'mandiri.webp',
+            'permata' => 'permata-bank.webp',
+            'permata_va' => 'permata-bank.webp',
+            'alfamart' => 'alfamanrt.webp',
+            'indomaret' => 'Logo_Indomaret.webp',
+        ];
+
+        return isset($logos[$code]) ? pwa_asset('assets/payment/'.$logos[$code]) : null;
+    }
+}
+
+if (! function_exists('topup_game_icon_asset')) {
+    /**
+     * Ikon nominal top up yang konsisten untuk game yang sudah memiliki
+     * aset lokal di public/assets/icon-topup.
+     */
+    function topup_game_icon_asset(?string $gameName): ?string
+    {
+        $gameName = mb_strtolower(trim((string) $gameName));
+
+        $icons = [
+            'mobile legends' => 'diamond-ml.webp',
+            'magic chess' => 'diamond-magicchess.webp',
+            'free fire' => 'diamond-ff.webp',
+            'call of duty' => 'cp-codm.webp',
+            'codm' => 'cp-codm.webp',
+            'pubg' => 'uc-pubg.webp',
+        ];
+
+        foreach ($icons as $name => $file) {
+            if (str_contains($gameName, $name)) {
+                return pwa_asset('assets/icon-topup/'.$file);
+            }
+        }
+
+        return null;
+    }
+}

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
+    <meta name="theme-color" content="#01203c">
     <title>Admin - {{ config('app.name') }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -12,20 +13,23 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
-            --sidebar: #032D52;
-            --sidebar-hover: #024073;
-            --sidebar-active: #0987F5;
-            --bg-main: #021B31;
-            --bg-card: #032D52;
-            --bg-input: #024073;
-            --border: #043a66;
-            --accent: #0987F5;
-            --accent-hover: #0770cc;
-            --text: #e2e8f0;
+            --sidebar: #01203c;
+            --sidebar-hover: #052a48;
+            --sidebar-active: #2563eb;
+            --bg-main: #020D2E;
+            --bg-card: #0A1E50;
+            --bg-input: #0d2448;
+            --border: #0a2e5c;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --brand-cyan: #00d4ff;
+            --brand-purple: #7c3aed;
+            --brand-gradient: linear-gradient(135deg, var(--accent), var(--brand-purple));
+            --text: #f0f4ff;
             --text-muted: #94a3b8;
             --text-dim: #64748b;
             --card-shadow: 0 4px 24px -8px rgba(0,0,0,0.3);
-            --glass-bg: rgba(3,45,82,0.6);
+            --glass-bg: rgba(10,30,80,0.68);
             --glass-border: rgba(255,255,255,0.06);
             --success: #10b981;
             --warning: #f59e0b;
@@ -36,13 +40,13 @@
         [data-theme="light"] {
             --sidebar: #f1f5f9;
             --sidebar-hover: #e2e8f0;
-            --sidebar-active: #0987F5;
+            --sidebar-active: #2563eb;
             --bg-main: #f8fafc;
             --bg-card: #ffffff;
             --bg-input: #f1f5f9;
             --border: #e2e8f0;
-            --accent: #0987F5;
-            --accent-hover: #0770cc;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
             --text: #0f172a;
             --text-muted: #475569;
             --text-dim: #94a3b8;
@@ -73,18 +77,18 @@
         }
         .orb-1 {
             width: 500px; height: 500px;
-            background: rgba(9,135,245,0.08);
+            background: rgba(37,99,235,0.10);
             top: -15%; right: -10%;
         }
         .orb-2 {
             width: 400px; height: 400px;
-            background: rgba(99,102,241,0.06);
+            background: rgba(0,212,255,0.06);
             bottom: -20%; left: -8%;
             animation-delay: -5s;
         }
         .orb-3 {
             width: 300px; height: 300px;
-            background: rgba(236,72,153,0.04);
+            background: rgba(124,58,237,0.05);
             top: 40%; left: 50%;
             animation-delay: -9s;
         }
@@ -106,7 +110,7 @@
         .sidebar {
             width: 260px;
             flex-shrink: 0;
-            background: linear-gradient(180deg, #032D52 0%, #1E1050 100%);
+            background: linear-gradient(180deg, #01203c 0%, #0A1E50 100%);
             border-right: 1px solid rgba(255,255,255,0.08);
             display: flex;
             flex-direction: column;
@@ -186,7 +190,7 @@
             background: rgba(255,255,255,0.06);
         }
         .sidebar-nav a.active {
-            background: linear-gradient(90deg, #263F98, #432B9B);
+            background: var(--brand-gradient);
             color: #fff; font-weight: 700;
             box-shadow: 0 4px 12px -2px rgba(38,63,152,0.3);
         }
@@ -195,7 +199,7 @@
             content: '';
             position: absolute; left: -12px; top: 50%; transform: translateY(-50%);
             width: 3px; height: 22px;
-            background: #2196FF;
+            background: var(--brand-cyan);
             border-radius: 0 4px 4px 0;
         }
 
@@ -275,7 +279,7 @@
         .user-avatar {
             width: 30px; height: 30px;
             border-radius: 8px;
-            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            background: var(--brand-gradient);
             display: flex; align-items: center; justify-content: center;
             font-size: 0.72rem; font-weight: 700; color: #fff;
         }
@@ -513,8 +517,8 @@
         }
         .btn:hover { transform: translateY(-1px); }
         .btn:active { transform: translateY(0); }
-        .btn-primary { background: linear-gradient(135deg, var(--accent), #8b5cf6); color: #fff; box-shadow: 0 4px 14px -4px rgba(9,135,245,0.4); }
-        .btn-primary:hover { box-shadow: 0 6px 20px -4px rgba(9,135,245,0.5); }
+        .btn-primary { background: var(--brand-gradient); color: #fff; box-shadow: 0 4px 14px -4px rgba(37,99,235,0.4); }
+        .btn-primary:hover { box-shadow: 0 6px 20px -4px rgba(37,99,235,0.5); }
         .btn-ghost { background: transparent; color: var(--text-muted); border: 1px solid var(--glass-border); }
         .btn-ghost:hover { background: var(--sidebar-hover); color: var(--text); }
         .btn-danger { background: var(--error); color: #fff; }
@@ -541,23 +545,59 @@
             font-size: 1rem;
         }
 
-        /* PAGINATION */
-        .pagination-wrap { display: flex; justify-content: center; margin-top: 1.5rem; }
-        .pagination-wrap nav { display: flex; gap: 0.3rem; }
-        .pagination-wrap a, .pagination-wrap span {
-            display: inline-flex; align-items: center; justify-content: center;
-            min-width: 36px; height: 36px;
-            padding: 0 0.5rem;
-            border-radius: 10px;
-            font-size: 0.82rem; font-weight: 500;
-            color: var(--text-muted);
-            text-decoration: none;
-            border: 1px solid var(--glass-border);
-            transition: all 0.15s ease;
+        /* FILTER BAR */
+        .admin-filter-bar {
+            display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap;
+            width: 100%; margin-bottom: 1rem;
         }
-        .pagination-wrap a:hover { background: var(--sidebar-hover); color: var(--text); }
-        .pagination-wrap span:not(.dots) { background: linear-gradient(135deg, var(--accent), #8b5cf6); color: #fff; border-color: transparent; }
-        .pagination-wrap .dots { border: none; }
+        .admin-filter-bar .search-wrap { flex: 1 1 240px; min-width: 0; }
+        .admin-filter-bar .input-field {
+            flex: 0 1 190px; width: auto; min-width: 150px; height: 42px;
+            padding: 0.55rem 0.75rem; font-size: 0.82rem;
+        }
+        .admin-filter-bar .search-wrap .input-field { width: 100%; min-width: 0; padding-left: 2.4rem; }
+        .admin-filter-bar .btn { min-height: 42px; }
+
+        /* PAGINATION */
+        .pagination-wrap { margin-top: 1.5rem; }
+        .admin-pagination {
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 1rem; width: 100%; margin-top: 1.5rem;
+        }
+        .pagination-wrap .admin-pagination { margin-top: 0; }
+        .admin-pagination__summary {
+            margin: 0; color: var(--text-dim); font-size: 0.8rem; white-space: nowrap;
+        }
+        .admin-pagination__summary strong { color: var(--text); font-weight: 700; }
+        .admin-pagination__links {
+            display: flex; align-items: center; justify-content: flex-end;
+            flex-wrap: wrap; gap: 0.35rem;
+        }
+        .admin-pagination__control {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 36px; height: 36px; padding: 0 0.5rem;
+            border: 1px solid var(--glass-border); border-radius: 10px;
+            background: var(--bg-input); color: var(--text-muted);
+            font-size: 0.8rem; font-weight: 600; line-height: 1;
+            text-decoration: none; transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+        }
+        .admin-pagination__control:hover { background: var(--sidebar-hover); border-color: var(--accent); color: var(--text); }
+        .admin-pagination__control:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+        .admin-pagination__control.is-current { background: var(--brand-gradient); border-color: transparent; color: #fff; }
+        .admin-pagination__control.is-disabled { cursor: not-allowed; opacity: 0.4; }
+        .admin-pagination__control.is-dots { min-width: 22px; border-color: transparent; background: transparent; cursor: default; }
+        .admin-pagination__control.is-dots:hover { border-color: transparent; background: transparent; color: var(--text-muted); }
+
+        @media (max-width: 640px) {
+            .admin-filter-bar { align-items: stretch; }
+            .admin-filter-bar .search-wrap,
+            .admin-filter-bar .input-field,
+            .admin-filter-bar .btn { flex: 1 1 100%; width: 100%; min-width: 0; }
+            .admin-pagination { flex-direction: column; align-items: stretch; gap: 0.75rem; }
+            .admin-pagination__summary { text-align: center; white-space: normal; }
+            .admin-pagination__links { justify-content: center; gap: 0.25rem; }
+            .admin-pagination__control { min-width: 34px; height: 34px; }
+        }
 
         /* SEARCH INPUT */
         .search-wrap { position: relative; }
@@ -601,7 +641,7 @@
                     <div class="brand-sub">Admin Panel</div>
                 </div>
             </div>
-            <nav class="sidebar-nav">
+            <nav class="sidebar-nav" id="adminSidebarNav">
                 <div class="nav-section">Beranda</div>
                 <a href="{{ route('admin.dashboard') }}" class="{{ request()->routeIs('admin.dashboard') ? 'active' : '' }}">
                     <i class="fas fa-chart-pie"></i> Dashboard
@@ -609,18 +649,11 @@
 
                 <div class="nav-section">Produk</div>
                 <a href="{{ route('admin.products') }}" class="{{ request()->routeIs('admin.products*') ? 'active' : '' }}">
-                    <i class="fas fa-box"></i> Produk
-                </a>
-                <a href="{{ route('admin.brands') }}" class="{{ request()->routeIs('admin.brands*') ? 'active' : '' }}">
-                    <i class="fas fa-gamepad"></i> Daftar Game
+                    <i class="fas fa-bolt"></i> Top Up
                 </a>
                 <a href="{{ route('admin.account-listings') }}" class="{{ request()->routeIs('admin.account-listings*') ? 'active' : '' }}">
                     <i class="fas fa-store"></i> Jual Beli Akun
                 </a>
-                <a href="{{ route('admin.payment-methods') }}" class="{{ request()->routeIs('admin.payment-methods*') ? 'active' : '' }}">
-                    <i class="fas fa-credit-card"></i> Pembayaran
-                </a>
-
                 <div class="nav-section">Event</div>
                 <a href="{{ route('admin.popup-banners') }}" class="{{ request()->routeIs('admin.popup-banners*') ? 'active' : '' }}">
                     <i class="fas fa-bullhorn"></i> Popup Banner
@@ -752,7 +785,7 @@
                 document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#f8fafc');
             } else {
                 icon.className = 'fas fa-moon';
-                document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#021B31');
+                document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#01203c');
             }
         }
 
@@ -767,6 +800,31 @@
         });
 
         // ===== SIDEBAR =====
+        (function preserveSidebarScrollPosition() {
+            const sidebarNav = document.getElementById('adminSidebarNav');
+            const storageKey = 'johen-admin-sidebar-scroll-top';
+
+            if (!sidebarNav) return;
+
+            const savedPosition = sessionStorage.getItem(storageKey);
+            if (savedPosition !== null) {
+                requestAnimationFrame(function () {
+                    sidebarNav.scrollTop = Number(savedPosition);
+                });
+            }
+
+            const savePosition = function () {
+                sessionStorage.setItem(storageKey, String(sidebarNav.scrollTop));
+            };
+
+            sidebarNav.addEventListener('scroll', savePosition, { passive: true });
+            window.addEventListener('pagehide', savePosition);
+
+            document.querySelectorAll('#adminSidebarNav a').forEach(function (link) {
+                link.addEventListener('click', savePosition);
+            });
+        })();
+
         document.getElementById('hamburgerBtn')?.addEventListener('click', function () {
             const sidebar = document.getElementById('sidebar');
             const overlay = document.getElementById('sidebarOverlay');

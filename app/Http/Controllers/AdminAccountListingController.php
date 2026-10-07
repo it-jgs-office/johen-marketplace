@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\AccountListing;
 use App\Models\Brand;
+use App\Jobs\RunJohenGamingSync;
 use App\Services\ImageOptimizer;
 use App\Services\JohenGamingSyncService;
 use App\Services\MediaStore;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class AdminAccountListingController extends Controller
 {
@@ -15,8 +17,9 @@ class AdminAccountListingController extends Controller
     {
         $listings = AccountListing::orderBy('game')->orderBy('product_name')->paginate(20);
         $brands = Brand::where('is_active', true)->orderBy('name')->get();
+        $syncStatus = Cache::get(RunJohenGamingSync::STATUS_KEY);
 
-        return view('admin.account-listings.index', compact('listings', 'brands'));
+        return view('admin.account-listings.index', compact('listings', 'brands', 'syncStatus'));
     }
 
     public function create()
@@ -157,31 +160,28 @@ class AdminAccountListingController extends Controller
 
     public function sync(Request $request)
     {
-        set_time_limit(0);
-
-        try {
-            $result = app(JohenGamingSyncService::class)->sync($request->query('game') ?: null, [
-                'deactivate_missing' => $request->boolean('deactivate_missing'),
-            ]);
-
-            $message = sprintf(
-                'Sinkron johengaming.id selesai: %d dibuat, %d diperbarui, %d tidak berubah, %d ditandai terjual.',
-                $result['created'],
-                $result['updated'],
-                $result['unchanged'],
-                $result['sold']
-            );
-
-            if ($result['errors'] > 0) {
-                $message .= ' '.$result['errors'].' gagal. Cek log terminal via `php artisan jba:sync-johengaming`.';
-
-                return back()->with('error', $message);
-            }
-
-            return back()->with('success', $message);
-        } catch (\Throwable $e) {
-            return back()->with('error', 'Sinkronisasi gagal: '.$e->getMessage());
+        $game = $request->query('game');
+        if ($game !== null && ! in_array($game, JohenGamingSyncService::gameSlugsSupported(), true)) {
+            return back()->with('error', 'Kategori game tidak dikenal.');
         }
+
+        if (! Cache::add(RunJohenGamingSync::RUNNING_KEY, true, now()->addMinutes(30))) {
+            return back()->with('error', 'Sinkronisasi masih berjalan. Tunggu hingga selesai.');
+        }
+
+        Cache::put(RunJohenGamingSync::STATUS_KEY, [
+            'state' => 'running',
+            'started_at' => now()->toDateTimeString(),
+        ], now()->addMinutes(30));
+
+        RunJohenGamingSync::dispatchAfterResponse($game);
+
+        return back()->with('success', 'Sinkronisasi dimulai. Status dan hasilnya akan tampil di halaman ini.');
+    }
+
+    public function syncStatus()
+    {
+        return response()->json(Cache::get(RunJohenGamingSync::STATUS_KEY, ['state' => 'idle']));
     }
 
     public function toggle(AccountListing $accountListing)

@@ -15,7 +15,7 @@
                     <tr>
                         <td align="center" style="padding:32px 40px 0;background-color:#ffffff !important;">
                             <img src="{{ $message->embed(public_path('logo.png')) }}" alt="Johen Gaming" width="56" style="display:block;width:56px;height:auto;margin:0 auto 16px;border-radius:12px;">
-                            <h1 style="margin:0;font-family:'Sora',Arial,sans-serif;font-size:20px;font-weight:800;color:#111827;letter-spacing:-0.02em;"><span style="color:#7c3aed;">JOHENGAMING</span></h1>
+                            <h1 style="margin:0;font-family:'Sora',Arial,sans-serif;font-size:20px;font-weight:800;color:#111827;letter-spacing:-0.02em;"><span style="color:#2563eb;">JOHENGAMING</span></h1>
                             <p style="margin:8px 0 0;font-size:13px;color:#6B7280;">Balasan Pesan</p>
                         </td>
                     </tr>
@@ -35,7 +35,7 @@
                     </tr>
                     <tr>
                         <td align="left" style="padding:0 40px 24px;">
-                            <p style="margin:0;font-size:13px;color:#6B7280;">Salam,<br><strong style="color:#7c3aed;">Tim Customer Service</strong></p>
+                            <p style="margin:0;font-size:13px;color:#6B7280;">Salam,<br><strong style="color:#2563eb;">Tim Customer Service</strong></p>
                         </td>
                     </tr>
                     <tr>

@@ -32,7 +32,6 @@
 <body>
 @include('partials.splash')
 @include('partials.floating-decoration')
-@include('partials.particle-effect')
 
 <!-- ===== HEADER ===== -->
 <header class="site-header" id="siteHeader">
@@ -348,21 +347,21 @@
 
 <style>
 [data-theme="light"] {
-  --bg: color-mix(in srgb, var(--theme-primary, #7c3aed) 9%, #ffffff);
-  --bg-soft: color-mix(in srgb, var(--theme-primary, #7c3aed) 6%, #f4f1fa);
+  --bg: color-mix(in srgb, var(--theme-primary, #2563eb) 9%, #ffffff);
+  --bg-soft: color-mix(in srgb, var(--theme-primary, #2563eb) 6%, #f4f1fa);
   --surface: #ffffff;
-  --surface-2: color-mix(in srgb, var(--theme-primary, #7c3aed) 5%, #ffffff);
-  --surface-3: color-mix(in srgb, var(--theme-primary, #7c3aed) 9%, #ffffff);
+  --surface-2: color-mix(in srgb, var(--theme-primary, #2563eb) 5%, #ffffff);
+  --surface-3: color-mix(in srgb, var(--theme-primary, #2563eb) 9%, #ffffff);
   --border: rgba(0,0,0,.08);
   --border-strong: rgba(0,0,0,.14);
-  --text: color-mix(in srgb, var(--theme-primary, #7c3aed) 42%, #000000);
+  --text: color-mix(in srgb, var(--theme-primary, #2563eb) 42%, #000000);
   --text-dim: color-mix(in srgb, var(--text) 58%, var(--surface));
   --text-mute: color-mix(in srgb, var(--text) 38%, var(--surface));
-  --purple-glow: color-mix(in srgb, var(--theme-primary, #7c3aed) 25%, transparent);
-  --shadow-purple: 0 8px 30px -8px color-mix(in srgb, var(--theme-primary, #7c3aed) 35%, transparent);
-  --header-bg: color-mix(in srgb, var(--theme-primary, #7c3aed) 4%, rgba(255,255,255,.9));
-  --header-bg-scrolled: color-mix(in srgb, var(--theme-primary, #7c3aed) 6%, rgba(255,255,255,.97));
-  --nav-active-text: color-mix(in srgb, var(--theme-primary-dark, #4c1d95) 85%, #000000);
+  --purple-glow: color-mix(in srgb, var(--theme-primary, #2563eb) 25%, transparent);
+  --shadow-purple: 0 8px 30px -8px color-mix(in srgb, var(--theme-primary, #2563eb) 35%, transparent);
+  --header-bg: color-mix(in srgb, var(--theme-primary, #2563eb) 4%, rgba(255,255,255,.9));
+  --header-bg-scrolled: color-mix(in srgb, var(--theme-primary, #2563eb) 6%, rgba(255,255,255,.97));
+  --nav-active-text: color-mix(in srgb, var(--theme-primary-dark, #1a4a9e) 85%, #000000);
   --bg-card:#ffffff;
 }
 .nav-theme-btn {
@@ -453,6 +452,25 @@ html:not([data-theme="light"]) .mobile-theme-btn .icon-moon {
 
 </style>
 
+@php
+  $staticPaymentLogos = [
+    'qris' => payment_logo_asset('qris'),
+    'dana' => payment_logo_asset('dana'),
+    'ovo' => payment_logo_asset('ovo'),
+    'linkaja' => payment_logo_asset('linkaja'),
+    'bca' => payment_logo_asset('bca'),
+    'bca_va' => payment_logo_asset('bca_va'),
+    'bni' => payment_logo_asset('bni'),
+    'bni_va' => payment_logo_asset('bni_va'),
+    'mandiri' => payment_logo_asset('mandiri'),
+    'mandiri_va' => payment_logo_asset('mandiri_va'),
+    'permata' => payment_logo_asset('permata'),
+    'permata_va' => payment_logo_asset('permata_va'),
+    'alfamart' => payment_logo_asset('alfamart'),
+    'indomaret' => payment_logo_asset('indomaret'),
+  ];
+@endphp
+
 <script>
 (function() {
   const theme = localStorage.getItem('theme') || 'dark';
@@ -475,6 +493,7 @@ html:not([data-theme="light"]) .mobile-theme-btn .icon-moon {
   window.ZONE_BRANDS = @json(\App\Models\Brand::where('requires_zone_id', true)->where('is_active', true)->pluck('name'));
   // Dipakai topup.js untuk menyegarkan angka keranjang tanpa reload halaman.
   window.CART_STATE_URL = @json(\Illuminate\Support\Facades\Route::has('cart.state') ? route('cart.state') : null);
+  window.STATIC_PAYMENT_LOGOS = @json($staticPaymentLogos);
 </script>
   <script src="{{ pwa_asset('js/topup.js') }}"></script>
 

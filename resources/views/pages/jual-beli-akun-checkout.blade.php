@@ -76,8 +76,8 @@
                 <label class="jco-pay-opt">
                   <input type="radio" name="payment_method" value="{{ $pm->code }}" {{ old('payment_method') === $pm->code ? 'checked' : ($loop->first && $loop->parent->first ? 'checked' : '') }} required>
                   <div class="jco-pay-card">
-                    @if($pm->photo_url)
-                      <img data-src-dark="{{ $pm->photo_url }}" data-src-light="{{ $pm->photo_light_url ?? $pm->photo_url }}" alt="{{ $pm->name }}" class="jco-pay-img jco-pay-themeable">
+                    @if(payment_logo_asset($pm->code))
+                      <img src="{{ payment_logo_asset($pm->code) }}" alt="{{ $pm->name }}" class="jco-pay-img">
                     @elseif($pm->icon)
                       <span class="jco-pay-icon">{{ $pm->icon }}</span>
                     @else
@@ -374,8 +374,9 @@
   object-fit: contain;
   border-radius: 6px;
   flex-shrink: 0;
-  background: var(--bg-soft, rgba(255,255,255,.06));
-  padding: 2px;
+  background: #fff;
+  padding: 4px;
+  border: 1px solid rgba(15,23,42,.12);
 }
 .jco-pay-icon {
   font-size: 1.3rem;

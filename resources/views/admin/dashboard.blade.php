@@ -262,10 +262,6 @@
                 </h2>
             </div>
             <div style="padding:0.75rem;display:flex;flex-direction:column;gap:0.5rem">
-                <a href="{{ route('admin.products') }}" class="btn btn-ghost" style="justify-content:flex-start;padding:0.65rem 0.9rem;gap:0.6rem">
-                    <i class="fas fa-plus-circle" style="color:var(--accent)"></i>
-                    <span>Tambah Produk</span>
-                </a>
                 <a href="{{ route('admin.orders') }}" class="btn btn-ghost" style="justify-content:flex-start;padding:0.65rem 0.9rem;gap:0.6rem">
                     <i class="fas fa-eye" style="color:var(--warning)"></i>
                     <span>Lihat Pesanan Baru</span>

@@ -33,7 +33,7 @@
     </div>
 </div>
 
-<div class="flex gap-2 mb-4 flex-wrap">
+<div class="admin-filter-bar">
     <select class="input-field" id="statusFilter" style="width:auto;min-width:140px;padding:0.35rem 0.75rem;font-size:0.82rem" onchange="applyFilter()">
         <option value="">Semua Status</option>
         <option value="running" {{ request('status') === 'running' ? 'selected' : '' }}>Menayang</option>
@@ -132,7 +132,7 @@
         </table>
     </div>
 </div>
-<div class="pagination-wrap">{{ $flashDeals->links() }}</div>
+<div class="pagination-wrap">{{ $flashDeals->links('vendor.pagination.admin') }}</div>
 
 <!-- MODAL FLASH DEAL -->
 <div class="fixed inset-0 z-50 flex items-center justify-center" id="dealModal" style="display:none">

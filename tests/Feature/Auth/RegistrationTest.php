@@ -74,7 +74,8 @@ class RegistrationTest extends TestCase
 
         $response = $this->post(route('verify-otp'), ['otp' => $otp->otp]);
 
-        $response->assertRedirect(route('login'));
+        $response->assertRedirect(route('home'));
+        $response->assertSessionHas('success', 'Registrasi berhasil. Selamat datang!');
 
         $this->assertDatabaseHas('users', [
             'email' => 'test@example.com',
@@ -83,6 +84,9 @@ class RegistrationTest extends TestCase
 
         $user = User::where('email', 'test@example.com')->firstOrFail();
         $this->assertTrue(Hash::check('password', $user->password));
+        $this->assertAuthenticatedAs($user, 'web');
+        $this->assertFalse(session()->has('register_data'));
+        $this->assertFalse(session()->has('register_email'));
     }
 
     public function test_wrong_otp_does_not_create_the_user(): void

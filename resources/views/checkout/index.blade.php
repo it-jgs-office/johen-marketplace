@@ -221,8 +221,8 @@
                                                     <input type="radio" name="pay_choice" value="{{ $pm->code }}" {{ $selectedPay === $pm->code ? 'checked' : '' }} hidden>
                                                     <button type="button" class="gd-pay-row-head">
                                                         <span class="gd-pay-icon">
-                                                            @if($pm->photo_url)
-                                                                <img src="{{ $pm->photo_url }}" alt="{{ $pm->name }}" class="pay-badge-img" @if($pm->photo_light_url) data-light="{{ $pm->photo_light_url }}" @endif>
+                                                            @if(payment_logo_asset($pm->code))
+                                                                <img src="{{ payment_logo_asset($pm->code) }}" alt="{{ $pm->name }}" class="pay-badge-img">
                                                             @else
                                                                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
                                                             @endif

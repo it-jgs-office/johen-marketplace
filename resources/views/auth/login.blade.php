@@ -21,7 +21,7 @@
 }
 .modal-icon {
     width:68px;height:68px;margin:0 auto 1.2rem;border-radius:50%;
-    background:linear-gradient(135deg,#7c3aed,#a855f7);display:flex;align-items:center;justify-content:center;
+    background:linear-gradient(135deg,#2563eb,#7c3aed);display:flex;align-items:center;justify-content:center;
     font-size:2rem;color:#fff;font-weight:700;
 }
 .modal-content h2 { font-size:1.4rem;margin-bottom:.5rem;color:#f5f3fb; }

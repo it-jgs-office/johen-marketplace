@@ -6,9 +6,7 @@
         <h2 class="text-lg font-semibold">Daftar Game</h2>
         <span class="badge badge-neutral">{{ $brands->total() }} total</span>
     </div>
-    <button type="button" class="btn btn-primary" onclick="openCreateModal()">
-        <i class="fas fa-plus"></i><span>Tambah Game</span>
-    </button>
+    <p class="text-sm" style="color:var(--text-muted)">Game top up baru dibuat otomatis saat sinkronisasi Digiflazz.</p>
 </div>
 
 <div class="table-wrap">
@@ -88,7 +86,7 @@
                     <td colspan="8">
                         <div class="empty-state">
                             <i class="fas fa-gamepad"></i>
-                            <p>Belum ada game. Tambah game baru untuk mulai.</p>
+                            <p>Belum ada game. Jalankan sinkronisasi Digiflazz dari halaman Produk.</p>
                         </div>
                     </td>
                 </tr>
@@ -97,19 +95,19 @@
         </table>
     </div>
 </div>
-<div class="pagination-wrap">{{ $brands->links() }}</div>
+<div class="pagination-wrap">{{ $brands->links('vendor.pagination.admin') }}</div>
 
 <!-- MODAL BRAND -->
 <div class="fixed inset-0 z-50 flex items-center justify-center" id="brandModal" style="display:none">
     <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" onclick="closeBrandModal()"></div>
     <div class="relative" style="background:var(--bg-card);border:1px solid var(--glass-border);border-radius:20px;width:100%;max-width:600px;margin:0 1rem;max-height:90vh;overflow-y:auto;box-shadow:0 24px 64px -16px rgba(0,0,0,0.5)">
         <div class="flex items-center justify-between p-5" style="border-bottom:1px solid var(--glass-border)">
-            <h3 class="text-lg font-bold" id="brandModalTitle">Tambah Game</h3>
+            <h3 class="text-lg font-bold" id="brandModalTitle">Edit Game</h3>
             <button type="button" style="background:none;border:none;color:var(--text-muted);font-size:1.4rem;cursor:pointer;line-height:1" onclick="closeBrandModal()">&times;</button>
         </div>
         <form id="brandForm" class="p-5" enctype="multipart/form-data">
             <input type="hidden" name="_token" value="{{ csrf_token() }}">
-            <input type="hidden" id="brandFormMethod" name="_method" value="POST">
+            <input type="hidden" id="brandFormMethod" name="_method" value="PUT">
             <input type="hidden" id="brandId" name="brand_id" value="">
 
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -417,36 +415,6 @@ document.getElementById('detailBgInput')?.addEventListener('change', function(e)
     }
 });
 
-function openCreateModal() {
-    editBrandId = null;
-    document.getElementById('brandModalTitle').textContent = 'Tambah Game';
-    document.getElementById('brandSubmitBtn').textContent = 'Simpan';
-    document.getElementById('brandFormMethod').value = 'POST';
-    document.getElementById('brandId').value = '';
-    document.getElementById('brandForm').reset();
-    document.getElementById('thumbImage').classList.add('hidden');
-    document.getElementById('thumbPlaceholder').classList.remove('hidden');
-    document.getElementById('featThumbImage').classList.add('hidden');
-    document.getElementById('featThumbPlaceholder').classList.remove('hidden');
-    for (let i = 1; i <= 3; i++) {
-        document.getElementById('featImg' + i + 'Image').classList.add('hidden');
-        document.getElementById('featImg' + i + 'Placeholder').classList.remove('hidden');
-    }
-    document.getElementById('bgImage').classList.add('hidden');
-    document.getElementById('bgPlaceholder').classList.remove('hidden');
-    document.getElementById('thumbHint').textContent = 'Maksimal 2MB. Format: JPG atau PNG.';
-    document.getElementById('featThumbHint').textContent = 'Thumbnail khusus untuk section produk unggulan. Maks 2MB.';
-    document.getElementById('bgHint').textContent = 'Gambar latar di carousel. Maks 2MB.';
-    initDetailBgFrame(null);
-    document.getElementById('detailBgHint').textContent = 'Background header halaman detail game. Maks 2MB.';
-    document.getElementById('f_service_type').value = 'topup';
-    document.getElementById('f_catalog_group').value = 'game';
-    document.getElementById('f_is_active').checked = true;
-    document.getElementById('f_is_popular').checked = false;
-    clearBrandErrors();
-    document.getElementById('brandModal').style.display = 'flex';
-}
-
 function openEditModal(btn) {
     const b = JSON.parse(btn.dataset.brand);
     editBrandId = b.id;
@@ -509,17 +477,15 @@ function clearBrandErrors() {
 
 document.getElementById('brandForm').addEventListener('submit', async function(e) {
     e.preventDefault();
+    if (editBrandId === null) return;
     const btn = document.getElementById('brandSubmitBtn');
     btn.disabled = true;
     btn.textContent = 'Menyimpan...';
 
     const formData = new FormData(this);
-    const isEdit = editBrandId !== null;
-    if (isEdit) formData.set('_method', 'PUT');
+    formData.set('_method', 'PUT');
 
-    const url = isEdit
-        ? '{{ route('admin.brands.update', '__ID__') }}'.replace('__ID__', editBrandId)
-        : '{{ route('admin.brands.store') }}';
+    const url = '{{ route('admin.brands.update', '__ID__') }}'.replace('__ID__', editBrandId);
 
     try {
         const res = await fetch(url, {
@@ -530,7 +496,7 @@ document.getElementById('brandForm').addEventListener('submit', async function(e
         const data = await res.json();
         if (res.ok) {
             closeBrandModal();
-            showModal('success', data.message || (isEdit ? 'Game berhasil diperbarui' : 'Game berhasil ditambahkan'));
+            showModal('success', data.message || 'Game berhasil diperbarui');
             setTimeout(() => location.reload(), 800);
         } else {
             const errors = data.errors || {};
@@ -540,12 +506,12 @@ document.getElementById('brandForm').addEventListener('submit', async function(e
                 if (el) { el.textContent = errors[field][0]; el.classList.remove('hidden'); }
             }
             btn.disabled = false;
-            btn.textContent = isEdit ? 'Simpan Perubahan' : 'Simpan';
+            btn.textContent = 'Simpan Perubahan';
         }
     } catch (err) {
         showModal('error', 'Terjadi kesalahan. Silakan coba lagi.');
         btn.disabled = false;
-        btn.textContent = isEdit ? 'Simpan Perubahan' : 'Simpan';
+        btn.textContent = 'Simpan Perubahan';
     }
 });
 

@@ -148,12 +148,12 @@ class OptimizeImages extends Command
     {
         $settingKeys = [
             'site_logo' => [512, 512],
-            'site_hero_banner' => [1920, 1080],
-            'site_hero_banner_2' => [1920, 1080],
-            'site_hero_banner_3' => [1920, 1080],
-            'jba_hero_banner' => [1920, 1080],
-            'jba_hero_banner_2' => [1920, 1080],
-            'jba_hero_banner_3' => [1920, 1080],
+            'site_hero_banner' => [1920, 750],
+            'site_hero_banner_2' => [1920, 750],
+            'site_hero_banner_3' => [1920, 750],
+            'jba_hero_banner' => [1920, 750],
+            'jba_hero_banner_2' => [1920, 750],
+            'jba_hero_banner_3' => [1920, 750],
         ];
 
         return [

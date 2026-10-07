@@ -195,7 +195,8 @@ class CartService
                 return (object) [
                     'key' => $brandKey,
                     'name' => $brand?->name ?? $groupItems->first()->product->brand,
-                    'requires_zone_id' => (bool) ($brand?->requires_zone_id ?? false),
+                    'requires_zone_id' => (bool) ($brand?->requires_zone_id ?? false)
+                        || (str_starts_with($brandKey, 'mobile legends') && $groupItems->contains(fn ($item) => str_ends_with(mb_strtolower($item->product->buyer_sku_code), '-idn'))),
                     'icon' => $brand?->icon,
                     'thumbnail' => $brand?->thumbnail,
                     'thumbnail_url' => $brand?->thumbnail_url,

@@ -97,7 +97,7 @@
     </div>
 </div>
 
-<div class="pagination-wrap">{{ $orders->links() }}</div>
+<div class="pagination-wrap">{{ $orders->links('vendor.pagination.admin') }}</div>
 
 <!-- ===== MODAL DETAIL PESANAN ===== -->
 <div class="ord-modal" id="orderModal">

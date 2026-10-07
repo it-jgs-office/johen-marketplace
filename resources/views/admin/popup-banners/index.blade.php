@@ -107,7 +107,7 @@
         </table>
     </div>
 </div>
-<div class="pagination-wrap">{{ $popupBanners->links() }}</div>
+<div class="pagination-wrap">{{ $popupBanners->links('vendor.pagination.admin') }}</div>
 
 <!-- MODAL POPUP BANNER -->
 <div class="fixed inset-0 z-50 flex items-center justify-center" id="popupModal" style="display:none">

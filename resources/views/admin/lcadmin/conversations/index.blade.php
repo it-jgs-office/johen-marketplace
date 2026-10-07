@@ -17,6 +17,10 @@
 
 @push('styles')
 <style>
+.admin-pagination{display:flex;align-items:center;justify-content:space-between;gap:12px;width:100%;margin-top:12px;font-family:'Poppins',sans-serif}
+.admin-pagination__summary{margin:0;color:#8fa8c4;font-size:12px;white-space:nowrap}.admin-pagination__summary strong{color:#f5f7fb}
+.admin-pagination__links{display:flex;align-items:center;justify-content:flex-end;flex-wrap:wrap;gap:4px}.admin-pagination__control{display:inline-flex;align-items:center;justify-content:center;min-width:32px;height:32px;padding:0 8px;border:1px solid #1a4168;border-radius:8px;background:#102a47;color:#8fa8c4;font-size:12px;font-weight:600;line-height:1;text-decoration:none}.admin-pagination__control:hover{border-color:#3f6df5;background:#102e4d;color:#f5f7fb}.admin-pagination__control.is-current{border-color:transparent;background:linear-gradient(135deg,#3f6df5,#7653ec);color:#fff}.admin-pagination__control.is-disabled{opacity:.4;cursor:not-allowed}.admin-pagination__control.is-dots{min-width:22px;border-color:transparent;background:transparent;cursor:default}
+@media(max-width:560px){.admin-pagination{flex-direction:column;align-items:stretch}.admin-pagination__summary{text-align:center;white-space:normal}.admin-pagination__links{justify-content:center}}
 .lc-container {
     display: flex;
     height: 100%;

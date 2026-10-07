@@ -24,6 +24,7 @@
   }
   $selectedRegion = $regions->isNotEmpty() ? 'ID' : null;
   $firstProduct = $products->first();
+  $topupGameIcon = topup_game_icon_asset($brand->name);
   // Mapping eksplisit channel code -> kategori. Tidak bergantung pada kolom
   // `category` di DB (jika data hosting kategori-nya kosong/salah, grouping
   // tetap benar). Pastikan channel code sesuai Xendit.
@@ -50,7 +51,7 @@
           'key' => $m->code,
           'title' => $m->name,
           'category' => $cat,
-          'photo' => $m->photo_url ?? null,
+          'photo' => payment_logo_asset($m->code),
           'fee' => 0,
           'min_amount' => $channelMinAmount($cat),
       ];
@@ -121,7 +122,7 @@
   <div class="gd-detail-grid">
     <div class="gd-detail-main">
   <!-- ===== STEP 1: Data Akun ===== -->
-  <div class="gd-step">
+  <div class="gd-step" id="accountDataStep">
     <div class="gd-step-head"><div class="gd-step-num">1</div><div class="gd-step-title">Masukan Data Akun</div></div>
     <div class="gd-step1-grid">
       <div class="gd-step1-left">
@@ -129,19 +130,25 @@
           <div class="gd-field-row">
             <div class="gd-field">
               <label for="userId">User ID</label>
-              <input type="text" id="userId" placeholder="12345678" autocomplete="off">
+              <input type="text" id="userId" placeholder="12345678" autocomplete="off" aria-describedby="accountLockNotice">
               <div class="gd-field-ok" id="userIdOk"></div>
               <div class="gd-field-error" id="userIdError">User ID wajib diisi.</div>
             </div>
-            @if($brand->requires_zone_id)
+            @if($brand->requires_zone_id || $isMobileLegends)
             <div class="gd-field">
               <label for="zoneId">Zone ID</label>
-              <input type="text" id="zoneId" placeholder="(1234)" autocomplete="off">
+              <input type="text" id="zoneId" placeholder="(1234)" autocomplete="off" aria-describedby="accountLockNotice">
               <div class="gd-field-error" id="zoneIdError">Zone ID wajib diisi.</div>
             </div>
             @endif
           </div>
+          <p class="gd-account-lock-notice" id="accountLockNotice" role="alert" aria-live="assertive" hidden></p>
           <p class="gd-field-hint">To find your User ID, tap on your avatar in the top-left corner of the main game screen.</p>
+          @if($isMobileLegends)
+            <button type="button" class="btn btn-solid" id="mlCheckAccountBtn" disabled style="margin-top:.75rem">Cek Username &amp; Region</button>
+            <p id="mlRegionNotice" role="status" aria-live="polite" hidden style="margin-top:.65rem;font-size:.84rem;color:var(--text-muted)"></p>
+            <p class="gd-field-hint">Produk Indonesia (-idn) ditampilkan sebagai pilihan awal. Cek akun untuk melanjutkan pembelian.</p>
+          @endif
         </div>
 
       </div>
@@ -171,7 +178,9 @@
               @if($deal)
                 <span class="gd-pkg-flash"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg> FLASH -{{ rtrim(rtrim(number_format($deal->discount_percent, 0), '0'), ',') }}%</span>
               @endif
-              @if($p->photo_url)
+              @if($topupGameIcon)
+                <img class="gd-pkg-img" src="{{ $topupGameIcon }}" alt="{{ $brand->name }}">
+              @elseif($p->photo_url)
                 <img class="gd-pkg-img" src="{{ $p->photo_url }}" alt="{{ $p->product_name }}">
               @else
                 <svg class="gd-gem" viewBox="0 0 32 32" width="30" height="30">
@@ -234,7 +243,9 @@
               @if($deal)
                 <span class="gd-pkg-flash"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg> FLASH -{{ rtrim(rtrim(number_format($deal->discount_percent, 0), '0'), ',') }}%</span>
               @endif
-              @if($p->photo_url)
+              @if($topupGameIcon)
+                <img class="gd-pkg-img" src="{{ $topupGameIcon }}" alt="{{ $brand->name }}">
+              @elseif($p->photo_url)
                 <img class="gd-pkg-img" src="{{ $p->photo_url }}" alt="{{ $p->product_name }}">
               @else
                 <svg class="gd-gem" viewBox="0 0 32 32" width="30" height="30">
@@ -293,8 +304,8 @@
               <div class="gd-pay-row" data-key="{{ $pm->code }}" data-category="{{ $catKey }}">
                 <button type="button" class="gd-pay-row-head">
                   <span class="gd-pay-icon">
-                    @if($pm->photo_url)
-                      <img src="{{ $pm->photo_url }}" alt="{{ $pm->name }}" class="pay-badge-img"@if($pm->photo_light_url) data-light="{{ $pm->photo_light_url }}"@endif>
+                    @if(payment_logo_asset($pm->code))
+                      <img src="{{ payment_logo_asset($pm->code) }}" alt="{{ $pm->name }}" class="pay-badge-img">
                     @else
                       <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
                     @endif
@@ -473,10 +484,13 @@ const $$ = (s, ctx) => Array.from((ctx||document).querySelectorAll(s));
 const rupiah = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
 
 const brandName = @json($brand->name);
+const isMobileLegends = @json($isMobileLegends);
 const paymentMethods = @json($payData);
 
 let selectedPkg = null;
 let selectedRegion = @json($selectedRegion);
+let detectedRegion = null;
+let detectedNickname = null;
 let qty = 1;
 let promoDiscount = 0;
 // Kode + subtotal yang terakhir berhasil diverifikasi, dipakai untuk melepas
@@ -505,8 +519,7 @@ document.addEventListener('click', e => {
     // tanpa JavaScript. Di sini alur pemesanan inline yang tetap berjalan.
     e.preventDefault();
     if (productLock.classList.contains('gd-step-locked')) {
-        showToast('Isi Data Akun terlebih dahulu', false);
-        userIdInput.scrollIntoView({behavior:'smooth', block:'center'});
+        requireAccountDetails();
         return;
     }
     if (card.closest('.gd-pkg-instant') && !card.closest('[data-no-region-filter="true"]')) {
@@ -560,8 +573,7 @@ function setQty(v) {
 }
 function qtyLockCheck() {
     if (productLock.classList.contains('gd-step-locked')) {
-        showToast('Isi Data Akun terlebih dahulu', false);
-        userIdInput.scrollIntoView({behavior:'smooth', block:'center'});
+        requireAccountDetails();
         return true;
     }
     return false;
@@ -579,9 +591,57 @@ const payGroup = $('#payGroup');
 const productLock = $('#productLock');
 const userIdInput = $('#userId'), zoneIdInput = $('#zoneId');
 const zoneRequired = !!zoneIdInput;
+const accountDataStep = $('#accountDataStep');
+const accountLockNotice = $('#accountLockNotice');
+
+function requireAccountDetails() {
+    const missingUserId = userIdInput.value.trim().length === 0;
+    const missingZoneId = zoneRequired && zoneIdInput.value.trim().length === 0;
+    const message = (missingUserId || missingZoneId)
+        ? 'Harap isi ID game terlebih dahulu.'
+        : accountLockMessage();
+
+    if (accountLockNotice) {
+        accountLockNotice.textContent = message;
+        accountLockNotice.hidden = false;
+        accountLockNotice.classList.add('show');
+    }
+
+    [
+        [userIdInput, missingUserId],
+        [zoneIdInput, missingZoneId],
+    ].forEach(([input, missing]) => {
+        if (!input || !missing) return;
+        input.classList.remove('gd-input-attention');
+        void input.offsetWidth;
+        input.classList.add('error', 'gd-input-attention');
+    });
+
+    showToast(message, false);
+    accountDataStep.scrollIntoView({behavior:'smooth', block:'center'});
+    window.setTimeout(() => {
+        const input = missingUserId ? userIdInput : (missingZoneId ? zoneIdInput : userIdInput);
+        input.focus({preventScroll:true});
+    }, 400);
+}
+
+productLock.addEventListener('click', e => {
+    if (!productLock.classList.contains('gd-step-locked')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    requireAccountDetails();
+});
+
+function accountLockMessage() {
+    if (!isMobileLegends) return 'Isi Data Akun terlebih dahulu';
+    if (detectedRegion && detectedRegion !== 'Indonesia') return 'Region ' + detectedRegion + ' belum tersedia saat ini.';
+    return 'Cek Username & Region terlebih dahulu';
+}
 
 function togglePayLock() {
-    const unlocked = userIdInput.value.trim().length > 0 && (!zoneRequired || zoneIdInput.value.trim().length > 0);
+    const unlocked = userIdInput.value.trim().length > 0
+        && (!zoneRequired || zoneIdInput.value.trim().length > 0)
+        && (!isMobileLegends || detectedRegion === 'Indonesia');
     payGroup.classList.toggle('gd-pay-group--locked', !unlocked);
     productLock.classList.toggle('gd-step-locked', !unlocked);
     if (!unlocked && selectedPkg) {
@@ -610,17 +670,26 @@ togglePayLock();
 
 /* ---------- deteksi akun real-time (indikator hijau) ---------- */
 const userIdOk = $('#userIdOk');
+const mlCheckAccountBtn = $('#mlCheckAccountBtn');
+const mlRegionNotice = $('#mlRegionNotice');
 const accountCheckUrl = @json(route('api.account.check'));
 const MIN_UID_LEN = 5;
 let accountCheckTimer = null;
 let accountCheckAbort = null;
-let detectedNickname = null;
 
 function clearAccountFeedback() {
     detectedNickname = null;
-    userIdInput.classList.remove('valid');
-    if (zoneIdInput) zoneIdInput.classList.remove('valid');
+    detectedRegion = null;
+    userIdInput.classList.remove('valid', 'gd-input-attention');
+    if (zoneIdInput) zoneIdInput.classList.remove('valid', 'gd-input-attention');
     if (userIdOk) { userIdOk.className = 'gd-field-ok'; userIdOk.textContent = ''; }
+    if (accountLockNotice) {
+        accountLockNotice.hidden = true;
+        accountLockNotice.classList.remove('show');
+        accountLockNotice.textContent = '';
+    }
+    if (mlRegionNotice) { mlRegionNotice.hidden = true; mlRegionNotice.textContent = ''; }
+    togglePayLock();
 }
 
 function showAccountLoading() {
@@ -632,8 +701,9 @@ function showAccountLoading() {
     userIdOk.append(s, ' Mencari akun...');
 }
 
-function showAccountValid(nickname) {
+function showAccountValid(nickname, region) {
     detectedNickname = nickname || null;
+    detectedRegion = region || null;
     userIdInput.classList.add('valid');
     if (zoneIdInput) zoneIdInput.classList.add('valid');
     if (userIdOk) {
@@ -644,25 +714,44 @@ function showAccountValid(nickname) {
         b.textContent = detectedNickname || 'OK';
         userIdOk.append(b);
     }
+    if (mlRegionNotice) {
+        mlRegionNotice.hidden = false;
+        if (detectedRegion === 'Indonesia') {
+            mlRegionNotice.textContent = 'Region Indonesia terdeteksi. Produk -idn tersedia.';
+        } else if (detectedRegion) {
+            mlRegionNotice.textContent = 'Region ' + detectedRegion + ' belum tersedia saat ini.';
+        } else {
+            mlRegionNotice.textContent = 'Region akun belum dapat dipastikan saat ini. Silakan coba lagi nanti.';
+        }
+    }
+    togglePayLock();
 }
 
 function showAccountNotFound() {
     detectedNickname = null;
+    detectedRegion = null;
     userIdInput.classList.remove('valid');
     if (zoneIdInput) zoneIdInput.classList.remove('valid');
     if (userIdOk) {
         userIdOk.className = 'gd-field-ok bad show';
         userIdOk.textContent = 'Akun tidak ditemukan atau profil privat.';
     }
+    togglePayLock();
 }
 
 function scheduleAccountCheck() {
     clearTimeout(accountCheckTimer);
+    if (accountCheckAbort) accountCheckAbort.abort();
+    clearAccountFeedback();
     const uid = userIdInput.value.trim();
     const zid = zoneIdInput ? zoneIdInput.value.trim() : '';
 
+    if (mlCheckAccountBtn) {
+        mlCheckAccountBtn.disabled = uid.length < MIN_UID_LEN || (zoneRequired && zid.length === 0);
+        return; // Transaksi cek Digiflazz hanya saat tombol ditekan.
+    }
+
     if (uid.length < MIN_UID_LEN || (zoneRequired && zid.length === 0)) {
-        clearAccountFeedback();
         return;
     }
     accountCheckTimer = setTimeout(runAccountCheck, 450);
@@ -675,34 +764,52 @@ async function runAccountCheck() {
     if (accountCheckAbort) accountCheckAbort.abort();
     const myAbort = accountCheckAbort = new AbortController();
     showAccountLoading();
+    if (mlCheckAccountBtn) mlCheckAccountBtn.disabled = true;
     try {
-        const params = new URLSearchParams({ brand: brandName, user_id: uid });
-        if (zid) params.append('zone_id', zid);
-        const res = await fetch(accountCheckUrl + '?' + params.toString(), {
-            headers: { 'Accept': 'application/json' },
+        const res = await fetch(accountCheckUrl, {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content || ''
+            },
+            body: JSON.stringify({ brand: brandName, user_id: uid, zone_id: zid }),
             signal: myAbort.signal,
         });
         if (!res.ok) throw new Error('HTTP ' + res.status);
         const data = await res.json();
         if (myAbort !== accountCheckAbort) return; /* respons basi */
-        if (data.checked === false) { clearAccountFeedback(); return; }
-        if (data.valid) showAccountValid(data.nickname);
+        if (data.checked === false) {
+            clearAccountFeedback();
+            if (mlRegionNotice) {
+                mlRegionNotice.hidden = false;
+                mlRegionNotice.textContent = 'Pengecekan akun belum berhasil. Silakan coba lagi sebentar.';
+            }
+            return;
+        }
+        if (data.valid) showAccountValid(data.nickname, data.region);
         else showAccountNotFound();
     } catch (e) {
         if (e.name !== 'AbortError' && myAbort === accountCheckAbort) {
             clearAccountFeedback(); /* gagal jaringan → netral */
+        }
+    } finally {
+        if (mlCheckAccountBtn && myAbort === accountCheckAbort) {
+            mlCheckAccountBtn.disabled = userIdInput.value.trim().length < MIN_UID_LEN
+                || (zoneRequired && zoneIdInput.value.trim().length === 0);
         }
     }
 }
 
 userIdInput.addEventListener('input', scheduleAccountCheck);
 if (zoneIdInput) zoneIdInput.addEventListener('input', scheduleAccountCheck);
+if (mlCheckAccountBtn) mlCheckAccountBtn.addEventListener('click', runAccountCheck);
 
 /* category accordion toggle */
 $('#payGroup').addEventListener('click', e => {
     if (payGroup.classList.contains('gd-pay-group--locked')) {
-        showToast('Isi Data Akun terlebih dahulu', false);
-        userIdInput.scrollIntoView({behavior:'smooth', block:'center'});
+        e.preventDefault();
+        requireAccountDetails();
         return;
     }
     const catHead = e.target.closest('.gd-pay-cat-head');

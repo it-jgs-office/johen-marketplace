@@ -18,6 +18,9 @@ class Product extends Model
         'photo',
         'price',
         'selling_price',
+        'selling_price_override',
+        'selling_markup_type',
+        'selling_markup_value',
         'type',
         'is_active',
         'stock',
@@ -29,6 +32,8 @@ class Product extends Model
         'is_active' => 'boolean',
         'stock' => 'integer',
         'stock_alert_sent' => 'boolean',
+        'selling_price_override' => 'decimal:2',
+        'selling_markup_value' => 'decimal:2',
     ];
 
     protected $appends = ['photo_url'];

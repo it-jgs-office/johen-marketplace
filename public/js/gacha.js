@@ -23,7 +23,7 @@
 
   if (!overlay || !modal || !fab || !wheel || !hub) return;
 
-  var state = { prizes: [], remaining: 0, spinning: false, rotation: 0, loaded: false, lastPrizeId: null };
+  var state = { isOpen: false, prizes: [], remaining: 0, spinning: false, rotation: 0, loaded: false, lastPrizeId: null };
   var toast = null;
   var toastTimer = null;
 
@@ -349,8 +349,13 @@
   }
 
   function open() {
+    // Tombol FAB memiliki handler inline dan listener JavaScript. Guard ini
+    // membuat satu klik tetap menjalankan pembukaan sekali saja.
+    if (state.isOpen) return;
+    state.isOpen = true;
     overlay.classList.add('active');
     modal.classList.add('active');
+    overlay.setAttribute('aria-hidden', 'false');
     modal.setAttribute('aria-hidden', 'false');
     document.body.style.overflow = 'hidden';
     setHubState();
@@ -359,8 +364,10 @@
   }
 
   function close() {
+    state.isOpen = false;
     overlay.classList.remove('active');
     modal.classList.remove('active');
+    overlay.setAttribute('aria-hidden', 'true');
     modal.setAttribute('aria-hidden', 'true');
     stopCountdown();
     if (!state.spinning) document.body.style.overflow = '';
@@ -519,6 +526,21 @@
 
   /* ---------------- Event ---------------- */
 
+  // Browser/PWA dapat mengembalikan halaman dari back-forward cache dengan
+  // class modal lama masih menempel. Pastikan navigasi reguler selalu mulai
+  // dari keadaan tertutup, bukan mewarisi modal Spin Voucher sebelumnya.
+  function closeForNavigation() {
+    state.isOpen = false;
+    state.spinning = false;
+    state.loaded = false;
+    overlay.classList.remove('active');
+    modal.classList.remove('active');
+    overlay.setAttribute('aria-hidden', 'true');
+    modal.setAttribute('aria-hidden', 'true');
+    stopCountdown();
+    document.body.style.overflow = '';
+  }
+
   fab.addEventListener('click', open);
   hub.addEventListener('click', spin);
   copyBtn.addEventListener('click', copyCode);
@@ -526,6 +548,8 @@
   document.addEventListener('keydown', function (e) {
     if (e.key === 'Escape' && modal.classList.contains('active')) close();
   });
+  window.addEventListener('pagehide', closeForNavigation);
+  window.addEventListener('pageshow', closeForNavigation);
 
   if (voucherLink) {
     voucherLink.href = USER ? URLS.voucherPage : URLS.login;

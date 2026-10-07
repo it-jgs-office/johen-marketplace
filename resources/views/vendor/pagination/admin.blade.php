@@ -1,39 +1,41 @@
 @if ($paginator->hasPages())
-    <div class="flex items-center justify-between gap-4 flex-wrap mt-4">
-        <div style="color:var(--text-dim);font-size:0.82rem">
+    <nav class="admin-pagination" role="navigation" aria-label="Navigasi halaman">
+        <p class="admin-pagination__summary">
             @if ($paginator->firstItem())
-                Menampilkan {{ $paginator->firstItem() }}–{{ $paginator->lastItem() }} dari {{ $paginator->total() }}
+                Menampilkan <strong>{{ $paginator->firstItem() }}–{{ $paginator->lastItem() }}</strong> dari <strong>{{ $paginator->total() }}</strong> hasil
             @else
-                {{ $paginator->count() }} hasil
+                <strong>{{ $paginator->count() }}</strong> hasil
             @endif
-        </div>
-        <div class="flex gap-1.5">
+        </p>
+
+        <div class="admin-pagination__links">
             @if ($paginator->onFirstPage())
-                <span style="display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 0.5rem;border-radius:10px;font-size:0.82rem;font-weight:500;border:1px solid var(--glass-border);color:var(--text-dim);opacity:.4;cursor:default">&lsaquo;</span>
+                <span class="admin-pagination__control is-disabled" aria-disabled="true" aria-label="Halaman sebelumnya">&lsaquo;</span>
             @else
-                <a href="{{ $paginator->previousPageUrl() }}" style="display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 0.5rem;border-radius:10px;font-size:0.82rem;font-weight:500;color:var(--text-muted);text-decoration:none;border:1px solid var(--glass-border);transition:all 0.15s ease" onmouseover="this.style.background='var(--sidebar-hover)';this.style.color='var(--text)'" onmouseout="this.style.background='';this.style.color='var(--text-muted)'">&lsaquo;</a>
+                <a class="admin-pagination__control" href="{{ $paginator->previousPageUrl() }}" rel="prev" aria-label="Halaman sebelumnya">&lsaquo;</a>
             @endif
 
             @foreach ($elements as $element)
                 @if (is_string($element))
-                    <span style="display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 0.5rem;border-radius:10px;font-size:0.82rem;font-weight:500;border:none;color:var(--text-dim)">{{ $element }}</span>
+                    <span class="admin-pagination__control is-dots" aria-disabled="true">{{ $element }}</span>
                 @endif
+
                 @if (is_array($element))
                     @foreach ($element as $page => $url)
                         @if ($page == $paginator->currentPage())
-                            <span style="display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 0.5rem;border-radius:10px;font-size:0.82rem;font-weight:500;background:linear-gradient(135deg,var(--accent),#6366f1);color:#fff;border-color:transparent">{{ $page }}</span>
+                            <span class="admin-pagination__control is-current" aria-current="page">{{ $page }}</span>
                         @else
-                            <a href="{{ $url }}" style="display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 0.5rem;border-radius:10px;font-size:0.82rem;font-weight:500;color:var(--text-muted);text-decoration:none;border:1px solid var(--glass-border);transition:all 0.15s ease" onmouseover="this.style.background='var(--sidebar-hover)';this.style.color='var(--text)'" onmouseout="this.style.background='';this.style.color='var(--text-muted)'">{{ $page }}</a>
+                            <a class="admin-pagination__control" href="{{ $url }}" aria-label="Buka halaman {{ $page }}">{{ $page }}</a>
                         @endif
                     @endforeach
                 @endif
             @endforeach
 
             @if ($paginator->hasMorePages())
-                <a href="{{ $paginator->nextPageUrl() }}" style="display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 0.5rem;border-radius:10px;font-size:0.82rem;font-weight:500;color:var(--text-muted);text-decoration:none;border:1px solid var(--glass-border);transition:all 0.15s ease" onmouseover="this.style.background='var(--sidebar-hover)';this.style.color='var(--text)'" onmouseout="this.style.background='';this.style.color='var(--text-muted)'">&rsaquo;</a>
+                <a class="admin-pagination__control" href="{{ $paginator->nextPageUrl() }}" rel="next" aria-label="Halaman berikutnya">&rsaquo;</a>
             @else
-                <span style="display:inline-flex;align-items:center;justify-content:center;min-width:36px;height:36px;padding:0 0.5rem;border-radius:10px;font-size:0.82rem;font-weight:500;border:1px solid var(--glass-border);color:var(--text-dim);opacity:.4;cursor:default">&rsaquo;</span>
+                <span class="admin-pagination__control is-disabled" aria-disabled="true" aria-label="Halaman berikutnya">&rsaquo;</span>
             @endif
         </div>
-    </div>
+    </nav>
 @endif

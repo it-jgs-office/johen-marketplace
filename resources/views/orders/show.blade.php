@@ -12,18 +12,7 @@
     default => ['label' => 'MENUNGGU PEMBAYARAN', 'color' => '#854DEA'],
   };
   $paymentMethod = $order->transaction?->payment_type;
-  $paymentLogo = match($paymentMethod) {
-    'shopeepay' => 'https://i.imgur.com/sXK3l5l.png',
-    'gopay' => 'https://i.imgur.com/ZUw3GLr.png',
-    'dana' => 'https://i.imgur.com/7PmQx5M.png',
-    'qris' => 'https://i.imgur.com/6PQ8R0T.png',
-    'bca_va', 'bca' => 'https://i.imgur.com/QJ6qXzj.png',
-    'bni_va', 'bni' => 'https://i.imgur.com/9d5GqCj.png',
-    'bri_va', 'bri' => 'https://i.imgur.com/5Py3H0p.png',
-    'mandiri_va', 'mandiri' => 'https://i.imgur.com/CwT1dKO.png',
-    'permata_va', 'permata' => 'https://i.imgur.com/mXHsgdY.png',
-    default => null,
-  };
+  $paymentLogo = payment_logo_asset($paymentMethod);
 @endphp
 
 <div class="dt-wrap">

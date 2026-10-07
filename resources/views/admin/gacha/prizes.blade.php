@@ -133,7 +133,7 @@
         </table>
     </div>
 </div>
-<div class="pagination-wrap">{{ $prizes->links() }}</div>
+<div class="pagination-wrap">{{ $prizes->links('vendor.pagination.admin') }}</div>
 
 <!-- MODAL HADIAH -->
 <div class="fixed inset-0 z-50 flex items-center justify-center" id="prizeModal" style="display:none">

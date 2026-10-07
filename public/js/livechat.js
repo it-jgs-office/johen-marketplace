@@ -1535,6 +1535,8 @@
     if (state.isOpen) {
       popup?.classList.add('active');
       overlay?.classList.add('active');
+      popup?.setAttribute('aria-hidden', 'false');
+      overlay?.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
       if (IS_GUEST) {
         if (getGuestName()) {
@@ -1548,6 +1550,8 @@
     } else {
       popup?.classList.remove('active');
       overlay?.classList.remove('active');
+      popup?.setAttribute('aria-hidden', 'true');
+      overlay?.setAttribute('aria-hidden', 'true');
       document.body.style.overflow = '';
       closeAllMenus();
       stopPolling();
@@ -1557,8 +1561,12 @@
   function close() {
     cancelVoiceRec();
     state.isOpen = false;
-    document.getElementById('lc-popup')?.classList.remove('active');
-    document.getElementById('lc-overlay')?.classList.remove('active');
+    const popup = document.getElementById('lc-popup');
+    const overlay = document.getElementById('lc-overlay');
+    popup?.classList.remove('active');
+    overlay?.classList.remove('active');
+    popup?.setAttribute('aria-hidden', 'true');
+    overlay?.setAttribute('aria-hidden', 'true');
     document.body.style.overflow = '';
     closeAllMenus();
     stopPolling();
@@ -1731,11 +1739,22 @@
 
     const params = new URLSearchParams(window.location.search);
     if (params.get('chat') === '1') {
+      // Parameter ini hanya dipakai sebagai deep link dari notifikasi.
+      // Hapus segera setelah dibaca agar refresh/navigasi berikutnya tidak
+      // membuka modal chat lagi secara otomatis.
+      const channel = params.get('channel');
+      const cleanUrl = new URL(window.location.href);
+      cleanUrl.searchParams.delete('chat');
+      cleanUrl.searchParams.delete('channel');
+      window.history.replaceState(window.history.state, document.title, cleanUrl.pathname + cleanUrl.search + cleanUrl.hash);
+
       state.isOpen = true;
       const popup = document.getElementById('lc-popup');
       const overlayEl = document.getElementById('lc-overlay');
       popup?.classList.add('active');
       overlayEl?.classList.add('active');
+      popup?.setAttribute('aria-hidden', 'false');
+      overlayEl?.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
       if (IS_GUEST) {
         if (getGuestName()) {
@@ -1744,7 +1763,6 @@
           renderGuestNameForm();
         }
       } else {
-        const channel = params.get('channel');
         if (channel) {
           openChannel(channel).catch(function () {});
         } else if (state.view === 'panel') {
@@ -1752,5 +1770,12 @@
         }
       }
     }
+  });
+
+  // Tutup sebelum halaman masuk back-forward cache, lalu pastikan snapshot
+  // lama tidak menghidupkan modal lagi ketika pengguna kembali ke halaman.
+  window.addEventListener('pagehide', close);
+  window.addEventListener('pageshow', function(event) {
+    if (event.persisted) close();
   });
 })();

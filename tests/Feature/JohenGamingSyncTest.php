@@ -5,9 +5,11 @@ namespace Tests\Feature;
 use App\Models\AccountListing;
 use App\Models\Media;
 use App\Models\User;
+use App\Jobs\RunJohenGamingSync;
 use App\Services\JohenGamingSyncService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -180,5 +182,36 @@ class JohenGamingSyncTest extends TestCase
             ->assertSessionHas('success');
 
         $this->assertSame(2, AccountListing::where('source', 'johengaming')->count());
+        $this->assertSame('completed', Cache::get(RunJohenGamingSync::STATUS_KEY)['state']);
+
+        $this->actingAs($admin, 'admin')
+            ->get(route('admin.account-listings.sync-status'))
+            ->assertOk()
+            ->assertJsonPath('result.created', 2);
+    }
+
+    public function test_admin_cannot_start_an_overlapping_sync(): void
+    {
+        $admin = User::factory()->create(['is_admin' => true]);
+        Cache::put(RunJohenGamingSync::RUNNING_KEY, true, now()->addMinute());
+
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.account-listings.sync'))
+            ->assertSessionHas('error');
+
+        $this->assertSame(0, AccountListing::where('source', 'johengaming')->count());
+    }
+
+    public function test_sync_reports_source_failure_instead_of_empty_success(): void
+    {
+        Http::fake([
+            'https://johengaming.id/produk/jual-beli-akun/ml' => Http::response('Unavailable', 503),
+            'https://johengaming.id/produk/jual-beli-akun' => Http::response($this->fixture('johen-index.html')),
+        ]);
+
+        $result = app(JohenGamingSyncService::class)->sync('ml');
+
+        $this->assertSame(1, $result['errors']);
+        $this->assertStringContainsString('HTTP 503', $result['failed'][0]);
     }
 }

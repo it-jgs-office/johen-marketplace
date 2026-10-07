@@ -58,16 +58,19 @@ class ThemeResolverService
         $colors = is_array($theme->colors) ? $theme->colors : [];
         $colors = array_merge(self::defaultColors(), array_filter($colors, fn ($v) => $v !== null && $v !== ''));
 
-        $primary = $colors['primary'] ?? '#7c3aed';
-        $accent = $colors['accent'] ?? '#f0c419';
-        $bg = $colors['bg'] ?? '#100821';
-        $bgSoft = $colors['bg_soft'] ?? '#160b2c';
-        $cardBg = $colors['card_bg'] ?? '#1e1136';
-        $text = $colors['text'] ?? '#f5f3fb';
+        $primary = $colors['primary'] ?? '#2563eb';
+        $accent = $colors['accent'] ?? '#00d4ff';
+        $bg = $colors['bg'] ?? '#01203c';
+        $bgSoft = $colors['bg_soft'] ?? '#052a48';
+        $cardBg = $colors['card_bg'] ?? '#0A1E50';
+        $text = $colors['text'] ?? '#f0f4ff';
         $textOnPrimary = $colors['text_on_primary'] ?? '#ffffff';
+        $secondary = $colors['secondary']
+            ?? ($theme->slug === 'default' ? '#7c3aed' : "color-mix(in srgb, {$primary} 78%, #ffffff)");
 
         $lines = [];
         $lines[] = "--theme-primary: {$primary};";
+        $lines[] = "--theme-secondary: {$secondary};";
         $lines[] = "--theme-accent: {$accent};";
         $lines[] = "--theme-bg: {$bg};";
         $lines[] = "--theme-bg-soft: {$bgSoft};";
@@ -86,12 +89,12 @@ class ThemeResolverService
     public static function defaultColors(): array
     {
         return [
-            'primary' => '#7c3aed',
-            'accent' => '#f0c419',
-            'bg' => '#100821',
-            'bg_soft' => '#160b2c',
-            'card_bg' => '#1e1136',
-            'text' => '#f5f3fb',
+            'primary' => '#2563eb',
+            'accent' => '#00d4ff',
+            'bg' => '#01203c',
+            'bg_soft' => '#052a48',
+            'card_bg' => '#0A1E50',
+            'text' => '#f0f4ff',
             'text_on_primary' => '#ffffff',
         ];
     }

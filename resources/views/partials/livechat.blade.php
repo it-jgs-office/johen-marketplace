@@ -1,9 +1,15 @@
-<div id="lc-overlay" class="lc-overlay"></div>
+<link rel="stylesheet" href="{{ pwa_asset('css/livechat.css') }}">
+<style>
+/* Critical state: cegah modal sempat tampil sebelum stylesheet eksternal siap. */
+#lc-overlay:not(.active),#lc-popup:not(.active){opacity:0!important;visibility:hidden!important;pointer-events:none!important}
+</style>
 
-<div id="lc-popup" class="lc-popup">
+<div id="lc-overlay" class="lc-overlay" aria-hidden="true"></div>
+
+<div id="lc-popup" class="lc-popup" role="dialog" aria-modal="true" aria-label="Live Chat" aria-hidden="true">
   <div class="lc-header">
     <div>
-      <h3 style="font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--purple-light,#9d5cf5);margin:0">LIVE CHAT</h3>
+      <h3 style="font-size:13px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--gold,#00d4ff);margin:0">LIVE CHAT</h3>
     </div>
     <button class="lc-header-close" onclick="window.LiveChat.close()">✕</button>
   </div>
@@ -23,8 +29,7 @@
 window.LIVECHAT_USER = @json(auth('web')->check() ? ['id' => auth('web')->id(), 'name' => auth('web')->user()->name] : null);
 window.LIVECHAT_CS_SLUG = '{{ \App\Models\LiveChatChannel::CS_SLUG }}';
 </script>
-  <link rel="stylesheet" href="{{ pwa_asset('css/livechat.css') }}">
-  <script src="{{ pwa_asset('js/livechat.js') }}"></script>
+<script src="{{ pwa_asset('js/livechat.js') }}"></script>
 
 <script>
 (function() {

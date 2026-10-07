@@ -50,6 +50,7 @@ class CartCheckoutTest extends TestCase
     {
         return Brand::create([
             'name' => $name,
+            'catalog_group' => 'game',
             'requires_zone_id' => $requiresZone,
         ]);
     }
@@ -60,7 +61,7 @@ class CartCheckoutTest extends TestCase
             'buyer_sku_code' => 'sku-'.Str::lower(Str::random(8)),
             'product_name' => Str::random(6).' Diamond',
             'brand' => $brand,
-            'category' => 'instant',
+            'category' => 'Games',
             'type' => 'topup',
             'price' => 0,
             'selling_price' => $price,
@@ -349,7 +350,7 @@ class CartCheckoutTest extends TestCase
     public function test_game_detail_and_checkout_expose_realtime_cart_count(): void
     {
         $brand = $this->brand('Mobile Legends');
-        $this->product('Mobile Legends', price: 50000);
+        $this->product('Mobile Legends', price: 50000)->update(['buyer_sku_code' => 'sku-test-cart-idn']);
         $user = $this->user();
         $this->addToCart($user, Product::first(), 3);
 
@@ -826,6 +827,7 @@ class CartCheckoutTest extends TestCase
     {
         $brand = $this->brand('Mobile Legends');
         $product = $this->product('Mobile Legends');
+        $product->update(['buyer_sku_code' => 'sku-test-detail-idn']);
 
         $user = $this->user();
 

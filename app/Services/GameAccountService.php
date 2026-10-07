@@ -3,16 +3,19 @@
 namespace App\Services;
 
 use App\Models\Brand;
+use App\Models\Product;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Support\Str;
 
 class GameAccountService
 {
     /**
      * Deteksi keberadaan akun game.
      *
-     * @return array{valid: bool, nickname: ?string, checked: bool}
+     * @return array{valid: bool, nickname: ?string, checked: bool, region: ?string}
      *         checked=false berarti brand tidak punya validator / input belum layak cek
      *         (frontend memperlakukan sebagai netral).
      */
@@ -25,14 +28,15 @@ class GameAccountService
             return $this->result(false, null, false);
         }
 
+        $resolver = $this->matchBrand($brand);
+        $isMl = ($resolver['type'] ?? null) === 'digiflazz_ml';
+
         // Mode simulasi pembayaran: selalu terdeteksi agar UI bisa dites lokal.
         if (config('services.payment.simulation')) {
             $suffix = str_pad((string) (abs(crc32($userId.$zoneId)) % 10000), 4, '0', STR_PAD_LEFT);
 
-            return $this->result(true, 'PlayerSim'.$suffix);
+            return $this->result(true, 'PlayerSim'.$suffix, true, $isMl ? 'Indonesia' : null);
         }
-
-        $resolver = $this->matchBrand($brand);
 
         if ($resolver === null) {
             return $this->result(false, null, false);
@@ -45,16 +49,58 @@ class GameAccountService
             return $cached;
         }
 
-        $checked = $this->resolve($resolver, $userId, $zoneId);
+        if ($isMl) {
+            // SKU pengecekan dapat menimbulkan biaya. Batasi request publik
+            // dan cegah cek paralel untuk pasangan ID/Zone yang sama.
+            $rateKey = 'gameaccount:ml:'.sha1((string) request()->ip());
+            if (RateLimiter::tooManyAttempts($rateKey, 6)) {
+                return $this->result(false, null, false);
+            }
+
+            $pendingKey = 'gameaccount:ml:pending:'.md5($userId.'|'.$zoneId);
+            if (! Cache::add($pendingKey, true, now()->addSeconds(30))) {
+                return $this->result(false, null, false);
+            }
+
+            RateLimiter::hit($rateKey, 60);
+            try {
+                $checked = $this->resolve($resolver, $userId, $zoneId);
+            } finally {
+                Cache::forget($pendingKey);
+            }
+        } else {
+            $checked = $this->resolve($resolver, $userId, $zoneId);
+        }
 
         // Hasil gagal-jaringan (null) tidak di-cache agar user bisa langsung coba lagi.
-        if ($checked === null) {
+        if ($checked === null || $checked['checked'] === false) {
             return $this->result(false, null, false);
         }
 
-        Cache::put($cacheKey, $checked, now()->addMinutes((int) config('gameaccount.cache_ttl', 5)));
+        $ttl = $isMl ? (int) config('gameaccount.digiflazz_ml_cache_ttl', 30) : (int) config('gameaccount.cache_ttl', 5);
+        Cache::put($cacheKey, $checked, now()->addMinutes($ttl));
 
         return $checked;
+    }
+
+    /** Validasi server untuk SKU Mobile Legends Indonesia pada kedua jalur checkout. */
+    public function idnAvailabilityMessage(Product $product, string $userId, ?string $zoneId): ?string
+    {
+        if (! str_starts_with(mb_strtolower($product->brand), 'mobile legends')
+            || ! str_ends_with(mb_strtolower($product->buyer_sku_code), '-idn')) {
+            return null;
+        }
+
+        $result = $this->check($product->brand, $userId, $zoneId);
+        if ($result['valid'] && $result['region'] === 'Indonesia') {
+            return null;
+        }
+
+        if (! empty($result['region'])) {
+            return 'Region '.$result['region'].' belum tersedia saat ini.';
+        }
+
+        return 'Region akun Mobile Legends belum dapat diverifikasi. Cek kembali User ID dan Zone ID.';
     }
 
     protected function formatValid(string $userId, string $brand, string $zoneId): bool
@@ -72,7 +118,8 @@ class GameAccountService
 
     protected function requiresZone(string $brand): bool
     {
-        return (bool) Brand::where('name', $brand)->value('requires_zone_id');
+        return str_starts_with(mb_strtolower($brand), 'mobile legends')
+            || (bool) Brand::where('name', $brand)->value('requires_zone_id');
     }
 
     protected function matchBrand(string $brand): ?array
@@ -95,6 +142,7 @@ class GameAccountService
     {
         try {
             return match ($resolver['type']) {
+                'digiflazz_ml' => $this->checkDigiflazzMl($userId, (string) $zoneId),
                 'enka' => $this->checkEnka($resolver, $userId),
                 'isan' => $this->checkIsan($resolver, $userId, $zoneId),
                 'gopay' => $this->checkGopay($resolver, $userId, $zoneId),
@@ -105,6 +153,80 @@ class GameAccountService
 
             return null;
         }
+    }
+
+    protected function checkDigiflazzMl(string $userId, string $zoneId): array
+    {
+        $sku = (string) config('gameaccount.digiflazz_ml_sku', 'usrnameml-johen');
+        $transactionKey = 'gameaccount:ml:transaction:'.md5($userId.'|'.$zoneId);
+        $refId = Cache::get($transactionKey);
+        $digiflazz = app(DigiflazzService::class);
+
+        if (is_string($refId) && $refId !== '') {
+            // Respons pending/timeout dicek ulang dengan ref yang sama;
+            // jangan mengirim transaksi SKU pengecekan yang kedua.
+            $response = $digiflazz->checkStatus($sku, $userId, $refId, $zoneId);
+        } else {
+            $refId = 'MLCHECK-'.strtoupper(Str::random(16));
+            Cache::put($transactionKey, $refId, now()->addMinutes(30));
+            $response = $digiflazz->topUp($sku, $userId, $refId, $zoneId);
+        }
+        $data = $response['data'] ?? [];
+
+        if (! is_array($data) || ! in_array(strtolower((string) ($data['status'] ?? '')), ['sukses', 'success'], true)) {
+            // Pending/error tidak boleh dibaca sebagai akun invalid atau IDN.
+            return $this->result(false, null, false);
+        }
+
+        $sn = trim((string) ($data['sn'] ?? ''));
+        $lookupText = $sn.' | '.trim((string) ($data['message'] ?? ''));
+        $nickname = $this->firstText($data, ['nickname', 'username', 'customer_name', 'name'])
+            ?? $this->labelFromSn($lookupText, '(?:username|nickname|nick|nama(?: akun)?)');
+        $regionRaw = $this->firstText($data, ['region', 'country', 'country_name', 'country_code', 'server_region'])
+            ?? $this->labelFromSn($lookupText, '(?:region|negara|country)');
+
+        return $this->result(true, $nickname, true, $this->countryName($regionRaw));
+    }
+
+    private function firstText(array $data, array $keys): ?string
+    {
+        foreach ($keys as $key) {
+            $value = trim((string) ($data[$key] ?? ''));
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return null;
+    }
+
+    private function labelFromSn(string $sn, string $label): ?string
+    {
+        if (preg_match('/\b'.$label.'\s*[:=]\s*([^|;,\/\r\n]+)/iu', $sn, $matches)) {
+            return trim($matches[1]);
+        }
+
+        return null;
+    }
+
+    private function countryName(?string $value): ?string
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return null;
+        }
+
+        $names = [
+            'id' => 'Indonesia', 'idn' => 'Indonesia', 'indonesia' => 'Indonesia',
+            'my' => 'Malaysia', 'mys' => 'Malaysia', 'malaysia' => 'Malaysia',
+            'ph' => 'Filipina', 'phl' => 'Filipina', 'philippines' => 'Filipina', 'filipina' => 'Filipina',
+            'sg' => 'Singapura', 'sgp' => 'Singapura', 'singapore' => 'Singapura', 'singapura' => 'Singapura',
+            'th' => 'Thailand', 'tha' => 'Thailand', 'thailand' => 'Thailand',
+            'vn' => 'Vietnam', 'vnm' => 'Vietnam', 'vietnam' => 'Vietnam',
+            'us' => 'Amerika Serikat', 'usa' => 'Amerika Serikat', 'united states' => 'Amerika Serikat',
+        ];
+
+        return $names[mb_strtolower($value)] ?? mb_convert_case($value, MB_CASE_TITLE, 'UTF-8');
     }
 
     protected function checkEnka(array $resolver, string $userId): array
@@ -207,8 +329,8 @@ class GameAccountService
         return $this->result(false, null);
     }
 
-    protected function result(bool $valid, ?string $nickname, bool $checked = true): array
+    protected function result(bool $valid, ?string $nickname, bool $checked = true, ?string $region = null): array
     {
-        return ['valid' => $valid, 'nickname' => $nickname, 'checked' => $checked];
+        return ['valid' => $valid, 'nickname' => $nickname, 'checked' => $checked, 'region' => $region];
     }
 }

@@ -59,7 +59,7 @@ Route::get('/api/products', [HomeController::class, 'getApiProducts'])->name('ap
 Route::get('/api/brands/search', [HomeController::class, 'searchBrands'])->name('api.brands.search');
 Route::get('/api/payment-methods', [HomeController::class, 'getPaymentMethods'])->name('api.payment-methods');
 Route::get('/api/orders/check', [HomeController::class, 'checkOrder'])->name('api.orders.check');
-Route::get('/api/account/check', [HomeController::class, 'checkAccount'])
+Route::post('/api/account/check', [HomeController::class, 'checkAccount'])
     ->name('api.account.check')
     ->middleware('throttle:30,1');
 Route::get('/api/push/latest-message', [PushSubscriptionController::class, 'latestNotification'])
@@ -164,17 +164,15 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
     Route::get('/products', [AdminController::class, 'products'])->name('products');
-    Route::get('/products/create', [AdminController::class, 'productsCreate'])->name('products.create');
-    Route::post('/products', [AdminController::class, 'productsStore'])->name('products.store');
-    Route::get('/products/{product}/edit', [AdminController::class, 'productsEdit'])->name('products.edit');
-    Route::put('/products/{product}', [AdminController::class, 'productsUpdate'])->name('products.update');
+    Route::get('/products/game/{brand}', [AdminController::class, 'productsByGame'])->name('products.game');
+    Route::patch('/products/game/{brand}/markup', [AdminController::class, 'productsApplyMarkup'])->name('products.markup');
+    Route::patch('/products/{product}/selling-price', [AdminController::class, 'productsUpdateSellingPrice'])->name('products.selling-price');
     Route::patch('/products/{product}/toggle', [AdminController::class, 'productsToggle'])->name('products.toggle');
-    Route::delete('/products/{product}', [AdminController::class, 'productsDestroy'])->name('products.destroy');
     Route::post('/products/sync', [AdminController::class, 'productsSync'])->name('products.sync');
-    Route::get('/products/stock', [AdminController::class, 'productsStockJson'])->name('products.stock');
 
     Route::get('/account-listings', [App\Http\Controllers\AdminAccountListingController::class, 'index'])->name('account-listings');
     Route::post('/account-listings/sync', [App\Http\Controllers\AdminAccountListingController::class, 'sync'])->name('account-listings.sync');
+    Route::get('/account-listings/sync/status', [App\Http\Controllers\AdminAccountListingController::class, 'syncStatus'])->name('account-listings.sync-status');
     Route::get('/account-listings/create', [App\Http\Controllers\AdminAccountListingController::class, 'create'])->name('account-listings.create');
     Route::post('/account-listings', [App\Http\Controllers\AdminAccountListingController::class, 'store'])->name('account-listings.store');
     Route::get('/account-listings/{accountListing}/edit', [App\Http\Controllers\AdminAccountListingController::class, 'edit'])->name('account-listings.edit');
@@ -183,8 +181,6 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::delete('/account-listings/{accountListing}', [App\Http\Controllers\AdminAccountListingController::class, 'destroy'])->name('account-listings.destroy');
 
     Route::get('/brands', [AdminController::class, 'brands'])->name('brands');
-    Route::get('/brands/create', [AdminController::class, 'brandsCreate'])->name('brands.create');
-    Route::post('/brands', [AdminController::class, 'brandsStore'])->name('brands.store');
     Route::get('/brands/{brand}/edit', [AdminController::class, 'brandsEdit'])->name('brands.edit');
     Route::put('/brands/{brand}', [AdminController::class, 'brandsUpdate'])->name('brands.update');
     Route::patch('/brands/{brand}/toggle', [AdminController::class, 'brandsToggle'])->name('brands.toggle');
@@ -234,14 +230,6 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::post('/event-themes/reset-default', [App\Http\Controllers\Admin\EventThemeController::class, 'resetDefault'])->name('event-themes.reset-default');
     Route::get('/event-themes/{theme}/preview', [App\Http\Controllers\Admin\EventThemeController::class, 'preview'])->name('event-themes.preview');
     Route::delete('/event-themes/{theme}', [App\Http\Controllers\Admin\EventThemeController::class, 'destroy'])->name('event-themes.destroy');
-
-    Route::get('/payment-methods', [AdminController::class, 'paymentMethods'])->name('payment-methods');
-    Route::get('/payment-methods/create', [AdminController::class, 'paymentMethodsCreate'])->name('payment-methods.create');
-    Route::post('/payment-methods', [AdminController::class, 'paymentMethodsStore'])->name('payment-methods.store');
-    Route::get('/payment-methods/{paymentMethod}/edit', [AdminController::class, 'paymentMethodsEdit'])->name('payment-methods.edit');
-    Route::put('/payment-methods/{paymentMethod}', [AdminController::class, 'paymentMethodsUpdate'])->name('payment-methods.update');
-    Route::patch('/payment-methods/{paymentMethod}/toggle', [AdminController::class, 'paymentMethodsToggle'])->name('payment-methods.toggle');
-    Route::delete('/payment-methods/{paymentMethod}', [AdminController::class, 'paymentMethodsDestroy'])->name('payment-methods.destroy');
 
     Route::get('/orders', [AdminController::class, 'orders'])->name('orders');
     Route::get('/orders/{order}', [AdminController::class, 'ordersShow'])->name('orders.show');

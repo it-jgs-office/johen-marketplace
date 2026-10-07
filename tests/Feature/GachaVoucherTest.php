@@ -567,6 +567,10 @@ class GachaVoucherTest extends TestCase
         $this->get('/')
             ->assertOk()
             ->assertSee('id="gc-fab"', false)
+            ->assertSee('#gc-overlay:not(.active)', false)
+            ->assertSee('#lc-overlay:not(.active)', false)
+            ->assertSee('id="gc-modal" class="gc-modal" role="dialog" aria-modal="true" aria-labelledby="gcTitle" aria-hidden="true"', false)
+            ->assertSee('id="lc-popup" class="lc-popup" role="dialog" aria-modal="true" aria-label="Live Chat" aria-hidden="true"', false)
             ->assertSee('css/gacha.css', false)
             ->assertSee('js/gacha.js', false);
     }

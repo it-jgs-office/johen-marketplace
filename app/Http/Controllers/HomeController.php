@@ -126,7 +126,7 @@ class HomeController extends Controller
 
         // Harga terendah per game (dari katalog produk aktif) supaya kartu
         // beranda menampilkan angka nyata, bukan placeholder.
-        $minPrices = Product::where('is_active', true)
+        $minPrices = $this->activeGameProductsQuery()
             ->where('selling_price', '>', 0)
             ->groupBy('brand')
             ->selectRaw('brand, MIN(selling_price) AS min_price')
@@ -134,12 +134,12 @@ class HomeController extends Controller
             ->map(fn ($v) => (int) $v)
             ->all();
 
-        $brands = Brand::where('is_active', true)
+        $brands = $this->activeGameBrandsQuery()
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
 
-        $popularBrands = Brand::where('is_active', true)
+        $popularBrands = $this->activeGameBrandsQuery()
             ->where('is_popular', true)
             ->orderBy('sort_order')
             ->orderBy('name')
@@ -147,6 +147,7 @@ class HomeController extends Controller
 
         $flashDeals = FlashDeal::with('product')
             ->active()
+            ->whereHas('product', fn ($query) => $this->constrainToActiveGameProducts($query))
             ->orderBy('ends_at')
             ->get()
             ->filter(fn (FlashDeal $deal) => $deal->product && $deal->flash_price > 0)
@@ -157,13 +158,13 @@ class HomeController extends Controller
 
     public function getApiProducts(Request $request)
     {
-        $query = Product::where('is_active', true);
+        $query = $this->activeGameProductsQuery();
 
         if ($request->filled('brand')) {
-            $query->where('brand', $request->brand);
+            $query->whereRaw('LOWER(brand) = ?', [mb_strtolower((string) $request->brand)]);
         }
 
-        $products = $query->get();
+        $products = $query->orderBy('selling_price')->get();
 
         return response()->json($products);
     }
@@ -174,11 +175,18 @@ class HomeController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
-        $products = Product::where('brand', $brand->name)
-            ->where('is_active', true)
+        abort_unless($brand->is_active && $brand->catalog_group === 'game', 404);
+
+        $isMobileLegends = str_starts_with(mb_strtolower($brand->name), 'mobile legends');
+
+        $products = $this->activeGameProductsQuery()
+            ->whereRaw('LOWER(brand) = ?', [mb_strtolower($brand->name)])
+            ->when($isMobileLegends, fn ($query) => $query->whereRaw('LOWER(buyer_sku_code) LIKE ?', ['%-idn']))
             ->orderBy('type')
             ->orderBy('selling_price')
             ->get();
+
+        abort_if($products->isEmpty(), 404);
 
         $flashDeals = FlashDeal::active()
             ->whereIn('product_id', $products->pluck('id'))
@@ -190,20 +198,57 @@ class HomeController extends Controller
 
         $paymentMethods = app(PaymentGatewayService::class)->filterAvailableMethods($paymentMethods);
 
-        return view('game-detail', compact('brand', 'products', 'paymentMethods', 'flashDeals'));
+        return view('game-detail', compact('brand', 'products', 'paymentMethods', 'flashDeals', 'isMobileLegends'));
     }
 
     public function searchBrands(Request $request)
     {
         $q = $request->input('q', '');
 
-        $brands = Brand::where('is_active', true)
+        $brands = $this->activeGameBrandsQuery()
             ->where('name', 'like', "%{$q}%")
             ->orderBy('name')
             ->limit(10)
             ->get(['name as brand', 'thumbnail', 'icon']);
 
         return response()->json($brands);
+    }
+
+    /** Game yang benar-benar bisa dibeli: aktif, bersumber dari katalog Games Digiflazz, dan punya produk aktif. */
+    private function activeGameBrandsQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return Brand::query()
+            ->where('is_active', true)
+            ->where('catalog_group', 'game')
+            ->whereExists(function ($query) {
+                $query->selectRaw('1')
+                    ->from('products')
+                    ->whereRaw('LOWER(products.brand) = LOWER(brands.name)')
+                    ->whereRaw('LOWER(products.category) = ?', ['games'])
+                    ->where('products.is_active', true);
+            });
+    }
+
+    /** Produk top up yang sama dengan katalog admin: kategori Games dari brand game aktif. */
+    private function activeGameProductsQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        return Product::query()
+            ->where('is_active', true)
+            ->whereRaw('LOWER(category) = ?', ['games'])
+            ->whereIn(DB::raw('LOWER(brand)'), Brand::query()
+                ->where('is_active', true)
+                ->where('catalog_group', 'game')
+                ->selectRaw('LOWER(name)'));
+    }
+
+    private function constrainToActiveGameProducts(\Illuminate\Database\Eloquent\Builder $query): void
+    {
+        $query->where('is_active', true)
+            ->whereRaw('LOWER(category) = ?', ['games'])
+            ->whereIn(DB::raw('LOWER(brand)'), Brand::query()
+                ->where('is_active', true)
+                ->where('catalog_group', 'game')
+                ->selectRaw('LOWER(name)'));
     }
 
     public function getPaymentMethods()

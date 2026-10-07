@@ -10,7 +10,6 @@ use App\Models\LiveChatChannel;
 use App\Models\LiveChatOperator;
 use App\Models\LiveChatOperatorSchedule;
 use App\Models\Order;
-use App\Models\PaymentMethod;
 use App\Models\Product;
 use App\Models\SiteSetting;
 use App\Models\User;
@@ -159,171 +158,147 @@ class AdminController extends Controller
     // ---- PRODUCTS ----
     public function products(Request $request)
     {
-        $query = Product::orderBy('brand')->orderBy('product_name');
+        // Tetap dukung tautan lama yang mengirim ?brand= agar email/notifikasi
+        // langsung menuju daftar nominal game tersebut.
+        if ($request->filled('brand')) {
+            $brand = Brand::query()
+                ->where('catalog_group', 'game')
+                ->whereRaw('LOWER(name) = ?', [mb_strtolower((string) $request->brand)])
+                ->first();
 
-        if ($request->filled('type')) {
-            $query->where('type', $request->type);
+            if ($brand) {
+                return redirect()->route('admin.products.game', $brand);
+            }
         }
 
-        if ($request->filled('brand')) {
-            $query->where('brand', $request->brand);
+        $games = Brand::query()
+            ->where('catalog_group', 'game')
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get()
+            ->map(function (Brand $brand) {
+                $brand->product_count = Product::query()
+                    ->whereRaw('LOWER(brand) = ?', [mb_strtolower($brand->name)])
+                    ->whereRaw('LOWER(category) = ?', ['games'])
+                    ->where('is_active', true)
+                    ->count();
+
+                return $brand;
+            })
+            ->filter(fn (Brand $brand) => $brand->product_count > 0)
+            ->values();
+
+        return view('admin.products.topup', compact('games'));
+    }
+
+    /** Daftar nominal/diamond yang tersedia untuk satu game top up. */
+    public function productsByGame(Request $request, Brand $brand)
+    {
+        abort_unless($brand->catalog_group === 'game', 404);
+
+        $query = $this->gameProductsQuery()
+            ->whereRaw('LOWER(brand) = ?', [mb_strtolower($brand->name)])
+            ->orderBy('product_name');
+
+        if ($request->query('status', 'active') === 'inactive') {
+            $query->where('is_active', false);
+        } elseif ($request->query('status', 'active') !== 'all') {
+            $query->where('is_active', true);
         }
 
         $products = $query->paginate(20)->withQueryString();
 
-        $brands = Product::select('brand')->distinct()->orderBy('brand')->pluck('brand');
-
-        return view('admin.products.index', compact('products', 'brands'));
+        return view('admin.products.index', compact('products', 'brand'));
     }
 
-    public function productsStockJson(Request $request)
+    /** Katalog admin hanya berisi produk kategori Games dari brand game. */
+    private function gameProductsQuery(): \Illuminate\Database\Eloquent\Builder
     {
-        $query = Product::orderBy('brand')->orderBy('product_name');
+        return Product::query()
+            ->whereRaw('LOWER(category) = ?', ['games'])
+            ->whereIn(DB::raw('LOWER(brand)'), Brand::query()
+                ->where('catalog_group', 'game')
+                ->selectRaw('LOWER(name)'));
+    }
 
-        if ($request->filled('type')) {
-            $query->where('type', $request->type);
-        }
-        if ($request->filled('brand')) {
-            $query->where('brand', $request->brand);
+    /** Harga jual adalah satu-satunya nilai produk Digiflazz yang bisa diubah admin. */
+    public function productsUpdateSellingPrice(Request $request, Product $product)
+    {
+        $validated = $request->validate([
+            'selling_price' => ['required', 'numeric', 'min:0'],
+        ]);
+
+        $price = round((float) $validated['selling_price'], 2);
+        $product->update([
+            'selling_price' => $price,
+            // Harga override tidak ditimpa saat sinkronisasi dari Digiflazz.
+            'selling_price_override' => $price,
+            'selling_markup_type' => null,
+            'selling_markup_value' => null,
+        ]);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'message' => 'Harga jual berhasil diperbarui',
+                'selling_price' => $product->selling_price,
+            ]);
         }
 
-        $ids = $query->paginate(20, ['id', 'stock'])->getCollection()->pluck('id');
+        return back()->with('success', 'Harga jual berhasil diperbarui');
+    }
+
+    /** Terapkan markup Rupiah atau persentase pada semua produk dalam satu game. */
+    public function productsApplyMarkup(Request $request, Brand $brand)
+    {
+        abort_unless($brand->catalog_group === 'game', 404);
+
+        $validated = $request->validate([
+            'mode' => ['required', 'in:rupiah,persentase'],
+            'value' => ['required', 'numeric', 'min:0', 'max:100000000'],
+        ]);
+
+        $products = $this->gameProductsQuery()
+            ->whereRaw('LOWER(brand) = ?', [mb_strtolower($brand->name)])
+            ->get();
+
+        $value = round((float) $validated['value'], 2);
+        $prices = [];
+        DB::transaction(function () use ($products, $validated, $value, &$prices) {
+            foreach ($products as $product) {
+                $sellingPrice = $this->markupSellingPrice((float) $product->price, $validated['mode'], $value);
+                $product->update([
+                    'selling_price' => $sellingPrice,
+                    // Markup tersimpan sebagai aturan agar sinkronisasi berikutnya
+                    // menghitung ulang dengan harga modal terbaru dari Digiflazz.
+                    'selling_price_override' => null,
+                    'selling_markup_type' => $validated['mode'],
+                    'selling_markup_value' => $value,
+                ]);
+                $prices[$product->id] = $sellingPrice;
+            }
+        });
 
         return response()->json([
-            'stock' => Product::whereIn('id', $ids)
-                ->get(['id', 'stock', 'is_active'])
-                ->map(fn ($p) => [
-                    'id' => $p->id,
-                    'stock' => $p->stock,
-                    'is_active' => $p->is_active,
-                ]),
+            'message' => count($prices).' harga jual berhasil diperbarui.',
+            'updated' => count($prices),
+            'prices' => $prices,
         ]);
     }
 
-    public function productsCreate()
+    private function markupSellingPrice(float $cost, string $mode, float $value): float
     {
-        return view('admin.products.create');
-    }
+        $price = $mode === 'persentase'
+            ? $cost * (1 + ($value / 100))
+            : $cost + $value;
 
-    public function productsStore(Request $request)
-    {
-        $validator = validator($request->all(), [
-            'buyer_sku_code' => 'required|string|unique:products',
-            'brand' => 'required|string',
-            'category' => 'required|string',
-            'product_name' => 'required|string',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'price' => 'required|numeric|min:0',
-            'selling_price' => 'required|numeric|min:0',
-            'type' => 'required|string',
-            'stock' => 'nullable|integer|min:0',
-            'region' => 'nullable|string|in:ID,MY,PH',
-        ]);
-
-        if ($validator->fails()) {
-            if ($request->expectsJson()) {
-                return response()->json(['errors' => $validator->errors()], 422);
-            }
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
-
-        $data = [
-            'buyer_sku_code' => $request->buyer_sku_code,
-            'brand' => $request->brand,
-            'category' => $request->category,
-            'product_name' => $request->product_name,
-            'price' => $request->price,
-            'selling_price' => $request->selling_price ?: $request->price,
-            'type' => $request->type,
-            'stock' => $request->stock ?? 0,
-            'region' => $request->region,
-            'is_active' => true,
-        ];
-
-        if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
-            $data['photo'] = ImageOptimizer::storeOptimized($request->file('photo'), 'products', 800, 800);
-        }
-
-        Product::create($data);
-
-        if ($request->expectsJson()) {
-            return response()->json(['message' => 'Produk berhasil ditambahkan']);
-        }
-
-        return redirect()->route('admin.products')->with('success', 'Produk berhasil ditambahkan');
-    }
-
-    public function productsEdit(Product $product)
-    {
-        return view('admin.products.edit', compact('product'));
-    }
-
-    public function productsUpdate(Request $request, Product $product)
-    {
-        $validator = validator($request->all(), [
-            'buyer_sku_code' => 'required|string|unique:products,buyer_sku_code,' . $product->id,
-            'brand' => 'required|string',
-            'category' => 'required|string',
-            'product_name' => 'required|string',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'price' => 'required|numeric|min:0',
-            'selling_price' => 'required|numeric|min:0',
-            'type' => 'required|string',
-            'stock' => 'nullable|integer|min:0',
-            'region' => 'nullable|string|in:ID,MY,PH',
-            'is_active' => 'boolean',
-        ]);
-
-        if ($validator->fails()) {
-            if ($request->expectsJson()) {
-                return response()->json(['errors' => $validator->errors()], 422);
-            }
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
-
-        $data = [
-            'buyer_sku_code' => $request->buyer_sku_code,
-            'brand' => $request->brand,
-            'category' => $request->category,
-            'product_name' => $request->product_name,
-            'price' => $request->price,
-            'selling_price' => $request->selling_price,
-            'type' => $request->type,
-            'stock' => $request->stock ?? 0,
-            'region' => $request->region,
-            'is_active' => $request->boolean('is_active', true),
-        ];
-
-        if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
-            if ($product->photo) {
-                MediaStore::delete($product->photo);
-            }
-            $data['photo'] = ImageOptimizer::storeOptimized($request->file('photo'), 'products', 800, 800);
-        }
-
-        $product->update($data);
-
-        if ((int) ($data['stock'] ?? 0) >= Product::LOW_STOCK_THRESHOLD) {
-            $product->resetStockAlert();
-        }
-
-        if ($request->expectsJson()) {
-            return response()->json(['message' => 'Produk berhasil diperbarui']);
-        }
-
-        return redirect()->route('admin.products')->with('success', 'Produk berhasil diperbarui');
+        return round(max(0, $price), 2);
     }
 
     public function productsToggle(Product $product)
     {
         $product->update(['is_active' => !$product->is_active]);
         return back()->with('success', 'Status produk berhasil diubah');
-    }
-
-    public function productsDestroy(Product $product)
-    {
-        $product->delete();
-        return redirect()->route('admin.products')->with('success', 'Produk berhasil dihapus');
     }
 
     public function productsSync(Request $request)
@@ -343,78 +318,6 @@ class AdminController extends Controller
     {
         $brands = Brand::orderBy('sort_order')->orderBy('name')->paginate(20);
         return view('admin.brands.index', compact('brands'));
-    }
-
-    public function brandsCreate()
-    {
-        return view('admin.brands.create');
-    }
-
-    public function brandsStore(Request $request)
-    {
-        $validator = validator($request->all(), [
-            'name' => 'required|string|max:255|unique:brands',
-            'category' => 'required|string|max:50',
-            'service_type' => 'required|string|in:topup,joki,both',
-            'catalog_group' => 'nullable|string|in:game,pulsa',
-            'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'featured_thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'featured_img_1' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'featured_img_2' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'featured_img_3' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'carousel_bg' => 'nullable|image|mimes:jpeg,png,jpg|max:10240',
-            'detail_bg' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
-            'detail_bg_position' => 'nullable|string|max:50',
-            'description' => 'nullable|string',
-            'is_active' => 'boolean',
-            'is_popular' => 'boolean',
-            'sort_order' => 'nullable|integer|min:0',
-        ]);
-
-        if ($validator->fails()) {
-            if ($request->expectsJson()) {
-                return response()->json(['errors' => $validator->errors()], 422);
-            }
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
-
-        $data = [
-            'name' => $request->name,
-            'category' => $request->category,
-            'service_type' => $request->input('service_type', 'topup'),
-            'catalog_group' => $request->input('catalog_group', 'game'),
-            'description' => $request->description,
-            'is_active' => $request->boolean('is_active', true),
-            'is_popular' => $request->boolean('is_popular', false),
-            'sort_order' => $request->integer('sort_order', 0),
-            'detail_bg_position' => $request->input('detail_bg_position', 'center'),
-        ];
-
-        if ($request->hasFile('thumbnail') && $request->file('thumbnail')->isValid()) {
-            $data['thumbnail'] = ImageOptimizer::storeOptimized($request->file('thumbnail'), 'brands', 640, 640);
-        }
-
-        if ($request->hasFile('featured_thumbnail') && $request->file('featured_thumbnail')->isValid()) {
-            $data['featured_thumbnail'] = ImageOptimizer::storeOptimized($request->file('featured_thumbnail'), 'brands', 1280, 1280);
-        }
-
-        $data = array_merge($data, $this->handleFeaturedImages($request));
-
-        if ($request->hasFile('carousel_bg') && $request->file('carousel_bg')->isValid()) {
-            $data['carousel_bg'] = ImageOptimizer::optimizeAndCrop($request->file('carousel_bg'), '2:1');
-        }
-
-        if ($request->hasFile('detail_bg') && $request->file('detail_bg')->isValid()) {
-            $data['detail_bg'] = ImageOptimizer::optimizeAndCrop($request->file('detail_bg'), '21:9');
-        }
-
-        Brand::create($data);
-
-        if ($request->expectsJson()) {
-            return response()->json(['message' => 'Game berhasil ditambahkan']);
-        }
-
-        return redirect()->route('admin.brands')->with('success', 'Game berhasil ditambahkan');
     }
 
     public function brandsEdit(Brand $brand)
@@ -499,7 +402,9 @@ class AdminController extends Controller
             return response()->json(['message' => 'Game berhasil diperbarui']);
         }
 
-        return redirect()->route('admin.brands')->with('success', 'Game berhasil diperbarui');
+        return $request->input('return_to') === 'topup'
+            ? redirect()->route('admin.products')->with('success', 'Game berhasil diperbarui')
+            : redirect()->route('admin.brands')->with('success', 'Game berhasil diperbarui');
     }
 
     public function brandsToggle(Brand $brand)
@@ -779,125 +684,6 @@ class AdminController extends Controller
         }
     }
 
-    // ---- PAYMENT METHODS ----
-    public function paymentMethods()
-    {
-        $paymentMethods = PaymentMethod::orderBy('name')->paginate(20);
-        return view('admin.payment-methods.index', compact('paymentMethods'));
-    }
-
-    public function paymentMethodsCreate()
-    {
-        return view('admin.payment-methods.create');
-    }
-
-    public function paymentMethodsStore(Request $request)
-    {
-        $validator = validator($request->all(), [
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:payment_methods',
-            'category' => 'required|string|in:qris,ewallet,va,convenience_store',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'photo_light' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'is_active' => 'boolean',
-        ]);
-
-        if ($validator->fails()) {
-            if ($request->expectsJson()) {
-                return response()->json(['errors' => $validator->errors()], 422);
-            }
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
-
-        $data = [
-            'name' => $request->name,
-            'code' => $request->code,
-            'category' => $request->category,
-            'is_active' => $request->boolean('is_active', true),
-        ];
-
-        if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
-            $data['photo'] = ImageOptimizer::storeOptimized($request->file('photo'), 'payments', 400, 400);
-        }
-
-        if ($request->hasFile('photo_light') && $request->file('photo_light')->isValid()) {
-            $data['photo_light'] = ImageOptimizer::storeOptimized($request->file('photo_light'), 'payments', 400, 400);
-        }
-
-        PaymentMethod::create($data);
-
-        if ($request->expectsJson()) {
-            return response()->json(['message' => 'Metode pembayaran berhasil ditambahkan']);
-        }
-
-        return redirect()->route('admin.payment-methods')->with('success', 'Metode pembayaran berhasil ditambahkan');
-    }
-
-    public function paymentMethodsEdit(PaymentMethod $paymentMethod)
-    {
-        return view('admin.payment-methods.edit', compact('paymentMethod'));
-    }
-
-    public function paymentMethodsUpdate(Request $request, PaymentMethod $paymentMethod)
-    {
-        $validator = validator($request->all(), [
-            'name' => 'required|string|max:255',
-            'code' => 'required|string|max:50|unique:payment_methods,code,' . $paymentMethod->id,
-            'category' => 'required|string|in:qris,ewallet,va,convenience_store',
-            'photo' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'photo_light' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'is_active' => 'boolean',
-        ]);
-
-        if ($validator->fails()) {
-            if ($request->expectsJson()) {
-                return response()->json(['errors' => $validator->errors()], 422);
-            }
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
-
-        $data = [
-            'name' => $request->name,
-            'code' => $request->code,
-            'category' => $request->category,
-            'is_active' => $request->boolean('is_active', true),
-        ];
-
-        if ($request->hasFile('photo') && $request->file('photo')->isValid()) {
-            if ($paymentMethod->photo) {
-                MediaStore::delete($paymentMethod->photo);
-            }
-            $data['photo'] = ImageOptimizer::storeOptimized($request->file('photo'), 'payments', 400, 400);
-        }
-
-        if ($request->hasFile('photo_light') && $request->file('photo_light')->isValid()) {
-            if ($paymentMethod->photo_light) {
-                MediaStore::delete($paymentMethod->photo_light);
-            }
-            $data['photo_light'] = ImageOptimizer::storeOptimized($request->file('photo_light'), 'payments', 400, 400);
-        }
-
-        $paymentMethod->update($data);
-
-        if ($request->expectsJson()) {
-            return response()->json(['message' => 'Metode pembayaran berhasil diperbarui']);
-        }
-
-        return redirect()->route('admin.payment-methods')->with('success', 'Metode pembayaran berhasil diperbarui');
-    }
-
-    public function paymentMethodsToggle(PaymentMethod $paymentMethod)
-    {
-        $paymentMethod->update(['is_active' => !$paymentMethod->is_active]);
-        return back()->with('success', 'Status metode pembayaran berhasil diubah');
-    }
-
-    public function paymentMethodsDestroy(PaymentMethod $paymentMethod)
-    {
-        $paymentMethod->delete();
-        return redirect()->route('admin.payment-methods')->with('success', 'Metode pembayaran berhasil dihapus');
-    }
-
     // ---- CONTACT INQUIRIES ----
     public function contactInquiries()
     {
@@ -1018,7 +804,7 @@ class AdminController extends Controller
                 if ($oldBanner && Storage::disk('public')->exists($oldBanner)) {
                     MediaStore::delete($oldBanner);
                 }
-                $path = ImageOptimizer::storeOptimized($request->file($key), 'settings', 1920, 1080);
+                $path = ImageOptimizer::storeOptimized($request->file($key), 'settings', 1920, 750);
                 \App\Models\SiteSetting::set($key, $path, 'image');
             }
         }
@@ -1030,7 +816,7 @@ $jbaBannerKeys = ['jba_hero_banner', 'jba_hero_banner_2', 'jba_hero_banner_3'];
             if ($oldBanner && Storage::disk('public')->exists($oldBanner)) {
                 MediaStore::delete($oldBanner);
             }
-            $path = ImageOptimizer::storeOptimized($request->file($key), 'settings', 1920, 1080);
+            $path = ImageOptimizer::storeOptimized($request->file($key), 'settings', 1920, 750);
             \App\Models\SiteSetting::set($key, $path, 'image');
         }
     }

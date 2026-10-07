@@ -29,7 +29,7 @@
     <span class="badge badge-neutral">{{ $orders->total() }} total</span>
 </div>
 
-<form method="GET" action="{{ route('admin.account-orders') }}" class="flex flex-col sm:flex-row gap-3 mb-4" style="max-width:640px">
+<form method="GET" action="{{ route('admin.account-orders') }}" class="admin-filter-bar" style="max-width:640px">
     <div class="search-wrap flex-1">
         <i class="fas fa-search search-icon"></i>
         <input type="text" name="search" value="{{ request('search') }}" class="input-field" placeholder="Cari no. pesanan, nama, akun..." style="padding-left:2.4rem">
@@ -108,7 +108,7 @@
     </div>
 </div>
 
-<div class="pagination-wrap">{{ $orders->links() }}</div>
+<div class="pagination-wrap">{{ $orders->links('vendor.pagination.admin') }}</div>
 
 <!-- ===== MODAL DETAIL PESANAN ===== -->
 <div class="ord-modal" id="orderModal">

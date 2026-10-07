@@ -167,32 +167,6 @@
 </style>
 @endpush
 
-@php
-$paymentLogos = [
-  'qris' => 'qris.svg',
-  'shopeepay' => 'shopeepay.svg',
-  'gopay' => 'gopay.svg',
-  'dana' => 'dana.svg',
-  'ovo' => 'ovo.svg',
-  'bca' => 'bca.svg',
-  'bni' => 'bni.svg',
-  'bri' => 'bri.svg',
-  'mandiri' => 'mandiri.svg',
-  'indomaret' => 'indomaret.svg',
-  'alfamart' => 'alfamart.svg',
-];
-if(!function_exists('paymentLogo')){
-  function paymentLogo($type, $logos){
-    if(!$type) return null;
-    $key = strtolower(trim($type));
-    foreach($logos as $k => $v){
-      if(str_contains($key, $k)) return asset('assets/payment/' . $v) . '?v=' . pwa_build();
-    }
-    return null;
-  }
-}
-@endphp
-
 @section('content')
 @php
   $ordWa = \App\Models\SiteSetting::get('contact_whatsapp', '');
@@ -322,7 +296,7 @@ if(!function_exists('paymentLogo')){
           $tabCat = in_array($cat, ['joki', 'marketplace']) ? $cat : 'topup';
           $dateStr = $order->created_at->format('d M Y');
           $timeStr = $order->created_at->format('H:i') . ' WIB';
-          $payLogo = paymentLogo($paymentType, $paymentLogos);
+          $payLogo = payment_logo_asset($paymentType);
         @endphp
         <div class="ord-card" data-category="{{ $tabCat }}" data-status="{{ $order->status }}" data-date="{{ $order->created_at->format('Y-m-d') }}" data-search="{{ strtolower($order->order_id . ' ' . $order->brand . ' ' . $order->product_name) }}">
           <div class="ord-card-left">

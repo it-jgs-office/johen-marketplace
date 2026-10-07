@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Mail\SendOtpMail;
+use App\Models\Order;
 use App\Models\OtpCode;
 use App\Models\User;
 use Illuminate\Auth\Events\Registered;
@@ -52,17 +53,24 @@ class VerifyOtpController extends Controller
 
         $otpRecord->update(['used_at' => now()]);
 
-        User::create([
+        $user = User::create([
             'name' => $registerData['name'],
             'username' => $registerData['username'],
             'email' => $registerData['email'],
             'password' => Hash::make($registerData['password']),
         ]);
 
-        session()->forget('register_data');
-        session()->forget('register_email');
+        event(new Registered($user));
 
-        return redirect()->route('login')->with('register_success', true);
+        Auth::guard('web')->login($user);
+        $request->session()->regenerate();
+        $request->session()->forget(['register_data', 'register_email']);
+
+        Order::whereNull('user_id')
+            ->where('email', $user->email)
+            ->update(['user_id' => $user->id]);
+
+        return redirect()->route('home')->with('success', 'Registrasi berhasil. Selamat datang!');
     }
 
     public function resend(Request $request): JsonResponse

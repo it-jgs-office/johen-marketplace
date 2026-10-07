@@ -79,7 +79,7 @@ class CheckoutController extends Controller
      * Semua baris order + charge dibuat dalam satu transaksi: kalau charge ke
      * Xendit gagal, kuota flash deal yang sempat terpakai ikut kembali.
      */
-    public function store(Request $request)
+    public function store(Request $request, \App\Services\GameAccountService $gameAccount)
     {
         $user = Auth::user();
 
@@ -125,6 +125,24 @@ class CheckoutController extends Controller
                 return back()
                     ->withErrors(['accounts.'.$group->key.'.zone_id' => 'Zone ID wajib diisi untuk '.$group->name.'.'])
                     ->withInput();
+            }
+        }
+
+        foreach ($summary['items'] as $item) {
+            $product = $item->product;
+            if (! $product) {
+                continue;
+            }
+
+            $key = strtolower((string) $product->brand);
+            $input = $accounts[$key] ?? [];
+            $regionError = $gameAccount->idnAvailabilityMessage(
+                $product,
+                trim((string) ($input['customer_number'] ?? '')),
+                $this->cleanZone($input['zone_id'] ?? null)
+            );
+            if ($regionError !== null) {
+                return back()->withErrors(['accounts.'.$key.'.zone_id' => $regionError])->withInput();
             }
         }
 

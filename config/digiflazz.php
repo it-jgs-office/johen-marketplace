@@ -2,9 +2,14 @@
 
 return [
     'username' => env('DIGIFLAZZ_USERNAME'),
-    'key' => env('DIGIFLAZZ_KEY'),
     'base_url' => env('DIGIFLAZZ_BASE_URL', 'https://api.digiflazz.com/v1'),
     'production' => env('DIGIFLAZZ_PRODUCTION', false),
+    'development_key' => env('DIGIFLAZZ_DEVELOPMENT_KEY'),
+    'production_key' => env('DIGIFLAZZ_PRODUCTION_KEY'),
+    // Tetap mendukung DIGIFLAZZ_KEY agar deployment lama tidak putus.
+    'key' => env('DIGIFLAZZ_PRODUCTION', false)
+        ? env('DIGIFLAZZ_PRODUCTION_KEY', env('DIGIFLAZZ_KEY'))
+        : env('DIGIFLAZZ_DEVELOPMENT_KEY', env('DIGIFLAZZ_KEY')),
 
     'sync_all_products' => true,
 

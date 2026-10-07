@@ -7,6 +7,11 @@ return [
     // Lama cache hasil cek per brand+user_id+zone_id (menit)
     'cache_ttl' => 5,
 
+    // Cek ML menggunakan SKU Digiflazz; cache lebih lama untuk menghindari
+    // transaksi pengecekan berulang pada akun yang sama.
+    'digiflazz_ml_sku' => env('DIGIFLAZZ_ML_USERNAME_SKU', 'usrnameml-johen'),
+    'digiflazz_ml_cache_ttl' => 30,
+
     // Base URL validator komunitas (agregator Codashop) — type 'isan'
     'isan_url' => 'https://api.isan.eu.org/nickname',
 
@@ -31,9 +36,7 @@ return [
 
     'brands' => [
         'mobile legends*' => [
-            'type' => 'isan',
-            'game' => 'ml',
-            'params' => ['id' => '{user_id}', 'server' => '{zone_id}'],
+            'type' => 'digiflazz_ml',
         ],
         'free fire*' => [
             'type' => 'isan',

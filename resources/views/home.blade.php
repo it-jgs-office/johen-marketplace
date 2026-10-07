@@ -261,6 +261,7 @@
         $hidden = $i >= 10 ? 'style=display:none' : '';
       @endphp
       <a href="{{ route('games.show', $brand->name) }}" class="game-card"
+         aria-label="Top up {{ $brand->name }}"
          data-brand="{{ $brand->name }}"
          data-category="{{ $brand->category ?? 'other' }}"
          data-service-type="{{ $brand->service_type ?? 'topup' }}"
@@ -271,16 +272,12 @@
          style="background:{{ $bg }};animation:cardIn .5s ease forwards;animation-delay:{{ $i * 0.04 }}s;opacity:0;transform:translateY(16px);{{ $i >= 10 ? 'display:none;' : '' }}">
         <div class="game-card-icon">
           @if($brand->thumbnail_url)
-            <img src="{{ $brand->thumbnail_url }}" alt="{{ $brand->name }}" style="width:100%;height:100%;object-fit:cover;">
+            <img src="{{ $brand->thumbnail_url }}" alt="" style="width:100%;height:100%;object-fit:cover;">
           @else
             {{ $icon }}
           @endif
         </div>
-        <div class="game-card-overlay"></div>
-        <div class="game-card-info">
-          <div class="game-card-name">{{ $brand->name }}</div>
-          <div class="game-card-cat">{{ $brand->category ?? 'other' }}</div>
-        </div>
+        <span class="game-card-search-data">{{ $brand->name }} {{ $brand->category ?? 'other' }}</span>
       </a>
     @endforeach
   </div>

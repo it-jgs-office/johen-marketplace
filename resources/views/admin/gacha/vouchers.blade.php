@@ -64,7 +64,7 @@
     </a>
 </div>
 
-<form method="GET" class="flex gap-2 mb-4 flex-wrap">
+<form method="GET" class="admin-filter-bar">
     <input type="text" name="search" value="{{ request('search') }}" class="input-field" style="flex:1;min-width:200px" placeholder="Cari kode voucher atau nama user">
     <select name="status" class="input-field" style="width:auto;min-width:150px;padding:0.35rem 0.75rem;font-size:0.82rem">
         <option value="">Semua Status</option>
@@ -171,7 +171,7 @@
         </table>
     </div>
 </div>
-<div class="pagination-wrap">{{ $vouchers->links() }}</div>
+<div class="pagination-wrap">{{ $vouchers->links('vendor.pagination.admin') }}</div>
 
 <!-- MODAL TERBITKAN VOUCHER -->
 <div class="fixed inset-0 z-50 flex items-center justify-center" id="voucherModal" style="display:none">

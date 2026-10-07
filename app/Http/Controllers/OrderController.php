@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Services\BalanceService;
 use App\Services\DigiflazzService;
+use App\Services\GameAccountService;
 use App\Services\PaymentGatewayService;
 use App\Services\TopupOrderBuilder;
 use App\Services\XenditService;
@@ -41,11 +42,13 @@ class OrderController extends Controller
         $paymentMethods = \App\Models\PaymentMethod::where('is_active', true)->get();
 
         $paymentMethods = $this->gateway->filterAvailableMethods($paymentMethods);
+        $requiresZoneId = str_starts_with(mb_strtolower($product->brand), 'mobile legends')
+            || (bool) Brand::where('name', $product->brand)->value('requires_zone_id');
 
-        return view('orders.create', compact('product', 'paymentMethods'));
+        return view('orders.create', compact('product', 'paymentMethods', 'requiresZoneId'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, GameAccountService $gameAccount)
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
@@ -71,7 +74,9 @@ class OrderController extends Controller
         }
 
         // Game yang membutuhkan Zone ID wajib mengisinya (divalidasi di server).
-        $brandRequiresZone = Brand::where('name', $product->brand)->value('requires_zone_id');
+        $brandRequiresZone = (str_starts_with(mb_strtolower($product->brand), 'mobile legends')
+                && str_ends_with(mb_strtolower($product->buyer_sku_code), '-idn'))
+            || (bool) Brand::where('name', $product->brand)->value('requires_zone_id');
         $zoneId = $request->filled('zone_id') ? trim($request->zone_id) : null;
 
         if ($brandRequiresZone && empty($zoneId)) {
@@ -80,6 +85,15 @@ class OrderController extends Controller
                 return response()->json(['success' => false, 'message' => $message], 422);
             }
             return back()->withErrors(['zone_id' => $message])->withInput();
+        }
+
+        $regionError = $gameAccount->idnAvailabilityMessage($product, trim((string) $request->customer_number), $zoneId);
+        if ($regionError !== null) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $regionError], 422);
+            }
+
+            return back()->withErrors(['zone_id' => $regionError])->withInput();
         }
 
         $quantity = (int) ($request->quantity ?? 1);

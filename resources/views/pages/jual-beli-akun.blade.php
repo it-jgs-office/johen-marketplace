@@ -1314,10 +1314,7 @@
   }
 }
 @media (max-width: 768px) {
-  #jba-hero { height: 250px; border-radius: 16px; }
-}
-@media (max-width: 480px) {
-  #jba-hero { height: 200px; }
+  #jba-hero { height: auto; aspect-ratio: 64 / 25; border-radius: 16px; }
 }
 @media (max-width: 640px) {
   .jba-transfer-info { padding: .6rem .8rem; margin: 1.1rem 0 1.4rem; border-radius: 10px; }

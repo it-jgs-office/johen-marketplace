@@ -100,7 +100,7 @@
         </table>
     </div>
 </div>
-<div class="pagination-wrap">{{ $flashSaleBanners->links() }}</div>
+<div class="pagination-wrap">{{ $flashSaleBanners->links('vendor.pagination.admin') }}</div>
 
 <!-- MODAL BANNER FLASH SALE -->
 <div class="fixed inset-0 z-50 flex items-center justify-center" id="bannerModal" style="display:none">

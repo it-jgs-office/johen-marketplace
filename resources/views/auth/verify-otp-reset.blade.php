@@ -18,7 +18,7 @@
                    style="width:44px;height:52px;text-align:center;font-size:1.3rem;font-weight:800;font-family:'Sora',sans-serif;
                           background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.07);border-radius:12px;
                           color:#f5f3fb;outline:none;transition:border-color .2s;"
-                   onfocus="this.style.borderColor='#7c3aed';this.style.boxShadow='0 0 0 3px rgba(124,58,237,.12)'"
+                   onfocus="this.style.borderColor='#2563eb';this.style.boxShadow='0 0 0 3px rgba(37,99,235,.12)'"
                    onblur="if(!this.value)this.style.borderColor='rgba(255,255,255,.07)';this.style.boxShadow='none'"
                    oninput="otpInput(this)">
             @endfor
@@ -61,13 +61,13 @@
 </form>
 
 <div class="auth-footer-text" style="display:flex;flex-direction:column;align-items:center;gap:.4rem;">
-    <span>Tidak menerima kode? <button type="button" id="resendBtn" class="btn-resend" onclick="resendOtp()" style="background:none;border:none;color:#9d5cf5;font-weight:700;cursor:pointer;font-family:inherit;font-size:.85rem;text-decoration:underline;">Kirim Ulang</button></span>
+    <span>Tidak menerima kode? <button type="button" id="resendBtn" class="btn-resend" onclick="resendOtp()" style="background:none;border:none;color:#00d4ff;font-weight:700;cursor:pointer;font-family:inherit;font-size:.85rem;text-decoration:underline;">Kirim Ulang</button></span>
     <span id="resendTimer" style="font-size:.75rem;color:#7c6ea3;display:none;">Kirim ulang dalam <span id="countdown">60</span> detik</span>
 </div>
 
 <style>
 .otp-input { color:#ffffff !important; caret-color:#ffffff; background:rgba(255,255,255,.06) !important; padding:0 !important; box-sizing:content-box !important; }
-.otp-input:focus { border-color:#7c3aed !important; box-shadow:0 0 0 3px rgba(124,58,237,.12) !important; }
+.otp-input:focus { border-color:#2563eb !important; box-shadow:0 0 0 3px rgba(37,99,235,.12) !important; }
 .btn-resend:disabled { opacity:.5; cursor:not-allowed; text-decoration:none !important; }
 </style>
 
