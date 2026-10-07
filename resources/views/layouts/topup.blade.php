@@ -32,6 +32,11 @@
 <body>
 @include('partials.splash')
 @include('partials.floating-decoration')
+<div class="dark-meteor-field" aria-hidden="true">
+  @for($meteor = 0; $meteor < 40; $meteor++)
+    <span style="--meteor-x:{{ (($meteor * 37 + 11) % 100) }}vw;--meteor-y:{{ (($meteor * 53 + 7) % 100) }}%;--meteor-delay:{{ -fmod($meteor * 1.73, 14) }}s;--meteor-duration:{{ 7 + fmod($meteor * 1.19, 8) }}s;--meteor-size:{{ 0.7 + ($meteor % 3) * 0.3 }}px;--meteor-drift:{{ 70 + ($meteor % 7) * 18 }}px;--meteor-opacity:{{ 0.16 + ($meteor % 5) * 0.08 }};"></span>
+  @endfor
+</div>
 
 <!-- ===== HEADER ===== -->
 <header class="site-header" id="siteHeader">
