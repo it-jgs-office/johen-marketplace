@@ -335,7 +335,7 @@ class AdminController extends Controller
             'category' => 'required|string|max:50',
             'service_type' => 'required|string|in:topup,joki,both',
             'catalog_group' => 'nullable|string|in:game,pulsa',
-            'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg|max:2048|dimensions:max_width=8000,max_height=8000',
+            'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg|max:5120|dimensions:max_width=8000,max_height=8000',
             'topup_character_image' => 'nullable|image|mimes:png,webp|max:4096|dimensions:max_width=8000,max_height=8000',
             'topup_popular_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096|dimensions:max_width=8000,max_height=8000',
             'topup_popular_logo' => 'nullable|image|mimes:png,webp|max:2048|dimensions:max_width=8000,max_height=8000',

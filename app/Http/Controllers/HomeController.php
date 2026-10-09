@@ -125,17 +125,14 @@ class HomeController extends Controller
         }
 
         $brands = $this->activeGameBrandsQuery()
+            // Prioritaskan game yang ditandai populer dan sudah memiliki artwork.
+            // Urutan berikutnya tetap memberi keunggulan pada game populer, lalu game
+            // dengan thumbnail, sebelum memakai urutan manual dari admin.
             ->orderByRaw("CASE
-                WHEN LOWER(name) IN ('free fire') THEN 0
-                WHEN LOWER(name) IN ('mobile legends', 'mobile legends: bang bang', 'mobile legends bang bang') THEN 1
-                WHEN LOWER(name) IN ('pubg', 'pubg mobile') THEN 2
-                WHEN LOWER(name) IN ('honor of kings') THEN 3
-                WHEN LOWER(name) IN ('roblox') THEN 4
-                WHEN LOWER(name) IN ('valorant') THEN 5
-                WHEN LOWER(name) IN ('efootball', 'e-football') THEN 6
-                WHEN LOWER(name) IN ('fc mobile', 'ea sports fc mobile') THEN 7
-                WHEN LOWER(name) IN ('genshin impact') THEN 8
-                ELSE 9
+                WHEN is_topup_popular = 1 AND COALESCE(thumbnail, '') <> '' THEN 0
+                WHEN is_topup_popular = 1 THEN 1
+                WHEN COALESCE(thumbnail, '') <> '' THEN 2
+                ELSE 3
             END")
             ->orderBy('sort_order')
             ->orderBy('name')

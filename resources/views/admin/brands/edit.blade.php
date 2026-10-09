@@ -32,8 +32,17 @@
             </div>
             <div>
                 <label class="block text-sm font-medium mb-1.5" for="thumbnail">Gambar Game</label>
-                <input id="thumbnail" type="file" name="thumbnail" accept="image/jpeg,image/png,image/jpg" class="input-field w-full" style="padding:.45rem .65rem">
-                <p style="color:var(--text-dim);font-size:.72rem;margin-top:.35rem">JPG atau PNG, maksimal 2 MB.</p>
+                <div id="thumbnailDropzone" class="thumbnail-dropzone" role="button" tabindex="0" aria-describedby="thumbnailHelp thumbnailClientError">
+                    <input id="thumbnail" type="file" name="thumbnail" accept="image/jpeg,image/png,image/jpg" class="thumbnail-file-input" tabindex="-1">
+                    <span class="thumbnail-dropzone-icon" aria-hidden="true"><i class="fas fa-cloud-arrow-up"></i></span>
+                    <span class="thumbnail-dropzone-copy">
+                        <strong id="thumbnailDropzoneTitle">Seret gambar ke sini</strong>
+                        <span>atau klik untuk memilih file</span>
+                    </span>
+                    <span class="thumbnail-dropzone-action" aria-hidden="true">Pilih gambar</span>
+                </div>
+                <p id="thumbnailHelp" style="color:var(--text-dim);font-size:.72rem;margin-top:.35rem">JPG atau PNG, maksimal 5 MB.</p>
+                <p id="thumbnailClientError" class="thumbnail-client-error" role="alert" hidden></p>
                 @error('thumbnail') <p class="text-red-400 text-xs mt-1">{{ $message }}</p> @enderror
             </div>
         </div>
@@ -174,6 +183,7 @@
 @push('styles')
 <style>
 .brand-edit-preview{display:grid;place-items:center;width:78px;height:78px;overflow:hidden;flex:0 0 78px;border:1px solid var(--glass-border);border-radius:15px;background:linear-gradient(135deg,rgba(124,58,237,.35),rgba(14,165,233,.18));color:#c4b5fd;font-size:1.5rem}.brand-edit-preview img{width:100%;height:100%;object-fit:cover}
+.thumbnail-file-input{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);white-space:nowrap}.thumbnail-dropzone{position:relative;display:flex;align-items:center;gap:.75rem;min-height:76px;padding:.8rem .9rem;border:1px dashed color-mix(in srgb,var(--accent) 55%,var(--glass-border));border-radius:12px;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 8%,transparent),rgba(255,255,255,.018));color:var(--text);cursor:pointer;transition:border-color .18s ease,background .18s ease,transform .18s ease}.thumbnail-dropzone:hover,.thumbnail-dropzone:focus-visible,.thumbnail-dropzone.is-dragging{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 14%,transparent);outline:none}.thumbnail-dropzone.is-dragging{transform:scale(1.01)}.thumbnail-dropzone.has-error{border-color:#f87171;background:rgba(239,68,68,.08)}.thumbnail-dropzone-icon{display:grid;place-items:center;width:36px;height:36px;flex:0 0 36px;border-radius:10px;background:color-mix(in srgb,var(--accent) 18%,transparent);color:var(--accent);font-size:1rem}.thumbnail-dropzone-copy{display:grid;gap:.16rem;min-width:0;font-size:.74rem;color:var(--text-dim)}.thumbnail-dropzone-copy strong{overflow:hidden;color:var(--text);font-size:.8rem;font-weight:600;text-overflow:ellipsis;white-space:nowrap}.thumbnail-dropzone-action{margin-left:auto;padding:.38rem .55rem;border:1px solid var(--glass-border);border-radius:7px;color:var(--text);font-size:.68rem;font-weight:600;white-space:nowrap}.thumbnail-dropzone.has-file .thumbnail-dropzone-icon{background:rgba(16,185,129,.16);color:#6ee7b7}.thumbnail-client-error{margin-top:.35rem;color:#fca5a5;font-size:.72rem}@media(max-width:640px){.thumbnail-dropzone{align-items:flex-start}.thumbnail-dropzone-action{display:none}}
 .detail-cover-editor{padding:1rem;border:1px solid color-mix(in srgb,#0ea5e9 30%,var(--glass-border));border-radius:14px;background:linear-gradient(135deg,rgba(14,165,233,.08),rgba(37,99,235,.035))}.detail-cover-heading{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem}.detail-cover-help{color:var(--text-dim);font-size:.74rem;line-height:1.5;margin-top:.25rem}.detail-cover-status{display:inline-flex;align-items:center;gap:.35rem;padding:.3rem .55rem;border:1px solid rgba(52,211,153,.25);border-radius:999px;background:rgba(16,185,129,.1);color:#6ee7b7;font-size:.68rem;font-weight:700;white-space:nowrap}.detail-cover-controls{display:grid;grid-template-columns:minmax(240px,.7fr) minmax(360px,1.3fr);gap:1rem;align-items:start;margin-top:1rem}.detail-cover-preview-wrap[hidden]{display:none}.detail-cover-preview-title{margin-bottom:.4rem;color:var(--text-dim);font-size:.72rem;font-weight:600}.detail-cover-preview{position:relative;aspect-ratio:21/5;overflow:hidden;border:1px solid rgba(125,211,252,.38);border-radius:11px;background:#0b1327;cursor:grab;touch-action:none;user-select:none}.detail-cover-preview.is-dragging{cursor:grabbing}.detail-cover-preview-image{position:absolute;inset:-7%;background-repeat:no-repeat;background-size:cover;background-position:center;transition:filter .2s ease}.detail-cover-preview-overlay{position:absolute;inset:0;background:linear-gradient(135deg,rgba(10,8,24,.6),rgba(10,8,24,.18));pointer-events:none}.detail-cover-preview-card{position:absolute;bottom:-18px;left:50%;display:grid;place-items:center;width:68px;aspect-ratio:1;overflow:hidden;border:2px solid rgba(125,211,252,.7);border-radius:14px;background:#13203b;box-shadow:0 10px 22px rgba(0,0,0,.42);transform:translateX(-50%);pointer-events:none}.detail-cover-preview-card img{width:100%;height:100%;object-fit:cover}.detail-cover-preview-card i{color:#7dd3fc;font-size:1.25rem}.detail-cover-drag-hint{display:flex;align-items:center;gap:.35rem;margin-top:.45rem;color:var(--text-dim);font-size:.7rem}.detail-cover-remove{display:flex;align-items:center;gap:.5rem;width:max-content;margin-top:.85rem;color:#fca5a5;font-size:.75rem;cursor:pointer}.detail-cover-remove input{width:15px;height:15px;accent-color:#ef4444}.detail-cover-preview-wrap.is-marked-for-removal{opacity:.4;filter:grayscale(.8)}
 .character-3d-editor{padding:1rem;border:1px solid color-mix(in srgb,#7c3aed 28%,var(--glass-border));border-radius:14px;background:linear-gradient(135deg,rgba(124,58,237,.09),rgba(14,165,233,.04))}.character-3d-help{color:var(--text-dim);font-size:.74rem;line-height:1.5;margin-top:.25rem}.character-3d-assets{display:grid;grid-template-columns:minmax(0,1fr) 170px;gap:1rem;align-items:center;margin-top:1rem}.character-3d-preview{position:relative;display:grid;place-items:center;min-height:190px;overflow:hidden;border:1px solid var(--glass-border);border-radius:12px;background:radial-gradient(circle at 50% 32%,rgba(118,91,255,.38),transparent 46%),linear-gradient(160deg,#18243c,#090f1e)}.character-3d-preview::after{content:"";position:absolute;inset:auto 0 0;height:42%;background:linear-gradient(transparent,rgba(4,8,18,.82));pointer-events:none}.character-3d-preview img{position:relative;z-index:1;width:100%;height:184px;object-fit:contain;object-position:center bottom;filter:drop-shadow(0 12px 12px rgba(0,0,0,.55))}.character-3d-preview-label{position:absolute;z-index:2;right:.5rem;bottom:.45rem;left:.5rem;color:#e7edff;font-size:.68rem;font-weight:700;text-align:center}.character-3d-preview[hidden]{display:none}
 .topup-popular-editor{padding:1rem;border:1px solid var(--glass-border);border-radius:14px;background:rgba(255,255,255,.025)}.topup-popular-toggle-row{display:flex;align-items:center;justify-content:space-between;gap:1rem}.topup-popular-help{color:var(--text-dim);font-size:.74rem;line-height:1.5;margin-top:.25rem}.topup-popular-image-field{margin-top:1rem}.topup-popular-image-field[hidden],.topup-popular-preview-wrap[hidden]{display:none}.topup-popular-assets{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem}.topup-popular-switch{display:inline-flex;position:relative;flex:0 0 auto;cursor:pointer}.topup-popular-switch input{position:absolute;opacity:0;width:1px;height:1px}.topup-popular-switch-track{width:44px;height:25px;border-radius:999px;background:#475569;transition:background .2s;position:relative}.topup-popular-switch-track:after{content:"";position:absolute;width:19px;height:19px;left:3px;top:3px;border-radius:50%;background:#fff;transition:transform .2s}.topup-popular-switch input:checked+.topup-popular-switch-track{background:#7c3aed}.topup-popular-switch input:checked+.topup-popular-switch-track:after{transform:translateX(19px)}.topup-popular-switch input:focus-visible+.topup-popular-switch-track{outline:2px solid #c4b5fd;outline-offset:3px}.topup-popular-preview-wrap{display:flex;align-items:center;gap:.75rem;margin-top:.8rem}.topup-popular-preview-wrap img{width:min(100%,280px);aspect-ratio:16/9;object-fit:cover;border:1px solid var(--glass-border);border-radius:10px}.topup-popular-logo-preview-wrap img{width:120px;height:68px;aspect-ratio:auto;object-fit:contain;background:rgba(15,23,42,.5)}.topup-popular-preview-label{font-size:.75rem;color:var(--text-dim)}@media(max-width:640px){.topup-popular-assets{grid-template-columns:1fr}}
@@ -184,14 +194,80 @@
 
 @push('scripts')
 <script>
-document.getElementById('thumbnail')?.addEventListener('change', function () {
-    const file = this.files && this.files[0];
+const thumbnailInput = document.getElementById('thumbnail');
+const thumbnailDropzone = document.getElementById('thumbnailDropzone');
+const thumbnailDropzoneTitle = document.getElementById('thumbnailDropzoneTitle');
+const thumbnailClientError = document.getElementById('thumbnailClientError');
+let thumbnailObjectUrl = null;
+
+function showThumbnailError(message = '') {
+    thumbnailClientError.textContent = message;
+    thumbnailClientError.hidden = !message;
+    thumbnailDropzone.classList.toggle('has-error', Boolean(message));
+}
+
+function setThumbnailFile(file) {
     if (!file) return;
+    const allowedTypes = ['image/jpeg', 'image/png'];
+    if (!allowedTypes.includes(file.type)) {
+        thumbnailInput.value = '';
+        showThumbnailError('Format tidak didukung. Pilih gambar JPG atau PNG.');
+        return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+        thumbnailInput.value = '';
+        showThumbnailError('Ukuran file melebihi 5 MB. Pilih gambar yang lebih kecil.');
+        return;
+    }
+
+    showThumbnailError();
+    if (thumbnailObjectUrl) URL.revokeObjectURL(thumbnailObjectUrl);
+    thumbnailObjectUrl = URL.createObjectURL(file);
     const preview = document.getElementById('thumbnailPreview');
     const fallback = document.getElementById('thumbnailFallback');
-    preview.src = URL.createObjectURL(file);
+    preview.src = thumbnailObjectUrl;
     preview.classList.remove('hidden');
     fallback?.classList.add('hidden');
+    thumbnailDropzoneTitle.textContent = file.name;
+    thumbnailDropzone.classList.add('has-file');
+}
+
+thumbnailInput?.addEventListener('change', function () {
+    setThumbnailFile(this.files && this.files[0]);
+});
+
+thumbnailDropzone?.addEventListener('click', function (event) {
+    if (event.target !== thumbnailInput) thumbnailInput?.click();
+});
+
+thumbnailDropzone?.addEventListener('keydown', function (event) {
+    if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        thumbnailInput?.click();
+    }
+});
+
+['dragenter', 'dragover'].forEach((eventName) => {
+    thumbnailDropzone?.addEventListener(eventName, function (event) {
+        event.preventDefault();
+        this.classList.add('is-dragging');
+    });
+});
+
+['dragleave', 'drop'].forEach((eventName) => {
+    thumbnailDropzone?.addEventListener(eventName, function (event) {
+        event.preventDefault();
+        this.classList.remove('is-dragging');
+    });
+});
+
+thumbnailDropzone?.addEventListener('drop', function (event) {
+    const file = event.dataTransfer?.files?.[0];
+    if (!file) return;
+    const transfer = new DataTransfer();
+    transfer.items.add(file);
+    thumbnailInput.files = transfer.files;
+    setThumbnailFile(file);
 });
 
 const detailCoverInput = document.getElementById('detail_bg');
