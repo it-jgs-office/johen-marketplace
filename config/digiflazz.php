@@ -13,6 +13,10 @@ return [
 
     'sync_all_products' => true,
 
+    // Hindari klik sinkronisasi berulang yang dapat memicu limit price list
+    // dari Digiflazz. Hanya berlaku untuk refresh paksa dari admin/CLI.
+    'price_list_refresh_cooldown_seconds' => (int) env('DIGIFLAZZ_PRICE_LIST_REFRESH_COOLDOWN', 120),
+
     /*
      * Rekonsiliasi topup yang menggantung.
      *

@@ -94,7 +94,7 @@
 }
 .lc-filter-btn:hover { border-color: #3F6DF5; color: #8FA8C4; }
 .lc-filter-btn.active {
-    background: linear-gradient(135deg, #3F6DF5, #8b5cf6);
+    background: linear-gradient(135deg, #2563eb, #0ea5e9);
     color: #fff;
     border-color: transparent;
     box-shadow: 0 2px 8px -2px rgba(63,109,245,0.4);
@@ -171,7 +171,7 @@
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    background: linear-gradient(135deg, #3F6DF5, #8b5cf6);
+    background: linear-gradient(135deg, #2563eb, #0ea5e9);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -583,7 +583,7 @@
 .lc-media-send-btn {
     display: flex; align-items: center; gap: 8px;
     padding: 8px 20px; border-radius: 20px; border: none;
-    background: linear-gradient(135deg, #3F6DF5, #8b5cf6);
+    background: linear-gradient(135deg, #2563eb, #0ea5e9);
     color: #fff; font-size: 13px; font-weight: 600; font-family: 'Poppins', sans-serif;
     cursor: pointer; transition: all .2s; box-shadow: 0 4px 14px -4px rgba(63,109,245,0.4);
 }
@@ -610,7 +610,7 @@
 .lc-composer-input::placeholder { color: #6F89A7; }
 .lc-composer-btn {
     width: 36px; height: 36px; border-radius: 50%; border: none;
-    background: linear-gradient(135deg, #3F6DF5, #8b5cf6); color: #fff; cursor: pointer;
+    background: linear-gradient(135deg, #2563eb, #0ea5e9); color: #fff; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     flex-shrink: 0; transition: filter .15s;
 }

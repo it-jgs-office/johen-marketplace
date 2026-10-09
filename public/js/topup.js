@@ -356,144 +356,49 @@ document.getElementById('topupForm')?.addEventListener('submit', async (e) => {
   }
 });
 
-// ============ TESTIMONIALS CAROUSEL ============
+// ============ TESTIMONIALS WALL ============
 const testiTrack = document.getElementById('testiTrack');
-const testiDots = document.getElementById('testiDots');
-let testiCurrent = 0;
-let testiTimer = null;
-const TC = TESTIMONIALS.length;
+const testimonialAvatar = '/assets/icon/icon-testimoni.png';
+
+function testimonialGameName(game) {
+  return game.replace(/^Top Up\s*-\s*/, '');
+}
 
 function createTestiCard(t) {
-  const card = document.createElement('div');
-  card.className = 'testi-card';
+  const game = testimonialGameName(t.game);
+  const card = document.createElement('article');
+  card.className = 'home-testi-card';
   card.innerHTML = `
-    <div class="testi-user">
-      <div class="testi-avatar">${t.avatar}</div>
-      <div>
-        <div class="testi-name">${t.name}</div>
-        <div class="testi-game">${t.game}</div>
+    <div class="home-testi-card-head">
+      <div class="home-testi-brand">
+        <span>${game}</span>
+      </div>
+      <div class="home-testi-rating" aria-label="Rating 5 dari 5">
+        <span aria-hidden="true">★★★★★</span><span>5.0</span>
       </div>
     </div>
-    <p class="testi-quote">"${t.quote}"</p>`;
+    <p class="home-testi-quote">${t.quote}</p>
+    <div class="home-testi-user">
+      <img class="home-testi-avatar" src="${testimonialAvatar}" alt="Foto profil ${t.name}" loading="lazy">
+      <div>
+        <div class="home-testi-name">${t.name}</div>
+        <div class="home-testi-game">Pembeli terverifikasi</div>
+      </div>
+    </div>`;
   return card;
 }
 
-function getTestiOffset(i) {
-  const cw = testiTrack.parentElement.getBoundingClientRect().width;
-  const card = testiTrack.children[i + 1];
-  return card.offsetLeft - (cw - card.offsetWidth) / 2;
-}
-
-function applyTestiCenter(i) {
-  testiTrack.querySelectorAll('.testi-card').forEach((c, idx) => c.classList.toggle('center', idx === i + 1));
-  if (testiDots) Array.from(testiDots.children).forEach((d, idx) => d.classList.toggle('active', idx === i));
+function fillTestimonialLane(lane, items) {
+  if (!lane) return;
+  const group = document.createElement('div');
+  group.className = 'home-testi-lane-group';
+  items.forEach(item => group.appendChild(createTestiCard(item)));
+  lane.replaceChildren(group, group.cloneNode(true));
 }
 
 if (testiTrack) {
-  TESTIMONIALS.forEach(t => testiTrack.appendChild(createTestiCard(t)));
-  const clones = Array.from(testiTrack.children);
-  testiTrack.appendChild(clones[0].cloneNode(true));
-  testiTrack.insertBefore(clones[TC - 1].cloneNode(true), testiTrack.firstChild);
-
-  testiTrack.style.transition = 'none';
-  testiTrack.style.transform = `translateX(${-getTestiOffset(0)}px)`;
-  void testiTrack.offsetHeight;
-  testiTrack.style.transition = '';
-  applyTestiCenter(0);
-
-  if (testiDots) {
-    TESTIMONIALS.forEach((_, i) => {
-      const dot = document.createElement('span');
-      dot.className = 'dot' + (i === 0 ? ' active' : '');
-      dot.addEventListener('click', () => goTesti(i));
-      testiDots.appendChild(dot);
-    });
-  }
-
-  function goTesti(i, instant = false) {
-    if (i === testiCurrent) return;
-    testiCurrent = i;
-    const x = -getTestiOffset(i);
-    if (instant) testiTrack.style.transition = 'none';
-    testiTrack.style.transform = `translateX(${x}px)`;
-    if (instant) { void testiTrack.offsetHeight; testiTrack.style.transition = ''; }
-    applyTestiCenter(i);
-    resetTestiTimer();
-  }
-
-  testiTrack.addEventListener('transitionend', () => {
-    if (testiCurrent === -1) {
-      testiTrack.style.transition = 'none';
-      testiTrack.style.transform = `translateX(${-getTestiOffset(TC - 1)}px)`;
-      testiCurrent = TC - 1;
-      void testiTrack.offsetHeight;
-      testiTrack.style.transition = '';
-      applyTestiCenter(TC - 1);
-    } else if (testiCurrent === TC) {
-      testiTrack.style.transition = 'none';
-      testiTrack.style.transform = `translateX(${-getTestiOffset(0)}px)`;
-      testiCurrent = 0;
-      void testiTrack.offsetHeight;
-      testiTrack.style.transition = '';
-      applyTestiCenter(0);
-    }
-  });
-
-  window.prevTesti = function() { goTesti((testiCurrent - 1 + TC) % TC); };
-  window.nextTesti = function() { goTesti((testiCurrent + 1) % TC); };
-
-  function resetTestiTimer() {
-    if (testiTimer) clearInterval(testiTimer);
-    testiTimer = setInterval(() => nextTesti(), 5000);
-  }
-  resetTestiTimer();
-  const testiCarousel = document.querySelector('.testi-carousel');
-  if (testiCarousel) {
-    testiCarousel.addEventListener('mouseenter', () => clearInterval(testiTimer));
-    testiCarousel.addEventListener('mouseleave', resetTestiTimer);
-  }
-  window.addEventListener('resize', () => goTesti(testiCurrent, true));
+  fillTestimonialLane(testiTrack, TESTIMONIALS);
 }
-
-// ============ PAYMENT MARQUEE ============
-const paymentTrack = document.getElementById('paymentTrack');
-
-function isLightTheme() {
-  return document.documentElement.getAttribute('data-theme') === 'light';
-}
-
-function renderPaymentMarquee(methods) {
-  if (!paymentTrack) return;
-  const items = methods.map(m => typeof m === 'string' ? { name: m, code: m, icon: null } : m);
-  const doubled = [...items, ...items];
-  paymentTrack.innerHTML = '';
-  doubled.forEach(p => {
-    const badge = document.createElement('div');
-    badge.className = 'pay-badge';
-    const imgUrl = staticPaymentLogo(p);
-    if (imgUrl) {
-      badge.innerHTML = `<img src="${imgUrl}" alt="${p.name}" class="pay-badge-img">`;
-    } else if (p.icon) {
-      badge.innerHTML = `<span class="pay-badge-icon">${p.icon}</span><span class="pay-badge-name">${p.name}</span>`;
-    } else {
-      badge.textContent = p.name;
-    }
-    paymentTrack.appendChild(badge);
-  });
-}
-
-(async function initPaymentMarquee() {
-  let methods = await fetchPaymentMethods();
-  if (!methods.length) {
-    methods = ['QRIS','GoPay','OVO','DANA','BCA','BRI','Mandiri','Alfamart','Indomaret'];
-  }
-  renderPaymentMarquee(methods);
-  document.addEventListener('themeChanged', function() {
-    renderPaymentMarquee(methods);
-  });
-})();
-
-
 
 // ============ NEWSLETTER ============
 document.getElementById('newsletterForm')?.addEventListener('submit', (e) => {
@@ -743,67 +648,414 @@ function initBanner(sectionId) {
   const section = document.getElementById(sectionId);
   if (!section) return;
 
-  const imgA = section.querySelector('.hero-banner-img-a');
-  const imgB = section.querySelector('.hero-banner-img-b');
+  // Halaman Top Up memakai tampilan banner lama: satu banner memenuhi frame,
+  // lalu berpindah ke slide berikutnya tanpa kartu preview kiri/kanan.
+  const classicImgA = section.querySelector('.hero-banner-img-a');
+  const classicImgB = section.querySelector('.hero-banner-img-b');
+  if (classicImgA && classicImgB) {
+    let classicBanners = [];
+    try {
+      classicBanners = JSON.parse(classicImgA.dataset.banners || '[]');
+    } catch (e) {}
+
+    if (classicBanners.length > 1) {
+      let currentIndex = 0;
+      let activeImage = 'a';
+      let moving = false;
+      let timer = null;
+
+      function clearTimer() {
+        if (timer) window.clearInterval(timer);
+        timer = null;
+      }
+      function schedule() {
+        clearTimer();
+        if (!document.hidden) timer = window.setInterval(() => move(1), 3000);
+      }
+      function move(direction) {
+        if (moving) return;
+        moving = true;
+        currentIndex = (currentIndex + direction + classicBanners.length) % classicBanners.length;
+        const current = activeImage === 'a' ? classicImgA : classicImgB;
+        const next = activeImage === 'a' ? classicImgB : classicImgA;
+
+        next.src = classicBanners[currentIndex];
+        next.classList.add('no-transition');
+        next.style.transform = direction > 0 ? 'translateX(100%)' : 'translateX(-100%)';
+        void next.offsetHeight;
+        next.classList.remove('no-transition');
+        current.style.transform = direction > 0 ? 'translateX(-100%)' : 'translateX(100%)';
+        next.style.transform = 'translateX(0)';
+        activeImage = activeImage === 'a' ? 'b' : 'a';
+
+        window.setTimeout(() => {
+          current.classList.add('no-transition');
+          current.style.transform = '';
+          current.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
+          moving = false;
+        }, 950);
+      }
+
+      section.querySelector('[data-banner-prev]')?.addEventListener('click', () => { clearTimer(); move(-1); schedule(); });
+      section.querySelector('[data-banner-next]')?.addEventListener('click', () => { clearTimer(); move(1); schedule(); });
+      section.addEventListener('mouseenter', clearTimer);
+      section.addEventListener('mouseleave', schedule);
+      document.addEventListener('visibilitychange', schedule);
+      schedule();
+    }
+    return;
+  }
+
+  const track = section.querySelector('.hero-banner-track[data-banners]');
+  if (!track) return;
+
+  const prevCard = track.querySelector('[data-banner-slot="prev"]');
+  const activeCard = track.querySelector('[data-banner-slot="active"]');
+  const nextCard = track.querySelector('[data-banner-slot="next"]');
+  const dots = section.querySelector('[data-banner-dots]');
+  let cards = { prev: prevCard, active: activeCard, next: nextCard };
   let bannerIndex = 0;
   let banners = [];
   let bannerTimer = null;
-  let bannerMoving = false;
-  let activeImg = 'a';
+  let isPaused = false;
+  let isMoving = false;
 
   try {
-    const raw = imgA?.dataset?.banners;
+    const raw = track.dataset.banners;
     if (raw) banners = JSON.parse(raw);
   } catch (e) {}
 
-  if (!banners.length) return;
+  if (banners.length < 2 || !activeCard) return;
 
-  function switchBanner(index, dir) {
-    if (!banners.length || !imgA || !imgB) return;
-    if (index === bannerIndex || bannerMoving) return;
-    bannerMoving = true;
-    bannerIndex = (index + banners.length) % banners.length;
+  const wrapIndex = (index) => (index + banners.length) % banners.length;
+  const imageFor = (slot) => cards[slot]?.querySelector('img');
+  const preloadedBanners = new Map();
 
-    const currEl = activeImg === 'a' ? imgA : imgB;
-    const nextEl = activeImg === 'a' ? imgB : imgA;
+  function preloadBanner(url) {
+    if (preloadedBanners.has(url)) return preloadedBanners.get(url);
 
-    nextEl.src = banners[bannerIndex];
+    const preload = new Promise(resolve => {
+      const image = new Image();
+      let settled = false;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        if (typeof image.decode === 'function') {
+          image.decode().catch(() => {}).finally(resolve);
+        } else {
+          resolve();
+        }
+      };
+      image.addEventListener('load', finish, { once: true });
+      image.addEventListener('error', resolve, { once: true });
+      image.src = url;
+      if (image.complete) finish();
+    });
 
-    nextEl.classList.add('no-transition');
-    nextEl.style.transform = dir === 'next' ? 'translateX(100%)' : 'translateX(-100%)';
-
-    void nextEl.offsetHeight;
-
-    nextEl.classList.remove('no-transition');
-    currEl.style.transform = dir === 'next' ? 'translateX(-100%)' : 'translateX(100%)';
-    nextEl.style.transform = 'translateX(0)';
-
-    activeImg = activeImg === 'a' ? 'b' : 'a';
-
-    setTimeout(() => {
-      currEl.classList.add('no-transition');
-      currEl.style.transform = '';
-      currEl.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
-      bannerMoving = false;
-    }, 500);
-
-    resetBannerTimer();
+    preloadedBanners.set(url, preload);
+    return preload;
   }
 
-  function prevBanner() { switchBanner(bannerIndex - 1, 'prev'); }
-  function nextBanner() { switchBanner(bannerIndex + 1, 'next'); }
+  function updateDots(index) {
+    if (!dots) return;
+    Array.from(dots.children).forEach((dot, dotIndex) => {
+      dot.classList.toggle('is-active', dotIndex === index);
+      dot.setAttribute('aria-current', dotIndex === index ? 'true' : 'false');
+    });
+  }
 
-  function resetBannerTimer() {
-    if (bannerTimer) clearInterval(bannerTimer);
-    if (banners.length > 1) {
-      bannerTimer = setInterval(() => nextBanner(), 5000);
+  function waitForSlideTransition(card) {
+    return new Promise(resolve => {
+      let fallbackTimer = null;
+      const finish = () => {
+        card.removeEventListener('transitionend', onTransitionEnd);
+        if (fallbackTimer) window.clearTimeout(fallbackTimer);
+        resolve();
+      };
+      const onTransitionEnd = event => {
+        if (event.target === card && event.propertyName === 'transform') finish();
+      };
+      card.addEventListener('transitionend', onTransitionEnd);
+      fallbackTimer = window.setTimeout(finish, 1500);
+    });
+  }
+
+  function nextPaint() {
+    return new Promise(resolve => {
+      requestAnimationFrame(() => requestAnimationFrame(resolve));
+    });
+  }
+
+  function updateCard(card, slot, slideIndex, updateImage = true) {
+    if (!card) return;
+    card.classList.remove('hero-banner-card-prev', 'hero-banner-card-active', 'hero-banner-card-next');
+    card.classList.add(`hero-banner-card-${slot}`);
+    card.dataset.bannerSlot = slot;
+    card.tabIndex = slot === 'active' ? -1 : 0;
+    if (slot === 'active') {
+      card.setAttribute('aria-live', 'polite');
+      card.setAttribute('aria-current', 'true');
+    } else {
+      card.removeAttribute('aria-live');
+      card.removeAttribute('aria-current');
     }
+    card.setAttribute('aria-label', slot === 'active'
+      ? `Banner promo ${slideIndex + 1}`
+      : `Lihat banner promo ${slideIndex + 1}`);
+
+    if (!updateImage) return;
+    const image = card.querySelector('img');
+    if (!image) return;
+    image.src = banners[slideIndex];
+    image.alt = `Banner promo ${slideIndex + 1}`;
   }
-  resetBannerTimer();
+
+  function render(index) {
+    bannerIndex = wrapIndex(index);
+    const indices = {
+      prev: wrapIndex(bannerIndex - 1),
+      active: bannerIndex,
+      next: wrapIndex(bannerIndex + 1),
+    };
+
+    Object.entries(indices).forEach(([slot, slideIndex]) => {
+      updateCard(cards[slot], slot, slideIndex);
+    });
+
+    updateDots(bannerIndex);
+  }
+
+  async function switchBanner(index) {
+    const targetIndex = wrapIndex(index);
+    if (targetIndex === bannerIndex || isMoving) return;
+    const startingIndex = bannerIndex;
+    const direction = wrapIndex(targetIndex - bannerIndex) <= banners.length / 2 ? 'next' : 'prev';
+    const destination = imageFor(direction);
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    clearBannerTimer();
+
+    if (reduceMotion || !destination) {
+      render(targetIndex);
+      scheduleBannerTimer();
+      return;
+    }
+
+    isMoving = true;
+    await preloadBanner(banners[targetIndex]);
+    destination.src = banners[targetIndex];
+    destination.alt = `Banner promo ${targetIndex + 1}`;
+    await nextPaint();
+    updateDots(targetIndex);
+    track.classList.add(`is-moving-${direction}`);
+
+    await waitForSlideTransition(cards.active);
+    const recycledCard = direction === 'next' ? cards.prev : cards.next;
+    const rotatedCards = direction === 'next'
+      ? { prev: cards.active, active: cards.next, next: cards.prev }
+      : { prev: cards.next, active: cards.prev, next: cards.active };
+    const isAdjacent = targetIndex === wrapIndex(startingIndex + (direction === 'next' ? 1 : -1));
+    const cardsToRecycle = isAdjacent ? [recycledCard] : [recycledCard, cards.active];
+
+    cardsToRecycle.forEach(card => card.classList.add('is-recycling'));
+    await Promise.all([
+      preloadBanner(banners[wrapIndex(targetIndex - 1)]),
+      preloadBanner(banners[wrapIndex(targetIndex + 1)]),
+    ]);
+    track.classList.add('is-resetting');
+    track.classList.remove(`is-moving-${direction}`);
+    cards = rotatedCards;
+    bannerIndex = targetIndex;
+    updateCard(cards.prev, 'prev', wrapIndex(bannerIndex - 1));
+    updateCard(cards.active, 'active', bannerIndex, false);
+    updateCard(cards.next, 'next', wrapIndex(bannerIndex + 1));
+    void track.offsetWidth;
+    track.classList.remove('is-resetting');
+    await nextPaint();
+    cardsToRecycle.forEach(card => card.classList.remove('is-recycling'));
+    isMoving = false;
+    scheduleBannerTimer();
+  }
+
+  function prevBanner() { switchBanner(bannerIndex - 1); }
+  function nextBanner() { switchBanner(bannerIndex + 1); }
+
+  function clearBannerTimer() {
+    if (!bannerTimer) return;
+    window.clearTimeout(bannerTimer);
+    bannerTimer = null;
+  }
+
+  function scheduleBannerTimer() {
+    clearBannerTimer();
+    if (isPaused || isMoving || document.hidden) return;
+    bannerTimer = window.setTimeout(nextBanner, 3000);
+  }
+  if (dots) {
+    banners.forEach((_, index) => {
+      const dot = document.createElement('button');
+      dot.type = 'button';
+      dot.className = 'hero-banner-dot';
+      dot.setAttribute('aria-label', `Tampilkan banner ${index + 1}`);
+      dot.addEventListener('click', () => switchBanner(index));
+      dots.appendChild(dot);
+    });
+  }
+  banners.forEach(preloadBanner);
+  render(0);
+  scheduleBannerTimer();
 
   section.querySelector('[data-banner-prev]')?.addEventListener('click', prevBanner);
   section.querySelector('[data-banner-next]')?.addEventListener('click', nextBanner);
+  track.addEventListener('click', event => {
+    const card = event.target.closest('[data-banner-slot]');
+    if (!card || !track.contains(card)) return;
+    if (card.dataset.bannerSlot === 'prev') prevBanner();
+    if (card.dataset.bannerSlot === 'next') nextBanner();
+  });
+  section.addEventListener('mouseenter', () => { isPaused = true; clearBannerTimer(); });
+  section.addEventListener('mouseleave', () => { isPaused = false; scheduleBannerTimer(); });
+  section.addEventListener('focusin', () => { isPaused = true; clearBannerTimer(); });
+  section.addEventListener('focusout', (event) => {
+    if (section.contains(event.relatedTarget)) return;
+    isPaused = false;
+    scheduleBannerTimer();
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) clearBannerTimer();
+    else scheduleBannerTimer();
+  });
+
+  let touchStartX = null;
+  track.addEventListener('touchstart', (event) => {
+    touchStartX = event.touches[0]?.clientX ?? null;
+  }, { passive: true });
+  track.addEventListener('touchend', (event) => {
+    if (touchStartX === null) return;
+    const distance = (event.changedTouches[0]?.clientX ?? touchStartX) - touchStartX;
+    touchStartX = null;
+    if (Math.abs(distance) < 40) return;
+    if (distance < 0) nextBanner();
+    else prevBanner();
+  }, { passive: true });
 }
 
 initBanner('joki');
 initBanner('jba-hero');
+
+function initStockShowcase() {
+  const section = document.querySelector('[data-stock-showcase]');
+  if (!section) return;
+
+  const slides = Array.from(section.querySelectorAll('[data-stock-slide]'));
+  const frame = section.querySelector('.stock-showcase-frame');
+  const categoryLink = section.querySelector('[data-stock-category]');
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  if (!slides.length || !categoryLink || !frame) return;
+
+  const stockBrandColors = {
+    pubg: '#8995a5',
+    mlbb: '#55b9ed',
+    ff: '#e54450',
+    efootball: '#153d78',
+    fcm: '#2c9b64',
+    roblox: '#72a83c',
+    valorant: '#9c304c',
+  };
+
+  let activeIndex = 0;
+  let timer = null;
+  let paused = false;
+
+  function updateBrandColor(slide) {
+    const color = stockBrandColors[slide.dataset.stockSlug];
+    if (color) frame.style.setProperty('--stock-brand', color);
+  }
+
+  function warmSlide(index) {
+    const slide = slides[(index + slides.length) % slides.length];
+    const images = [slide.querySelector('.stock-showcase-art img'),
+      ...Array.from(slide.querySelectorAll('.stock-showcase-group:first-child .stock-showcase-card-image img')).slice(0, 4)];
+    images.filter(Boolean).forEach(image => { image.loading = 'eager'; });
+  }
+
+  function clearTimer() {
+    if (timer !== null) window.clearTimeout(timer);
+    timer = null;
+  }
+
+  function schedule() {
+    clearTimer();
+    if (slides.length < 2 || paused || document.hidden || reducedMotion.matches) return;
+    timer = window.setTimeout(() => show(activeIndex + 1, 1), 3000);
+  }
+
+  function show(index, direction = 1) {
+    const nextIndex = (index + slides.length) % slides.length;
+    if (nextIndex === activeIndex) return;
+
+    const previous = slides[activeIndex];
+    const next = slides[nextIndex];
+    [previous, next].forEach(slide => {
+      if (slide._stockTransitionTimer) window.clearTimeout(slide._stockTransitionTimer);
+      slide._stockTransitionTimer = null;
+      slide.classList.remove('is-entering', 'is-exiting');
+    });
+    previous.style.setProperty('--stock-slide-direction', String(direction));
+    next.style.setProperty('--stock-slide-direction', String(direction));
+    warmSlide(nextIndex);
+    previous.classList.remove('is-active');
+    previous.classList.add('is-exiting');
+    previous.setAttribute('aria-hidden', 'true');
+    previous.inert = true;
+    next.inert = false;
+    next.removeAttribute('aria-hidden');
+    next.classList.add('is-active');
+    next.classList.add('is-entering');
+    categoryLink.textContent = next.dataset.stockGame;
+    categoryLink.href = next.dataset.stockHref;
+    updateBrandColor(next);
+    if (!reducedMotion.matches) {
+      categoryLink.animate?.([
+        { opacity: 0, filter: 'blur(5px)', transform: 'translateY(7px) scale(.96)' },
+        { opacity: 1, filter: 'blur(0)', transform: 'translateY(0) scale(1)' },
+      ], { duration: 620, easing: 'cubic-bezier(.22,1,.36,1)' });
+    }
+    const transitionTimer = window.setTimeout(() => {
+      if (!previous.classList.contains('is-active')) {
+        previous.classList.remove('is-exiting');
+        previous.style.removeProperty('--stock-slide-direction');
+      }
+      if (next.classList.contains('is-active')) {
+        next.classList.remove('is-entering');
+        next.style.removeProperty('--stock-slide-direction');
+      }
+      if (previous._stockTransitionTimer === transitionTimer) previous._stockTransitionTimer = null;
+      if (next._stockTransitionTimer === transitionTimer) next._stockTransitionTimer = null;
+    }, 820);
+    previous._stockTransitionTimer = transitionTimer;
+    next._stockTransitionTimer = transitionTimer;
+    activeIndex = nextIndex;
+    warmSlide(activeIndex + 1);
+    schedule();
+  }
+
+  updateBrandColor(slides[activeIndex]);
+  warmSlide(0);
+  warmSlide(1);
+  schedule();
+  section.querySelector('[data-stock-prev]')?.addEventListener('click', () => show(activeIndex - 1, -1));
+  section.querySelector('[data-stock-next]')?.addEventListener('click', () => show(activeIndex + 1, 1));
+  section.addEventListener('mouseenter', () => { paused = true; clearTimer(); });
+  section.addEventListener('mouseleave', () => { paused = false; schedule(); });
+  section.addEventListener('focusin', () => { paused = true; clearTimer(); });
+  section.addEventListener('focusout', event => {
+    if (section.contains(event.relatedTarget)) return;
+    paused = false;
+    schedule();
+  });
+  document.addEventListener('visibilitychange', schedule);
+  reducedMotion.addEventListener?.('change', schedule);
+}
+
+initStockShowcase();

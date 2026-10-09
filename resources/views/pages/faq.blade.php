@@ -33,11 +33,11 @@
 </div>
 
 <style>
-.simple-page{max-width:800px;margin:0 auto;padding:3rem 1.5rem 4rem;min-height:calc(100vh - 140px);}
+.simple-page{width:100%;max-width:var(--layout-max);margin:0 auto;padding:3rem var(--layout-gutter) 4rem;min-height:calc(100vh - 140px);}
 .simple-hero{text-align:center;margin-bottom:2.5rem;}
 .simple-hero h1{font-size:1.8rem;font-weight:800;margin-bottom:.3rem;}
 .simple-hero p{color:var(--text-dim);font-size:.95rem;}
-.simple-content{display:flex;flex-direction:column;gap:1.2rem;}
+.simple-content{width:100%;max-width:960px;margin:0 auto;display:flex;flex-direction:column;gap:1.2rem;}
 .faq-item{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.3rem 1.5rem;}
 .faq-item h3{font-size:1rem;font-weight:700;margin-bottom:.4rem;}
 .faq-item p{color:var(--text-dim);font-size:.9rem;line-height:1.6;margin:0;}

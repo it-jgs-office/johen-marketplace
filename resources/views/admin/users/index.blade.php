@@ -285,7 +285,7 @@
 }
 .user-tab.active {
     color: #fff;
-    background: linear-gradient(135deg, var(--accent), #8b5cf6);
+    background: linear-gradient(135deg, var(--accent), #0ea5e9);
     box-shadow: 0 4px 14px -4px rgba(63,109,245,0.35);
 }
 .user-tab i {

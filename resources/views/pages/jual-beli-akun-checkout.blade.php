@@ -188,9 +188,10 @@
 
 <style>
 .jco-page {
-  max-width: 1100px;
+  width: 100%;
+  max-width: var(--layout-max);
   margin: 0 auto;
-  padding: 1.5rem 1.5rem 4rem;
+  padding: 1.5rem var(--layout-gutter) 4rem;
 }
 
 /* Header */
@@ -247,7 +248,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--jba-accent, #9d5cf5), var(--purple, #7c3aed));
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
   color: #fff;
   font-size: .78rem;
   font-weight: 700;
@@ -392,7 +393,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  background: linear-gradient(135deg, var(--jba-accent, #9d5cf5), var(--purple, #7c3aed));
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
   color: #fff;
   font-size: .7rem;
   font-weight: 700;
@@ -440,18 +441,18 @@
   padding: .85rem 1.5rem;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--jba-accent, #9d5cf5), var(--purple, #7c3aed));
+  background: linear-gradient(135deg, #2563eb, #0ea5e9);
   color: #fff;
   font-weight: 700;
   font-size: .95rem;
   cursor: pointer;
   transition: transform .2s, box-shadow .2s;
-  box-shadow: 0 4px 20px -4px rgba(157, 92, 245, .5);
+  box-shadow: 0 4px 20px -4px rgba(37, 99, 235, .45);
   font-family: var(--font-body, inherit);
 }
 .jco-submit:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px -4px rgba(157, 92, 245, .65);
+  box-shadow: 0 8px 30px -4px rgba(37, 99, 235, .6);
 }
 .jco-submit:active {
   transform: translateY(0);

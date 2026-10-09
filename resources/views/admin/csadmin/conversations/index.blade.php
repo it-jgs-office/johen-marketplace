@@ -78,7 +78,7 @@
 }
 .lc-filter-btn:hover { border-color: #3F6DF5; color: #8FA8C4; }
 .lc-filter-btn.active {
-    background: linear-gradient(135deg, #3F6DF5, #8b5cf6);
+    background: linear-gradient(135deg, #2563eb, #0ea5e9);
     color: #fff;
     border-color: transparent;
     box-shadow: 0 2px 8px -2px rgba(63,109,245,0.4);
@@ -123,7 +123,7 @@
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    background: linear-gradient(135deg, #3F6DF5, #8b5cf6);
+    background: linear-gradient(135deg, #2563eb, #0ea5e9);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -159,7 +159,7 @@
 .lc-item-time { font-size: 10px; color: #6F89A7; }
 .lc-item-unread {
     min-width: 18px; height: 18px; border-radius: 50%;
-    background: linear-gradient(135deg, #3F6DF5, #8b5cf6);
+    background: linear-gradient(135deg, #2563eb, #0ea5e9);
     color: #fff; font-size: 9px; font-weight: 700;
     display: flex; align-items: center; justify-content: center; padding: 0 5px;
 }
@@ -470,7 +470,7 @@
 }
 .lc-voice-btn {
     width: 30px; height: 30px; border-radius: 50%;
-    background: linear-gradient(135deg, #3F6DF5, #8b5cf6);
+    background: linear-gradient(135deg, #2563eb, #0ea5e9);
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 .lc-voice-btn svg { width: 14px; height: 14px; fill: #fff; margin-left: 2px; }
@@ -587,7 +587,7 @@
 .lc-send-btn {
     width: 38px; height: 38px; border-radius: 10px;
     border: none;
-    background: linear-gradient(135deg, #3F6DF5, #8b5cf6);
+    background: linear-gradient(135deg, #2563eb, #0ea5e9);
     color: #fff; font-size: 15px; cursor: pointer;
     display: flex; align-items: center; justify-content: center;
     transition: filter .15s; flex-shrink: 0;

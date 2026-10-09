@@ -1,0 +1,32 @@
+.frontend-promo{width:100%;overflow:hidden;}
+.frontend-promo *{box-sizing:border-box;}
+.frontend-promo .cta-section{
+  position:relative;isolation:isolate;overflow:hidden;
+  width:100%;margin:3rem 0 0;padding:94px 0 52px;
+  background-color:#123d81;
+  background-image:linear-gradient(105deg,rgba(20,112,225,.88),rgba(43,69,181,.84) 52%,rgba(92,53,172,.86)),url('/assets/card/bg-cta.png');
+  background-position:center;background-size:cover;
+}
+.frontend-promo .cta-wave{position:absolute;z-index:2;top:0;left:0;display:block;width:100%;height:78px;pointer-events:none;}
+.frontend-promo .cta-card{position:relative;width:min(100%,1050px);margin:0 auto;padding:0 var(--layout-gutter,1.5rem);text-align:center;background:transparent;border:0;border-radius:0;box-shadow:none;overflow:visible;}
+.frontend-promo .cta-card::before{content:none;}
+.frontend-promo .cta-card::after{content:'';position:absolute;top:-8rem;right:4%;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(105,196,255,.22),transparent 70%);opacity:.55;pointer-events:none;animation:frontend-cta-float 8s ease-in-out infinite;}
+.frontend-promo .cta-glow-2{position:absolute;bottom:-7rem;left:8%;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(181,133,255,.23),transparent 70%);opacity:.7;pointer-events:none;animation:frontend-cta-float 10s ease-in-out infinite reverse;}
+@keyframes frontend-cta-float{0%,100%{transform:translate(0,0)}50%{transform:translate(-20px,30px)}}
+.frontend-promo .cta-logo-link{display:inline-block;margin-bottom:1rem;position:relative;z-index:1;}
+.frontend-promo .cta-logo{display:block;width:auto;height:48px;margin:0 auto;border-radius:8px;transition:transform .25s ease;}
+.frontend-promo .cta-logo-link:hover .cta-logo{transform:scale(1.06);}
+.frontend-promo .cta-card h2{position:relative;z-index:1;margin:0 0 .5rem;color:#fff;font-size:1.4rem;font-weight:800;text-shadow:0 2px 14px rgba(0,0,0,.55);}
+.frontend-promo .cta-card p{position:relative;z-index:1;max-width:500px;margin:0 auto 1.5rem;color:rgba(255,255,255,.82);font-size:.92rem;text-shadow:0 1px 8px rgba(0,0,0,.55);}
+.frontend-promo .cta-btn{position:relative;z-index:1;display:inline-flex;align-items:center;gap:.55rem;padding:.7rem 1.6rem;border-radius:999px;background:var(--action-gradient,linear-gradient(135deg,#2563eb,#0ea5e9));color:#fff;font-size:.9rem;font-weight:700;text-decoration:none;box-shadow:0 4px 20px -4px var(--action-glow,rgba(37,99,235,.5));transition:transform .25s ease,box-shadow .25s ease;}
+.frontend-promo .cta-btn:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 12px 32px -6px var(--purple-glow,rgba(37,99,235,.5));}
+.frontend-promo .cta-btn:focus-visible,.frontend-promo .cta-logo-link:focus-visible{outline:2px solid #fff;outline-offset:4px;}
+.frontend-promo .payment-marquee-section{width:100%;margin:0;padding:0;background:#fff;color:#0f172a;}
+.frontend-promo .payment-marquee-section[hidden]{display:none;}
+.frontend-promo .payment-track-wrap{position:relative;isolation:isolate;width:100%;margin:0;padding:.85rem 0;overflow:hidden;background:#fff;border-top:1px solid #e5e7eb;border-bottom:1px solid #e5e7eb;}
+.frontend-promo .payment-track-wrap::before{content:'';position:absolute;inset:0;z-index:2;pointer-events:none;background:linear-gradient(90deg,rgba(255,255,255,.98),transparent 12%,transparent 88%,rgba(255,255,255,.98));}
+.frontend-promo .payment-track{position:relative;z-index:1;display:flex;gap:1.4rem;width:max-content;animation:frontend-payment-scroll 22s linear infinite;}
+.frontend-promo .pay-badge{flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+.frontend-promo .pay-badge-img{display:block;width:84px;height:48px;object-fit:contain;background:transparent;}
+@keyframes frontend-payment-scroll{to{transform:translateX(-50%);}}
+@media(prefers-reduced-motion:reduce){.frontend-promo .cta-card::after,.frontend-promo .cta-glow-2,.frontend-promo .payment-track{animation:none;}.frontend-promo .payment-track-wrap{overflow-x:auto;}}

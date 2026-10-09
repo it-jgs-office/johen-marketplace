@@ -90,7 +90,7 @@
 </div>
 
 <style>
-.vc-page{max-width:860px;margin:0 auto;padding:3rem 1.5rem 4rem;min-height:calc(100vh - 140px);}
+.vc-page{width:100%;max-width:var(--layout-max);margin:0 auto;padding:3rem var(--layout-gutter) 4rem;min-height:calc(100vh - 140px);}
 .vc-hero{text-align:center;margin-bottom:2rem;}
 .vc-hero-icon{width:58px;height:58px;margin:0 auto .9rem;border-radius:18px;display:flex;align-items:center;justify-content:center;
   background:linear-gradient(135deg,#fbbf24,#f97316);color:#431407;box-shadow:0 8px 24px -6px rgba(249,115,22,.5);}
@@ -108,7 +108,7 @@
 .vc-claim-form input{flex:1;min-width:200px;padding:.7rem .9rem;border-radius:10px;background:var(--surface-2);
   border:1px solid var(--border);color:var(--text);font-family:ui-monospace,Menlo,monospace;letter-spacing:1px;font-size:.9rem;outline:none;}
 .vc-claim-form input:focus{border-color:var(--purple);box-shadow:0 0 0 3px var(--purple-glow);}
-.vc-btn{padding:.7rem 1.3rem;border-radius:10px;background:linear-gradient(135deg,var(--purple-light),var(--purple));
+.vc-btn{padding:.7rem 1.3rem;border-radius:10px;background:var(--action-gradient,linear-gradient(135deg,#2563eb,#0ea5e9));
   color:#fff;font-size:.86rem;font-weight:700;transition:filter .15s;}
 .vc-btn:hover{filter:brightness(1.12);}
 

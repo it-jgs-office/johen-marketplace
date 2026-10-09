@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use App\Services\RecaptchaService;
 
 class LoginRequest extends FormRequest
 {
@@ -30,11 +31,18 @@ class LoginRequest extends FormRequest
         return [
             'username' => ['required', 'string'],
             'password' => ['required', 'string'],
+            'g-recaptcha-response' => ['required', 'string'],
         ];
     }
 
     public function authenticate(): void
     {
+        if (! app(RecaptchaService::class)->passes($this->string('g-recaptcha-response')->toString(), $this->ip())) {
+            throw ValidationException::withMessages([
+                'g-recaptcha-response' => 'Silakan centang verifikasi reCAPTCHA terlebih dahulu.',
+            ]);
+        }
+
         $this->ensureIsNotRateLimited();
 
         $credentials = $this->only('username', 'password');

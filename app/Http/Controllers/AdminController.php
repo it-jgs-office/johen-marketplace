@@ -174,6 +174,7 @@ class AdminController extends Controller
         $games = Brand::query()
             ->where('catalog_group', 'game')
             ->where('is_active', true)
+            ->orderByDesc('is_topup_popular')
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get()
@@ -303,7 +304,9 @@ class AdminController extends Controller
 
     public function productsSync(Request $request)
     {
-        $force = $request->boolean('force', false);
+        // Tombol sinkronisasi admin harus mengambil kondisi katalog saat ini,
+        // bukan memakai cache price list yang dapat berumur hingga satu jam.
+        $force = $request->boolean('force', true);
         $result = $this->digiflazz->syncProducts($force);
 
         if ($result['success']) {
@@ -332,19 +335,31 @@ class AdminController extends Controller
             'category' => 'required|string|max:50',
             'service_type' => 'required|string|in:topup,joki,both',
             'catalog_group' => 'nullable|string|in:game,pulsa',
-            'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
-            'featured_thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'featured_img_1' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'featured_img_2' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'featured_img_3' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
-            'carousel_bg' => 'nullable|image|mimes:jpeg,png,jpg|max:10240',
-            'detail_bg' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240',
+            'thumbnail' => 'nullable|image|mimes:jpeg,png,jpg|max:2048|dimensions:max_width=8000,max_height=8000',
+            'topup_character_image' => 'nullable|image|mimes:png,webp|max:4096|dimensions:max_width=8000,max_height=8000',
+            'topup_popular_image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:4096|dimensions:max_width=8000,max_height=8000',
+            'topup_popular_logo' => 'nullable|image|mimes:png,webp|max:2048|dimensions:max_width=8000,max_height=8000',
+            'featured_thumbnail' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048|dimensions:max_width=8000,max_height=8000',
+            'featured_img_1' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048|dimensions:max_width=8000,max_height=8000',
+            'featured_img_2' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048|dimensions:max_width=8000,max_height=8000',
+            'featured_img_3' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048|dimensions:max_width=8000,max_height=8000',
+            'carousel_bg' => 'nullable|image|mimes:jpeg,png,jpg|max:10240|dimensions:max_width=8000,max_height=8000',
+            'detail_bg' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:10240|dimensions:max_width=8000,max_height=8000',
             'detail_bg_position' => 'nullable|string|max:50',
+            'remove_detail_bg' => 'nullable|boolean',
             'description' => 'nullable|string',
             'is_active' => 'boolean',
             'is_popular' => 'boolean',
+            'is_topup_popular' => 'boolean',
             'sort_order' => 'nullable|integer|min:0',
         ]);
+
+        if ($request->input('return_to') === 'topup'
+            && $request->boolean('is_topup_popular')
+            && ! $brand->topup_popular_image
+            && ! $request->hasFile('topup_popular_image')) {
+            $validator->errors()->add('topup_popular_image', 'Gambar card wajib diunggah saat game populer diaktifkan.');
+        }
 
         if ($validator->fails()) {
             if ($request->expectsJson()) {
@@ -361,7 +376,8 @@ class AdminController extends Controller
             'description' => $request->description,
             'is_active' => $request->boolean('is_active', true),
             'is_popular' => $request->boolean('is_popular', false),
-            'sort_order' => $request->integer('sort_order', 0),
+            'is_topup_popular' => $request->boolean('is_topup_popular', (bool) $brand->is_topup_popular),
+            'sort_order' => $request->integer('sort_order', (int) $brand->sort_order),
         ];
 
         if ($request->hasFile('thumbnail') && $request->file('thumbnail')->isValid()) {
@@ -369,6 +385,27 @@ class AdminController extends Controller
                 MediaStore::delete($brand->thumbnail);
             }
             $data['thumbnail'] = ImageOptimizer::storeOptimized($request->file('thumbnail'), 'brands', 640, 640);
+        }
+
+        if ($request->hasFile('topup_character_image') && $request->file('topup_character_image')->isValid()) {
+            if ($brand->topup_character_image) {
+                MediaStore::delete($brand->topup_character_image);
+            }
+            $data['topup_character_image'] = ImageOptimizer::storeOptimized($request->file('topup_character_image'), 'brands/characters', 1200, 1600, 1024 * 1024);
+        }
+
+        if ($request->hasFile('topup_popular_image') && $request->file('topup_popular_image')->isValid()) {
+            if ($brand->topup_popular_image) {
+                MediaStore::delete($brand->topup_popular_image);
+            }
+            $data['topup_popular_image'] = ImageOptimizer::storeOptimized($request->file('topup_popular_image'), 'brands', 1280, 720);
+        }
+
+        if ($request->hasFile('topup_popular_logo') && $request->file('topup_popular_logo')->isValid()) {
+            if ($brand->topup_popular_logo) {
+                MediaStore::delete($brand->topup_popular_logo);
+            }
+            $data['topup_popular_logo'] = ImageOptimizer::storeOptimized($request->file('topup_popular_logo'), 'brands', 640, 640);
         }
 
         if ($request->hasFile('featured_thumbnail') && $request->file('featured_thumbnail')->isValid()) {
@@ -392,9 +429,16 @@ class AdminController extends Controller
                 MediaStore::delete($brand->detail_bg);
             }
             $data['detail_bg'] = ImageOptimizer::optimizeAndCrop($request->file('detail_bg'), '21:9');
+            $data['detail_bg_position'] = $request->input('detail_bg_position', 'center');
+        } elseif ($request->boolean('remove_detail_bg')) {
+            if ($brand->detail_bg) {
+                MediaStore::delete($brand->detail_bg);
+            }
+            $data['detail_bg'] = null;
+            $data['detail_bg_position'] = 'center';
+        } else {
+            $data['detail_bg_position'] = $request->input('detail_bg_position', 'center');
         }
-
-        $data['detail_bg_position'] = $request->input('detail_bg_position', 'center');
 
         $brand->update($data);
 
@@ -417,6 +461,15 @@ class AdminController extends Controller
     {
         if ($brand->thumbnail) {
             MediaStore::delete($brand->thumbnail);
+        }
+        if ($brand->topup_character_image) {
+            MediaStore::delete($brand->topup_character_image);
+        }
+        if ($brand->topup_popular_image) {
+            MediaStore::delete($brand->topup_popular_image);
+        }
+        if ($brand->topup_popular_logo) {
+            MediaStore::delete($brand->topup_popular_logo);
         }
         if ($brand->featured_thumbnail) {
             MediaStore::delete($brand->featured_thumbnail);

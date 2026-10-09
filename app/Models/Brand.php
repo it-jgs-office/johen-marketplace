@@ -10,6 +10,7 @@ class Brand extends Model
         'name',
         'icon',
         'thumbnail',
+        'topup_character_image',
         'featured_thumbnail',
         'featured_img_1',
         'featured_img_2',
@@ -24,17 +25,36 @@ class Brand extends Model
         'description',
         'is_active',
         'is_popular',
+        'is_topup_popular',
+        'topup_popular_image',
+        'topup_popular_logo',
         'sort_order',
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'is_popular' => 'boolean',
+        'is_topup_popular' => 'boolean',
         'requires_zone_id' => 'boolean',
         'sort_order' => 'integer',
     ];
 
-    protected $appends = ['thumbnail_url', 'featured_thumbnail_url', 'featured_img_urls', 'carousel_bg_url', 'detail_bg_url'];
+    protected $appends = ['thumbnail_url', 'topup_character_image_url', 'featured_thumbnail_url', 'featured_img_urls', 'carousel_bg_url', 'detail_bg_url', 'topup_popular_image_url', 'topup_popular_logo_url'];
+
+    public function getTopupCharacterImageUrlAttribute(): ?string
+    {
+        return $this->topup_character_image ? media_url($this->topup_character_image) : null;
+    }
+
+    public function getTopupPopularImageUrlAttribute(): ?string
+    {
+        return $this->topup_popular_image ? media_url($this->topup_popular_image) : null;
+    }
+
+    public function getTopupPopularLogoUrlAttribute(): ?string
+    {
+        return $this->topup_popular_logo ? media_url($this->topup_popular_logo) : null;
+    }
 
     public function getThumbnailUrlAttribute(): ?string
     {

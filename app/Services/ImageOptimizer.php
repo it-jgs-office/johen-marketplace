@@ -12,6 +12,10 @@ class ImageOptimizer
 
     protected const MIN_QUALITY = 55;
 
+    protected const CROP_MAX_BYTES = 768 * 1024;
+
+    protected const MAX_GD_MEMORY_BYTES = 768 * 1024 * 1024;
+
     /**
      * Simpan file upload, optimalkan (downscale + WebP) lalu kembalikan path relatif.
      */
@@ -51,13 +55,79 @@ class ImageOptimizer
     }
 
     /**
+     * GD harus mendekode seluruh bitmap sebelum resize. Siapkan memory headroom
+     * berdasarkan jumlah piksel agar gambar kamera beresolusi tinggi dapat
+     * langsung diperkecil tanpa berhenti karena memory_limit bawaan 256 MB.
+     */
+    protected static function ensureGdMemory(string $absolutePath): void
+    {
+        $info = @getimagesize($absolutePath);
+        if (!is_array($info)) {
+            return;
+        }
+
+        $width = max(1, (int) ($info[0] ?? 1));
+        $height = max(1, (int) ($info[1] ?? 1));
+        $currentUsage = memory_get_usage(true);
+
+        // Delapan byte per piksel memberi ruang untuk bitmap GD, overhead
+        // decoder, serta kanvas output 1920px yang jauh lebih kecil.
+        $required = $currentUsage + ($width * $height * 8) + (32 * 1024 * 1024);
+        $currentLimit = static::memoryLimitBytes((string) ini_get('memory_limit'));
+
+        if ($currentLimit === -1 || $required <= $currentLimit) {
+            return;
+        }
+
+        $requested = (int) (ceil($required / (64 * 1024 * 1024)) * 64 * 1024 * 1024);
+        if ($requested > static::MAX_GD_MEMORY_BYTES) {
+            throw new \RuntimeException('Resolusi gambar terlalu besar untuk diproses. Gunakan gambar maksimal sekitar 8000 x 8000 piksel.');
+        }
+
+        @ini_set('memory_limit', (string) (int) ceil($requested / 1024 / 1024) . 'M');
+        $newLimit = static::memoryLimitBytes((string) ini_get('memory_limit'));
+
+        if ($newLimit !== -1 && $newLimit < $required) {
+            throw new \RuntimeException('Server tidak memiliki memori yang cukup untuk mengompres gambar ini.');
+        }
+    }
+
+    protected static function memoryLimitBytes(string $value): int
+    {
+        $value = trim($value);
+        if ($value === '' || $value === '-1') {
+            return -1;
+        }
+
+        $unit = strtolower(substr($value, -1));
+        $bytes = (float) $value;
+
+        return (int) match ($unit) {
+            'g' => $bytes * 1024 * 1024 * 1024,
+            'm' => $bytes * 1024 * 1024,
+            'k' => $bytes * 1024,
+            default => $bytes,
+        };
+    }
+
+    /**
      * Buka sumber gambar GD dari path storage yang sudah ada (jpeg/png/webp/gif).
      */
     protected static function openPath(string $absolutePath): ?\GdImage
     {
-        $img = @imagecreatefromstring((string) @file_get_contents($absolutePath));
+        static::ensureGdMemory($absolutePath);
+        $info = @getimagesize($absolutePath);
+        $mime = $info['mime'] ?? null;
 
-        return $img === false ? null : $img;
+        $img = match ($mime) {
+            'image/jpeg' => @imagecreatefromjpeg($absolutePath),
+            'image/png' => @imagecreatefrompng($absolutePath),
+            'image/webp' => @imagecreatefromwebp($absolutePath),
+            'image/gif' => @imagecreatefromgif($absolutePath),
+            default => null,
+        };
+
+        return $img instanceof \GdImage ? $img : null;
     }
 
     /**
@@ -167,6 +237,7 @@ class ImageOptimizer
      */
     protected static function open(UploadedFile $file): ?\GdImage
     {
+        static::ensureGdMemory($file->getRealPath());
         $mime = $file->getMimeType();
 
         return match ($mime) {
@@ -178,24 +249,9 @@ class ImageOptimizer
     }
 
     /**
-     * Isi area transparan dengan warna putih agar konversi ke JPG tidak menghitam.
-     */
-    protected static function flattenAlpha(\GdImage $img): \GdImage
-    {
-        $w = imagesx($img);
-        $h = imagesy($img);
-
-        $bg = imagecreatetruecolor($w, $h);
-        $white = imagecolorallocate($bg, 255, 255, 255);
-        imagefill($bg, 0, 0, $white);
-        imagecopy($bg, $img, 0, 0, 0, 0, $w, $h);
-        imagedestroy($img);
-
-        return $bg;
-    }
-
-    /**
-     * Resize & crop (pendekatan cover) lalu simpan sebagai JPG.
+     * Resize & crop (pendekatan cover) langsung dari sumber ke kanvas output.
+     * Tidak membuat salinan bitmap ukuran penuh agar upload resolusi besar tetap
+     * hemat memori. Hasil JPG dikompres adaptif sampai mendekati batas ukuran.
      *
      * @return string path relatif storage (mis. brands/bg/xxxx.jpg)
      */
@@ -203,7 +259,8 @@ class ImageOptimizer
         UploadedFile $file,
         string $ratio,
         int $maxWidth = 1920,
-        int $quality = 82
+        int $quality = 82,
+        int $maxBytes = self::CROP_MAX_BYTES
     ): string {
         $src = self::open($file);
         if (!$src) {
@@ -213,8 +270,6 @@ class ImageOptimizer
             return $fallback;
         }
 
-        $src = self::flattenAlpha($src);
-
         // Parse rasio (mis. "2:1", "21:9")
         $parts = array_map('floatval', explode(':', $ratio));
         $targetRatio = ($parts[1] ?? 0) > 0 ? $parts[0] / $parts[1] : 2.0;
@@ -223,31 +278,41 @@ class ImageOptimizer
         $srcH = imagesy($src);
         $srcRatio = $srcW / max(1, $srcH);
 
-        // step 1: resize agar lebar = maxWidth (pertahankan rasio)
-        $dstW = min($maxWidth, $srcW);
-        $dstH = (int) round($dstW / $srcRatio);
-
-        $resized = imagecreatetruecolor($dstW, $dstH);
-        imagecopyresampled($resized, $src, 0, 0, 0, 0, $dstW, $dstH, $srcW, $srcH);
-        imagedestroy($src);
-
-        // step 2: crop center ke rasio target
-        $cropW = $dstW;
-        $cropH = (int) round($dstW / max(0.01, $targetRatio));
-
-        if ($cropH > $dstH) {
-            $cropH = $dstH;
-            $cropW = (int) round($dstH * $targetRatio);
+        // Tentukan area crop pada bitmap sumber, lalu resample sekali saja ke
+        // ukuran akhir. Peak memory = bitmap sumber + kanvas output kecil.
+        if ($srcRatio > $targetRatio) {
+            $sourceH = $srcH;
+            $sourceW = max(1, (int) round($srcH * $targetRatio));
+            $sourceX = max(0, (int) round(($srcW - $sourceW) / 2));
+            $sourceY = 0;
+        } else {
+            $sourceW = $srcW;
+            $sourceH = max(1, (int) round($srcW / max(0.01, $targetRatio)));
+            $sourceX = 0;
+            $sourceY = max(0, (int) round(($srcH - $sourceH) / 2));
         }
 
-        $cropW = min($cropW, $dstW);
-        $cropH = min($cropH, $dstH);
-        $offsetX = (int) round(($dstW - $cropW) / 2);
-        $offsetY = (int) round(($dstH - $cropH) / 2);
+        $dstW = max(1, min($maxWidth, $sourceW));
+        $dstH = max(1, (int) round($dstW / max(0.01, $targetRatio)));
+        $canvas = imagecreatetruecolor($dstW, $dstH);
 
-        $canvas = imagecreatetruecolor($cropW, $cropH);
-        imagecopy($canvas, $resized, 0, 0, $offsetX, $offsetY, $cropW, $cropH);
-        imagedestroy($resized);
+        // JPG tidak mendukung alpha. Putihkan hanya kanvas output yang kecil,
+        // bukan membuat duplikat gambar sumber beresolusi penuh.
+        $white = imagecolorallocate($canvas, 255, 255, 255);
+        imagefill($canvas, 0, 0, $white);
+        imagecopyresampled(
+            $canvas,
+            $src,
+            0,
+            0,
+            $sourceX,
+            $sourceY,
+            $dstW,
+            $dstH,
+            $sourceW,
+            $sourceH
+        );
+        imagedestroy($src);
 
         $name = Str::random(40) . '.jpg';
         $dir = storage_path('app/public/brands/bg');
@@ -256,7 +321,18 @@ class ImageOptimizer
             mkdir($dir, 0755, true);
         }
 
-        imagejpeg($canvas, $dir . DIRECTORY_SEPARATOR . $name, $quality);
+        $absoluteOutput = $dir . DIRECTORY_SEPARATOR . $name;
+        $quality = max(self::MIN_QUALITY, min(92, $quality));
+
+        for ($currentQuality = $quality; $currentQuality >= self::MIN_QUALITY; $currentQuality -= 7) {
+            imagejpeg($canvas, $absoluteOutput, $currentQuality);
+            clearstatcache(true, $absoluteOutput);
+
+            if ((@filesize($absoluteOutput) ?: 0) <= $maxBytes) {
+                break;
+            }
+        }
+
         imagedestroy($canvas);
 
         $path = 'brands/bg/' . $name;

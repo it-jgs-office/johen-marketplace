@@ -125,7 +125,12 @@ if (! function_exists('payment_logo_asset')) {
             'indomaret' => 'Logo_Indomaret.webp',
         ];
 
-        return isset($logos[$code]) ? pwa_asset('assets/payment/'.$logos[$code]) : null;
+        $filename = $logos[$code] ?? null;
+        if (! $filename || ! is_file(public_path('assets/payment/'.$filename))) {
+            return null;
+        }
+
+        return pwa_asset('assets/payment/'.$filename);
     }
 }
 

@@ -8,8 +8,9 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" href="{{ asset('logo.png') }}">
-    <link rel="shortcut icon" href="{{ asset('logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}?v={{ pwa_build() }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.png') }}?v={{ pwa_build() }}">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         :root{
             --bg-0:#020D2E;
@@ -214,7 +215,7 @@
         .btn-login{
             position:relative;
             width:100%;height:47px;border:none;border-radius:11px;
-            background:linear-gradient(92deg,#2563EB,#7C3AED);
+            background:linear-gradient(92deg,#2563EB,#0EA5E9);
             color:#fff;
             font-family:'Poppins',sans-serif;
             font-size:14.5px;font-weight:700;
@@ -366,6 +367,16 @@
                         <input type="checkbox" name="remember" {{ old('remember') ? 'checked' : '' }}>
                         Ingat saya
                     </label>
+                </div>
+
+                <div class="field">
+                    <div class="g-recaptcha" data-sitekey="{{ config('recaptcha.site_key') }}" data-theme="dark"></div>
+                    @error('g-recaptcha-response')
+                        <div class="error-text">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                            {{ $message }}
+                        </div>
+                    @enderror
                 </div>
 
                 <button type="submit" class="btn-login" id="adminLoginBtn">

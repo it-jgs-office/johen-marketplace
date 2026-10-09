@@ -16,7 +16,7 @@ $paymentLabels = [
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
 :root{--aco-primary:#854DEA;--aco-primary-light:#a575ff;--aco-primary-glow:rgba(133,77,234,.35);--aco-primary-subtle:rgba(133,77,234,.12)}
-.aco-page{max-width:1000px;margin:0 auto;padding:2rem 1.5rem 4rem;font-family:'Poppins',sans-serif;animation:acoFadeIn .4s ease}
+.aco-page{width:100%;max-width:var(--layout-max);margin:0 auto;padding:2rem var(--layout-gutter) 4rem;font-family:'Poppins',sans-serif;animation:acoFadeIn .4s ease}
 @keyframes acoFadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .aco-breadcrumb{font-size:.78rem;color:var(--text-mute);margin-bottom:.75rem;display:flex;align-items:center;gap:.35rem}
 .aco-breadcrumb a{color:var(--text-mute);text-decoration:none}
@@ -81,7 +81,7 @@ $paymentLabels = [
 .aco-card-left{gap:16px}
 }
 @media(max-width:600px){
-.aco-page{padding:1.5rem .75rem 3rem}
+.aco-page{padding:1.5rem var(--layout-gutter) 3rem}
 .aco-header{flex-direction:column;align-items:stretch}
 .aco-info-top{flex-direction:column;gap:4px;align-items:flex-start}
 .aco-product-name{font-size:14px}

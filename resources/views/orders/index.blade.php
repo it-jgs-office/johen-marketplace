@@ -7,7 +7,7 @@
 @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
 
 :root{--ord-primary:#854DEA;--ord-primary-light:#a575ff;--ord-primary-glow:rgba(133,77,234,.35);--ord-primary-subtle:rgba(133,77,234,.12)}
-.ord-page{max-width:1000px;margin:0 auto;padding:2rem 1.5rem 4rem;font-family:'Poppins',sans-serif;animation:ordFadeIn .4s ease}
+.ord-page{width:100%;max-width:var(--layout-max);margin:0 auto;padding:2rem var(--layout-gutter) 4rem;font-family:'Poppins',sans-serif;animation:ordFadeIn .4s ease}
 @keyframes ordFadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .ord-breadcrumb{font-size:.78rem;color:var(--text-mute);margin-bottom:.75rem;display:flex;align-items:center;gap:.35rem}
 .ord-breadcrumb a{color:var(--text-mute);text-decoration:none}
@@ -131,7 +131,7 @@
 .ord-card-left{gap:16px}
 }
 @media(max-width:768px){
-.ord-page{padding:1.5rem .75rem 3rem}
+.ord-page{padding:1.5rem var(--layout-gutter) 3rem}
 .ord-header{flex-direction:column;align-items:stretch}
 .ord-filter-card{flex-direction:column;align-items:stretch}
 .ord-filter-group{min-width:0}

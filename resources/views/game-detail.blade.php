@@ -3,6 +3,21 @@
 @php $pageType = $brand->service_type === 'joki' ? 'Joki' : 'Top Up'; @endphp
 @section('title', $brand->name . ' — ' . $pageType . ' ' . $brand->name)
 
+@push('styles')
+<style>
+.gd-header-wrap .gd-header-inner {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+.gd-header-wrap .gd-header-meta {
+  flex: 0 1 auto;
+  width: 100%;
+  text-align: center;
+}
+</style>
+@endpush
+
 @php
   $grouped = $products->groupBy('type');
   $regions = collect();
@@ -156,7 +171,7 @@
   </div>
 
   <!-- ===== STEP 2: Pilih Nominal ===== -->
-  <div class="gd-step-lock-group" id="productLock">
+  <div>
   <div class="gd-step">
     <div class="gd-step-head"><div class="gd-step-num">2</div><div class="gd-step-title">Pilih Nominal</div></div>
 
@@ -219,8 +234,11 @@
         $isInstant = strtolower($type) === 'instant';
       @endphp
       <div class="gd-group">
+        @if(!$isInstant || $regions->count() > 1)
         <div class="gd-group-head">
+          @if(!$isInstant)
           <div class="gd-group-title">{{ ucwords($type) }} <span class="gd-spark">✨</span></div>
+          @endif
           @if($isInstant && $regions->count() > 1)
             <div class="gd-region-tabs" data-group="{{ $typeKey }}">
               <button class="gd-region-btn{{ $selectedRegion === 'ID' ? ' active' : '' }}" data-region="ID">Indonesia</button>
@@ -229,6 +247,7 @@
             </div>
           @endif
         </div>
+        @endif
         <div class="gd-pkg-grid{{ $isInstant ? ' gd-pkg-instant' : '' }}"
              data-type="{{ $typeKey }}"
              @if($isInstant) data-has-regions="true"@endif>
@@ -294,7 +313,7 @@
     <div class="gd-pay-group" id="payGroup">
       @foreach($categories as $catKey => $catLabel)
         @php $catMethods = $groupedPay->get($catKey, collect()); @endphp
-        <div class="gd-pay-category" data-category="{{ $catKey }}">
+        <div class="gd-pay-category{{ $catKey === 'qris' && $catMethods->isNotEmpty() ? ' open' : '' }}" data-category="{{ $catKey }}">
           <button type="button" class="gd-pay-cat-head">
             <span class="gd-pay-cat-label">{{ $catLabel }}</span>
             <svg class="gd-pay-cat-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
@@ -518,10 +537,6 @@ document.addEventListener('click', e => {
     // Kartu produk juga link ke halaman checkout supaya bisa dibuka/di-crawl
     // tanpa JavaScript. Di sini alur pemesanan inline yang tetap berjalan.
     e.preventDefault();
-    if (productLock.classList.contains('gd-step-locked')) {
-        requireAccountDetails();
-        return;
-    }
     if (card.closest('.gd-pkg-instant') && !card.closest('[data-no-region-filter="true"]')) {
         const region = card.dataset.region;
         if (region && selectedRegion && region !== selectedRegion && region !== 'ALL') return;
@@ -572,7 +587,7 @@ function setQty(v) {
     updateSummary();
 }
 function qtyLockCheck() {
-    if (productLock.classList.contains('gd-step-locked')) {
+    if (!accountDetailsReady()) {
         requireAccountDetails();
         return true;
     }
@@ -588,11 +603,15 @@ let selectedPayKey = 'qris';
 let selectedPayFee = 0;
 let selectedPayLabel = '';
 const payGroup = $('#payGroup');
-const productLock = $('#productLock');
 const userIdInput = $('#userId'), zoneIdInput = $('#zoneId');
 const zoneRequired = !!zoneIdInput;
-const accountDataStep = $('#accountDataStep');
 const accountLockNotice = $('#accountLockNotice');
+
+function accountDetailsReady() {
+    return userIdInput.value.trim().length > 0
+        && (!zoneRequired || zoneIdInput.value.trim().length > 0)
+        && (!isMobileLegends || detectedRegion === 'Indonesia');
+}
 
 function requireAccountDetails() {
     const missingUserId = userIdInput.value.trim().length === 0;
@@ -615,22 +634,18 @@ function requireAccountDetails() {
         input.classList.remove('gd-input-attention');
         void input.offsetWidth;
         input.classList.add('error', 'gd-input-attention');
+        input.setAttribute('aria-invalid', 'true');
+        const errorEl = input === userIdInput ? $('#userIdError') : $('#zoneIdError');
+        if (errorEl) errorEl.classList.add('show');
     });
 
     showToast(message, false);
-    accountDataStep.scrollIntoView({behavior:'smooth', block:'center'});
+    const inputToFocus = missingUserId ? userIdInput : (missingZoneId ? zoneIdInput : userIdInput);
+    inputToFocus.scrollIntoView({behavior:'smooth', block:'center'});
     window.setTimeout(() => {
-        const input = missingUserId ? userIdInput : (missingZoneId ? zoneIdInput : userIdInput);
-        input.focus({preventScroll:true});
+        inputToFocus.focus({preventScroll:true});
     }, 400);
 }
-
-productLock.addEventListener('click', e => {
-    if (!productLock.classList.contains('gd-step-locked')) return;
-    e.preventDefault();
-    e.stopPropagation();
-    requireAccountDetails();
-});
 
 function accountLockMessage() {
     if (!isMobileLegends) return 'Isi Data Akun terlebih dahulu';
@@ -639,16 +654,9 @@ function accountLockMessage() {
 }
 
 function togglePayLock() {
-    const unlocked = userIdInput.value.trim().length > 0
-        && (!zoneRequired || zoneIdInput.value.trim().length > 0)
-        && (!isMobileLegends || detectedRegion === 'Indonesia');
-    payGroup.classList.toggle('gd-pay-group--locked', !unlocked);
-    productLock.classList.toggle('gd-step-locked', !unlocked);
-    if (!unlocked && selectedPkg) {
-        $$('.gd-pkg-card').forEach(c => c.classList.remove('selected'));
-        selectedPkg = null;
-        updateSummary();
-    }
+    // Metode pembayaran tetap boleh dilihat sebelum data akun diisi.
+    // Validasi baru dijalankan saat pengguna benar-benar memilih metodenya.
+    payGroup.classList.remove('gd-pay-group--locked');
 }
 userIdInput.addEventListener('input', togglePayLock);
 if (zoneIdInput) zoneIdInput.addEventListener('input', togglePayLock);
@@ -656,6 +664,15 @@ togglePayLock();
 
 /* preselect metode pembayaran default (QRIS atau metode pertama yang tersedia) */
 (function(){
+    const qrCategory = document.querySelector('.gd-pay-category[data-category="qris"]');
+    const defaultCategory = qrCategory?.querySelector('.gd-pay-row')
+        ? qrCategory
+        : $$('.gd-pay-category').find(category => category.querySelector('.gd-pay-row'));
+    if (defaultCategory) {
+        $$('.gd-pay-category').forEach(category => category.classList.remove('open'));
+        defaultCategory.classList.add('open');
+    }
+
     const qrRow = document.querySelector('.gd-pay-row[data-key="qris"]') || document.querySelector('.gd-pay-row');
     if (qrRow) {
         const method = paymentMethods.find(m => m.key === qrRow.dataset.key);
@@ -816,11 +833,6 @@ if (mlCheckAccountBtn) mlCheckAccountBtn.addEventListener('click', runAccountChe
 
 /* category accordion toggle */
 $('#payGroup').addEventListener('click', e => {
-    if (payGroup.classList.contains('gd-pay-group--locked')) {
-        e.preventDefault();
-        requireAccountDetails();
-        return;
-    }
     const catHead = e.target.closest('.gd-pay-cat-head');
     if (catHead) {
         const cat = catHead.closest('.gd-pay-category');
@@ -834,6 +846,10 @@ $('#payGroup').addEventListener('click', e => {
     if (!head) return;
     const row = head.closest('.gd-pay-row');
     if (!row || row.classList.contains('disabled')) return;
+    if (!accountDetailsReady()) {
+        requireAccountDetails();
+        return;
+    }
     if (row.classList.contains('selected')) return;
     $$('.gd-pay-row').forEach(r => r.classList.remove('selected'));
     row.classList.add('selected');
@@ -953,9 +969,8 @@ async function handleOrder(btn) {
     const okZone = !zoneRequired || validateField(zoneIdInput, $('#zoneIdError'), v => v.length > 0);
     const okEmail = validateField(emailInput, $('#emailError'), v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
     const okWa = validateField(waInput, $('#waError'), v => v.length >= 8);
-    if (!okUserId || !okZone) {
-      userIdInput.scrollIntoView({behavior:'smooth', block:'center'});
-      showToast('Lengkapi Data Akun terlebih dahulu', false);
+    if (!okUserId || !okZone || (isMobileLegends && detectedRegion !== 'Indonesia')) {
+      requireAccountDetails();
       return;
     }
     if (!okEmail || !okWa) {
@@ -1157,7 +1172,15 @@ function showToast(msg, ok) {
 
 /* live-clear errors */
 [userIdInput, zoneIdInput, emailInput, waInput].filter(Boolean).forEach(inp => {
-    inp.addEventListener('input', () => inp.classList.remove('error'));
+    inp.addEventListener('input', () => {
+        inp.classList.remove('error', 'gd-input-attention');
+        inp.removeAttribute('aria-invalid');
+        const errorEl = inp.id === 'userId' ? $('#userIdError')
+            : inp.id === 'zoneId' ? $('#zoneIdError')
+            : inp.id === 'emailInput' ? $('#emailError')
+            : $('#waError');
+        if (errorEl) errorEl.classList.remove('show');
+    });
 });
 
 /* theme-aware payment images */

@@ -3,7 +3,7 @@
     $themeLogo = $activeThemeLogoUrl
         ?? (\App\Models\SiteSetting::get('site_logo') ? media_url(\App\Models\SiteSetting::get('site_logo')) : null)
         ?? pwa_asset('logo.png');
-    $themeFavicon = $activeThemeLogoUrl ?? pwa_asset('logo.png');
+    $themeFavicon = asset('favicon.png') . '?v=' . pwa_build();
     $splashName = \App\Models\SiteSetting::get('site_name') ?: 'Johen Gaming';
     $splashTagline = \App\Models\SiteSetting::get('site_tagline') ?: 'Top Up & Joki Game Termurah';
     $biz = business_info();
@@ -23,6 +23,7 @@
 <link rel="shortcut icon" href="{{ $themeFavicon }}">
 @include('partials.pwa')
   <link rel="stylesheet" href="{{ pwa_asset('css/topup.css') }}">
+  <link rel="stylesheet" href="{{ pwa_asset('css/frontend-promo.css') }}">
 @if(!empty($activeThemeCss))
 <style>:root{{{ $activeThemeCss }}}</style>
 @endif
@@ -43,6 +44,14 @@
   <div class="header-inner">
     <a href="{{ route('home') }}" class="logo">
       <img src="{{ $themeLogo }}" alt="Johen Gaming" class="logo-img">
+      <span class="logo-wordmark" aria-hidden="true">
+        <span class="logo-wordmark-word">
+          <span style="animation-delay:0ms">J</span><span style="animation-delay:32ms">O</span><span style="animation-delay:64ms">H</span><span style="animation-delay:96ms">E</span><span style="animation-delay:128ms">N</span>
+        </span>
+        <span class="logo-wordmark-word">
+          <span style="animation-delay:192ms">G</span><span style="animation-delay:224ms">A</span><span style="animation-delay:256ms">M</span><span style="animation-delay:288ms">I</span><span style="animation-delay:320ms">N</span><span style="animation-delay:352ms">G</span>
+        </span>
+      </span>
     </a>
 
     <div class="search-wrap">
@@ -115,7 +124,7 @@
     @else
       <div class="auth-buttons">
         <a href="{{ route('login') }}" class="btn btn-outline">Masuk</a>
-        <a href="{{ route('register') }}" class="btn btn-solid" style="background:linear-gradient(135deg,var(--purple-light),var(--purple));">Daftar</a>
+        <a href="{{ route('register') }}" class="btn btn-solid" style="background:var(--action-gradient);">Daftar</a>
       </div>
     @endauth
 
@@ -168,7 +177,7 @@
     @else
       <div class="mobile-auth">
         <a href="{{ route('login') }}" class="btn btn-outline" style="flex:1;justify-content:center;">Masuk</a>
-        <a href="{{ route('register') }}" class="btn btn-solid" style="flex:1;justify-content:center;background:linear-gradient(135deg,var(--purple-light),var(--purple));">Daftar</a>
+        <a href="{{ route('register') }}" class="btn btn-solid" style="flex:1;justify-content:center;background:var(--action-gradient);">Daftar</a>
       </div>
     @endauth
   </div>
@@ -183,6 +192,7 @@
     <div id="flash-data" style="display:none;">{{ json_encode(['success' => session('success'), 'error' => session('error')]) }}</div>
   @endif
   @yield('content')
+  @include('partials.frontend-promo')
 </main>
 
 <!-- ===== FOOTER ===== -->
@@ -457,25 +467,6 @@ html:not([data-theme="light"]) .mobile-theme-btn .icon-moon {
 
 </style>
 
-@php
-  $staticPaymentLogos = [
-    'qris' => payment_logo_asset('qris'),
-    'dana' => payment_logo_asset('dana'),
-    'ovo' => payment_logo_asset('ovo'),
-    'linkaja' => payment_logo_asset('linkaja'),
-    'bca' => payment_logo_asset('bca'),
-    'bca_va' => payment_logo_asset('bca_va'),
-    'bni' => payment_logo_asset('bni'),
-    'bni_va' => payment_logo_asset('bni_va'),
-    'mandiri' => payment_logo_asset('mandiri'),
-    'mandiri_va' => payment_logo_asset('mandiri_va'),
-    'permata' => payment_logo_asset('permata'),
-    'permata_va' => payment_logo_asset('permata_va'),
-    'alfamart' => payment_logo_asset('alfamart'),
-    'indomaret' => payment_logo_asset('indomaret'),
-  ];
-@endphp
-
 <script>
 (function() {
   const theme = localStorage.getItem('theme') || 'dark';
@@ -498,9 +489,9 @@ html:not([data-theme="light"]) .mobile-theme-btn .icon-moon {
   window.ZONE_BRANDS = @json(\App\Models\Brand::where('requires_zone_id', true)->where('is_active', true)->pluck('name'));
   // Dipakai topup.js untuk menyegarkan angka keranjang tanpa reload halaman.
   window.CART_STATE_URL = @json(\Illuminate\Support\Facades\Route::has('cart.state') ? route('cart.state') : null);
-  window.STATIC_PAYMENT_LOGOS = @json($staticPaymentLogos);
 </script>
   <script src="{{ pwa_asset('js/topup.js') }}"></script>
+  <script src="{{ pwa_asset('js/frontend-promo.js') }}" defer></script>
 
 @if($popupBanners->isNotEmpty())
 <script>

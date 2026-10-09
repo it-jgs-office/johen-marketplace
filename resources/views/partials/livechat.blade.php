@@ -19,11 +19,10 @@
 </div>
 
 <button id="lc-fab" class="lc-fab" aria-label="Live Chat">
-  <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-    <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
-  </svg>
+  <img src="{{ asset('assets/icon/cs-johen.png') }}" alt="" aria-hidden="true">
   <span id="lc-fab-badge" class="lc-fab-badge" style="display:none">0</span>
 </button>
+<span id="lc-fab-greeting" class="lc-fab-greeting" aria-hidden="true">Halo, Pangeran 👋</span>
 
 <script>
 window.LIVECHAT_USER = @json(auth('web')->check() ? ['id' => auth('web')->id(), 'name' => auth('web')->user()->name] : null);
@@ -33,6 +32,20 @@ window.LIVECHAT_CS_SLUG = '{{ \App\Models\LiveChatChannel::CS_SLUG }}';
 
 <script>
 (function() {
+  const greeting = document.getElementById('lc-fab-greeting');
+  const greetings = ['Halo, Pangeran 👋', 'Butuh bantuan?', 'Admin siap bantu!'];
+  if (greeting && !window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    let greetingIndex = 0;
+    window.setInterval(function() {
+      greetingIndex = (greetingIndex + 1) % greetings.length;
+      greeting.classList.add('is-changing');
+      window.setTimeout(function() {
+        greeting.textContent = greetings[greetingIndex];
+        greeting.classList.remove('is-changing');
+      }, 180);
+    }, 3600);
+  }
+
   if (!window.LIVECHAT_USER) return;
   function poll() { window.LiveChat.updateBadge(); }
   poll();

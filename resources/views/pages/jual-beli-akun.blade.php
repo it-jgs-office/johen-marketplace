@@ -7,34 +7,39 @@
   $jbaBanner  = \App\Models\SiteSetting::get('jba_hero_banner');
   $jbaBanner2 = \App\Models\SiteSetting::get('jba_hero_banner_2');
   $jbaBanner3 = \App\Models\SiteSetting::get('jba_hero_banner_3');
-  $jbaBanners = array_filter([$jbaBanner, $jbaBanner2, $jbaBanner3]);
+  $jbaBanners = array_values(array_filter([$jbaBanner, $jbaBanner2, $jbaBanner3]));
 @endphp
 
 <div class="jba-page">
-  <section class="hero-section" id="jba-hero" style="position:relative;overflow:hidden;border-radius:20px;display:flex;align-items:center;justify-content:center;background:var(--bg-soft)">
+  <section class="hero-section hero-peek-carousel" id="jba-hero">
     @if(count($jbaBanners))
-      <div class="hero-banner-track">
-        <img src="{{ media_url($jbaBanners[0]) }}" alt=""
-             data-banners='{{ json_encode(array_map(fn($b) => media_url($b), $jbaBanners)) }}'
-             class="hero-banner-img hero-banner-img-a"
-             style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center">
-        <img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt=""
-             class="hero-banner-img hero-banner-img-b"
-             style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center">
+      <div class="hero-banner-track{{ count($jbaBanners) === 1 ? ' is-single' : '' }}"
+           data-banners='{{ json_encode(array_map(fn($b) => media_url($b), $jbaBanners)) }}'>
+        <button type="button" class="hero-banner-card hero-banner-card-prev" data-banner-slot="prev" aria-label="Lihat banner sebelumnya">
+          <img src="{{ media_url($jbaBanners[array_key_last($jbaBanners)]) }}" alt="Banner promo sebelumnya">
+        </button>
+        <button type="button" class="hero-banner-card hero-banner-card-active" data-banner-slot="active" aria-live="polite" tabindex="-1">
+          <img src="{{ media_url($jbaBanners[0]) }}" alt="Banner promo 1">
+        </button>
+        <button type="button" class="hero-banner-card hero-banner-card-next" data-banner-slot="next" aria-label="Lihat banner selanjutnya">
+          <img src="{{ media_url($jbaBanners[1] ?? $jbaBanners[0]) }}" alt="Banner promo selanjutnya">
+        </button>
       </div>
+      @if(count($jbaBanners) > 1)<div class="hero-banner-dots" data-banner-dots aria-label="Pilih banner"></div>@endif
     @else
-      <div style="position:absolute;inset:0;background:var(--bg-soft)"></div>
-      <div style="position:relative;z-index:1;text-align:center;padding:2rem">
+      <div class="hero-banner-empty">
         <p style="color:var(--text-mute);font-size:.82rem">Tambahkan banner di Pengaturan → Hero Banner (Jual Beli Akun)</p>
       </div>
     @endif
 
+    @if(count($jbaBanners) > 1)
     <button class="hero-arrow hero-arrow-left" data-banner-prev aria-label="Sebelumnya">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
     </button>
     <button class="hero-arrow hero-arrow-right" data-banner-next aria-label="Selanjutnya">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
     </button>
+    @endif
   </section>
 
   @if(!$activeSlug)
@@ -298,9 +303,10 @@
   --jba-accent-glow: rgba(37, 99, 235, .35);
 }
 .jba-page {
-  max-width: 1400px;
+  width: 100%;
+  max-width: var(--layout-max);
   margin: 0 auto;
-  padding: 1.5rem 2rem 1.5rem;
+  padding: var(--banner-navbar-gap, 0px) var(--layout-gutter) 1.5rem;
 }
 .jba-page .games-grid {
   align-items: start;
@@ -947,11 +953,14 @@
   flex-direction: column;
   align-items: center;
 }
+@media(min-width:1200px){
+  .jba-grid{grid-template-columns:repeat(5,minmax(0,1fr));}
+}
 @media(max-width:920px){
   .jba-grid{grid-template-columns:repeat(2,1fr);}
 }
 @media(max-width:640px){
-  .jba-page{padding:1rem 1.1rem 1.5rem;}
+  .jba-page{padding:var(--banner-navbar-gap, 0px) var(--layout-gutter) 1.5rem;}
   .jba-grid{grid-template-columns:repeat(2,1fr);gap:.7rem;}
   .jba-card-body{padding:.6rem .7rem;}
   .jba-card-title{font-size:.8rem;}
@@ -1312,9 +1321,6 @@
     left: 0;
     right: auto;
   }
-}
-@media (max-width: 768px) {
-  #jba-hero { height: auto; aspect-ratio: 64 / 25; border-radius: 16px; }
 }
 @media (max-width: 640px) {
   .jba-transfer-info { padding: .6rem .8rem; margin: 1.1rem 0 1.4rem; border-radius: 10px; }
@@ -1704,120 +1710,47 @@
 </script>
 
 <!-- ===== TESTIMONIALS ===== -->
-<section class="testi-section" id="jbaTestiSection">
+<section class="testi-section home-testi-section" id="jbaTestiSection">
   <h2>APA KATA MEREKA?</h2>
-  <p class="testi-sub">Ribuan orang telah mempercayai Transaksi mereka di Johen Gaming</p>
-  <div class="testi-carousel">
-    <button class="testi-arrow testi-arrow-left" onclick="prevTestiJba()" aria-label="Sebelumnya">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-    </button>
-    <div class="testi-track" id="testiTrackJba"></div>
-    <button class="testi-arrow testi-arrow-right" onclick="nextTestiJba()" aria-label="Selanjutnya">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
-    </button>
+  <p class="testi-sub">Ribuan orang telah mempercayai transaksi mereka di Johen Gaming</p>
+  <div class="home-testi-wall" aria-label="Testimoni pelanggan Johen Gaming">
+    <div class="home-testi-lane-wrap">
+      <div class="home-testi-lane">
+        @foreach([false, true] as $duplicate)
+          <div class="home-testi-lane-group" @if($duplicate) aria-hidden="true" @endif>
+            @foreach($testimonials as $t)
+              @php
+                $testiGame = preg_replace('/^(Top Up|Joki Rank|Jual Akun)\s*-\s*/i', '', $t['game']);
+                $testiRating = max(0, min(5, (int) ($t['rating'] ?? 5)));
+              @endphp
+              <article class="home-testi-card" @if($duplicate) tabindex="-1" @endif>
+                <div class="home-testi-card-head">
+                  <div class="home-testi-brand"><span>{{ $testiGame ?: $t['game'] }}</span></div>
+                  <div class="home-testi-rating" aria-label="Rating {{ $testiRating }} dari 5">
+                    <span aria-hidden="true">
+                      @for($i = 1; $i <= 5; $i++)<span class="{{ $i > $testiRating ? 'is-empty' : '' }}">★</span>@endfor
+                    </span>
+                    <span>{{ number_format($testiRating, 1) }}</span>
+                  </div>
+                </div>
+                <p class="home-testi-quote">{{ $t['quote'] }}</p>
+                <div class="home-testi-user">
+                  <img class="home-testi-avatar" src="{{ asset('assets/icon/icon-testimoni.png') }}" alt="" loading="lazy">
+                  <div>
+                    <div class="home-testi-name">{{ $t['name'] }}</div>
+                    <div class="home-testi-game">Pembeli terverifikasi</div>
+                  </div>
+                </div>
+              </article>
+            @endforeach
+          </div>
+        @endforeach
+      </div>
+    </div>
   </div>
-  <div class="testi-dots" id="testiDotsJba"></div>
   <div class="load-more-wrap" style="margin-top:1.2rem">
     <a href="{{ route('testimoni', ['layanan' => 'jual-beli-akun']) }}" class="btn btn-outline btn-load-more">Lihat Selengkapnya</a>
   </div>
 </section>
 
-<script>
-// ============ TESTIMONIALS CAROUSEL (JBA) ============
-const testiTrackJba = document.getElementById('testiTrackJba');
-const testiDotsJba = document.getElementById('testiDotsJba');
-let testiJbaCurrent = 0;
-let testiJbaTimer = null;
-
-function createTestiCardJba(t) {
-  const card = document.createElement('div');
-  card.className = 'testi-card';
-  card.innerHTML = `
-    <div class="testi-user">
-      <div class="testi-avatar">${t.avatar}</div>
-      <div>
-        <div class="testi-name">${t.name}</div>
-        <div class="testi-game">${t.game}</div>
-      </div>
-    </div>
-    <p class="testi-quote">"${t.quote}"</p>`;
-  return card;
-}
-
-function getTestiOffsetJba(i) {
-  const cw = testiTrackJba.parentElement.getBoundingClientRect().width;
-  const card = testiTrackJba.children[i + 1];
-  return card.offsetLeft - (cw - card.offsetWidth) / 2;
-}
-
-function applyTestiCenterJba(i) {
-  testiTrackJba.querySelectorAll('.testi-card').forEach((c, idx) => c.classList.toggle('center', idx === i + 1));
-  if (testiDotsJba) Array.from(testiDotsJba.children).forEach((d, idx) => d.classList.toggle('active', idx === i));
-}
-
-function goTestiJba(i) {
-  testiJbaCurrent = i;
-  if (i > testiJbaTotal - 1) { testiJbaCurrent = 0; }
-  if (i < 0) { testiJbaCurrent = testiJbaTotal - 1; }
-  testiTrackJba.style.transform = 'translateX(' + (-getTestiOffsetJba(testiJbaCurrent)) + 'px)';
-  applyTestiCenterJba(testiJbaCurrent);
-}
-
-function prevTestiJba() { goTestiJba(testiJbaCurrent - 1); resetTestiJbaTimer(); }
-function nextTestiJba() { goTestiJba(testiJbaCurrent + 1); resetTestiJbaTimer(); }
-function resetTestiJbaTimer() {
-  if (testiJbaTimer) clearInterval(testiJbaTimer);
-  testiJbaTimer = setInterval(function() { goTestiJba(testiJbaCurrent + 1); }, 5000);
-}
-
-const testiJbaData = @json($testimonials);
-const testiJbaTotal = testiJbaData.length;
-
-if (testiTrackJba && testiJbaTotal > 0) {
-  testiJbaData.forEach(t => testiTrackJba.appendChild(createTestiCardJba(t)));
-  const clones = Array.from(testiTrackJba.children);
-  testiTrackJba.appendChild(clones[0].cloneNode(true));
-  testiTrackJba.insertBefore(clones[testiJbaTotal - 1].cloneNode(true), testiTrackJba.firstChild);
-  testiTrackJba.style.transition = 'none';
-  testiTrackJba.style.transform = 'translateX(' + (-getTestiOffsetJba(0)) + 'px)';
-  void testiTrackJba.offsetHeight;
-  testiTrackJba.style.transition = '';
-  applyTestiCenterJba(0);
-  if (testiDotsJba) {
-    testiJbaData.forEach(function(_, i) {
-      const dot = document.createElement('button');
-      dot.className = 'testi-dot' + (i === 0 ? ' active' : '');
-      dot.setAttribute('aria-label', 'Testimonial ' + (i + 1));
-      dot.addEventListener('click', function() { goTestiJba(i); resetTestiJbaTimer(); });
-      testiDotsJba.appendChild(dot);
-    });
-  }
-  testiJbaTimer = setInterval(function() { goTestiJba(testiJbaCurrent + 1); }, 5000);
-}
-</script>
-
-<!-- ===== PAYMENT METHODS ===== -->
-<section class="payment-section">
-  <h2>METODE PEMBAYARAN</h2>
-  <p>Kami mendukung berbagai metode pembayaran seperti QRIS, e-wallet, virtual account dan minimarket.</p>
-  <div class="payment-track-wrap">
-    <div class="payment-track" id="paymentTrack"></div>
-  </div>
-</section>
-
-<!-- ===== CTA ===== -->
-<section class="cta-section">
-  <div class="cta-card">
-    <span class="cta-glow-2"></span>
-    <a href="https://www.johengaming.id" target="_blank" rel="noopener noreferrer" class="cta-logo-link">
-      <img src="{{ asset('logo.png') }}" alt="Johen Gaming" class="cta-logo">
-    </a>
-    <h2>Kunjungi Website Profile Kami</h2>
-    <p>Dapatkan informasi lengkap tentang layanan, promo terbaru, dan update seputar Johen Gaming.</p>
-    <a href="https://www.johengaming.id" target="_blank" rel="noopener noreferrer" class="cta-btn">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-      Kunjungi johengaming.id
-    </a>
-  </div>
-</section>
 @endsection

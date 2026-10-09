@@ -28,15 +28,9 @@
         @endif
         <form action="{{ route('admin.products.sync') }}" method="POST">
             @csrf
+            <input type="hidden" name="force" value="1">
             <button type="submit" class="btn btn-ghost" {{ $digiflazzReady ? '' : 'disabled' }}>
                 <i class="fas fa-sync"></i><span>Sinkronisasi Digiflazz</span>
-            </button>
-        </form>
-        <form action="{{ route('admin.products.sync') }}" method="POST">
-            @csrf
-            <input type="hidden" name="force" value="1">
-            <button type="submit" class="btn btn-ghost" style="color:#f59e0b" {{ $digiflazzReady ? '' : 'disabled' }}>
-                <i class="fas fa-sync-alt"></i><span>Force Refresh</span>
             </button>
         </form>
     </div>
@@ -73,7 +67,15 @@
                                         @endif
                                     </div>
                                     <div>
-                                        <div class="font-semibold">{{ $game->name }}</div>
+                                        <div class="topup-game-name-row">
+                                            <span class="font-semibold">{{ $game->name }}</span>
+                                            @if($game->is_topup_popular)
+                                                <span class="topup-popular-badge"><i class="fas fa-gem" aria-hidden="true"></i> Populer</span>
+                                            @endif
+                                            @if($game->detail_bg_url)
+                                                <span class="topup-cover-badge"><i class="fas fa-image" aria-hidden="true"></i> Sampul</span>
+                                            @endif
+                                        </div>
                                         <div style="font-size:.74rem;color:var(--text-dim)">Katalog Digiflazz</div>
                                     </div>
                                 </div>
@@ -85,8 +87,8 @@
                                     <a href="{{ route('admin.products.game', $game) }}" class="btn btn-primary btn-xs">
                                         <i class="fas fa-list"></i> Lihat Produk
                                     </a>
-                                    <a href="{{ route('admin.brands.edit', $game) }}" class="btn btn-ghost btn-xs" title="Edit gambar dan informasi game">
-                                        <i class="fas fa-edit"></i> Edit
+                                    <a href="{{ route('admin.brands.edit', $game) }}#detailCoverTitle" class="btn btn-ghost btn-xs" title="Kelola gambar dan informasi game">
+                                        <i class="fas fa-images"></i> Kelola Tampilan
                                     </a>
                                 </div>
                             </td>
@@ -113,6 +115,8 @@
 .topup-table-toolbar{display:flex;align-items:center;gap:.7rem;max-width:480px;padding:.68rem .9rem;border:1px solid var(--glass-border);border-radius:12px;background:rgba(13,31,61,.58)}
 .topup-table-toolbar>i{color:var(--accent);font-size:.84rem}.topup-table-toolbar input{min-width:0;flex:1;border:0;outline:0;background:transparent;color:var(--text);font-size:.86rem}.topup-table-toolbar input::placeholder{color:var(--text-dim)}.topup-table-toolbar span{padding-left:.7rem;border-left:1px solid var(--glass-border);color:var(--text-dim);font-size:.72rem;white-space:nowrap}
 .topup-game-thumb{display:grid;place-items:center;flex:0 0 42px;width:42px;height:42px;overflow:hidden;border:1px solid rgba(148,163,184,.24);border-radius:11px;background:linear-gradient(135deg,rgba(124,58,237,.36),rgba(14,165,233,.18));color:#c4b5fd}.topup-game-thumb img{width:100%;height:100%;object-fit:cover}
+.topup-game-name-row{display:flex;align-items:center;gap:.45rem;flex-wrap:wrap}.topup-popular-badge{display:inline-flex;align-items:center;gap:.28rem;padding:.17rem .46rem;border:1px solid rgba(251,191,36,.3);border-radius:999px;background:linear-gradient(135deg,rgba(245,158,11,.2),rgba(251,191,36,.08));color:#fbbf24;font-size:.62rem;font-weight:800;line-height:1.2;white-space:nowrap}.topup-popular-badge i{font-size:.58rem}
+.topup-cover-badge{display:inline-flex;align-items:center;gap:.28rem;padding:.17rem .46rem;border:1px solid rgba(56,189,248,.3);border-radius:999px;background:rgba(14,165,233,.1);color:#7dd3fc;font-size:.62rem;font-weight:800;line-height:1.2;white-space:nowrap}.topup-cover-badge i{font-size:.58rem}
 @media (max-width:640px){.topup-table-toolbar{max-width:none}.topup-table-toolbar span{display:none}}
 </style>
 @endpush

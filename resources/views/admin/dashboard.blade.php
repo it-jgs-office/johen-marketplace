@@ -275,6 +275,7 @@
                 </a>
                 <form action="{{ route('admin.products.sync') }}" method="POST">
                     @csrf
+                    <input type="hidden" name="force" value="1">
                     <button type="submit" class="btn btn-ghost" style="justify-content:flex-start;padding:0.65rem 0.9rem;gap:0.6rem;width:100%">
                         <i class="fas fa-sync" style="color:var(--success)"></i>
                         <span>Sinkronisasi Digiflazz</span>

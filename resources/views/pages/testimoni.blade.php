@@ -18,131 +18,59 @@
 
   <div class="testi-page-grid">
     @foreach($testimonials as $t)
-    <div class="testi-page-card">
-      <div class="testi-page-user">
-        <div class="testi-page-avatar">{{ $t['avatar'] }}</div>
-        <div>
-          <div class="testi-page-name">{{ $t['name'] }}</div>
-          <div class="testi-page-game">{{ $t['game'] }}</div>
+    @php
+      $testiGame = preg_replace('/^(Top Up|Joki Rank|Jual Akun)\s*-\s*/i', '', $t['game']);
+      $testiRating = max(0, min(5, (int) ($t['rating'] ?? 5)));
+    @endphp
+    <article class="home-testi-card testi-page-card">
+      <div class="home-testi-card-head">
+        <div class="home-testi-brand"><span>{{ $testiGame ?: $t['game'] }}</span></div>
+        <div class="home-testi-rating" aria-label="Rating {{ $testiRating }} dari 5">
+          <span aria-hidden="true">
+            @for($i = 1; $i <= 5; $i++)<span class="{{ $i > $testiRating ? 'is-empty' : '' }}">★</span>@endfor
+          </span>
+          <span>{{ number_format($testiRating, 1) }}</span>
         </div>
       </div>
-      <div class="testi-page-rating">
-        @for($i = 1; $i <= 5; $i++)
-          <span class="testi-page-star{{ $i <= ($t['rating'] ?? 5) ? ' filled' : '' }}">★</span>
-        @endfor
+      <p class="home-testi-quote">{{ $t['quote'] }}</p>
+      <div class="home-testi-user">
+        <img class="home-testi-avatar" src="{{ asset('assets/icon/icon-testimoni.png') }}" alt="" loading="lazy">
+        <div class="testi-page-user-copy">
+          <div class="home-testi-name">{{ $t['name'] }}</div>
+          <div class="home-testi-game">Pembeli terverifikasi</div>
+        </div>
       </div>
-      <p class="testi-page-quote">"{{ $t['quote'] }}"</p>
       <div class="testi-page-time">{{ $t['date'] }}</div>
-    </div>
+    </article>
     @endforeach
   </div>
 </div>
 
 <style>
 .testi-page {
-  max-width: 1200px;
+  width: 100%;
+  max-width: var(--layout-max);
   margin: 0 auto;
-  padding: 3rem 1.5rem 5rem;
+  padding: 3rem var(--layout-gutter) 5rem;
 }
-.testi-page-filters{display:flex;gap:.5rem;justify-content:center;margin-bottom:2rem;flex-wrap:wrap}
-.testi-filter-btn{display:inline-flex;padding:.4rem 1rem;border-radius:8px;font-size:.8rem;font-weight:600;border:1px solid var(--border-strong);color:var(--text);text-decoration:none;transition:all .16s ease;background:var(--surface)}
+.testi-page-hero{text-align:center;margin-bottom:1.5rem}
+.testi-page-hero h1{font-size:1.5rem;font-weight:700;letter-spacing:-.02em;margin-bottom:.4rem}
+.testi-page-hero p{color:var(--text-mute);font-size:.88rem;max-width:600px;margin:0 auto}
+.testi-page-filters{display:flex;gap:.5rem;justify-content:center;margin-bottom:1.5rem;flex-wrap:wrap}
+.testi-filter-btn{display:inline-flex;padding:.42rem 1rem;border-radius:999px;font-size:.78rem;font-weight:700;border:1px solid var(--border-strong);color:var(--text-dim);text-decoration:none;transition:all .16s ease;background:var(--surface)}
 .testi-filter-btn:hover{border-color:var(--purple-light);color:var(--purple-light)}
 .testi-filter-btn.active{background:var(--purple);color:#fff;border-color:var(--purple);box-shadow:0 0 16px -4px rgba(157,92,245,.3)}
-.testi-page-hero {
-  text-align: center;
-  margin-bottom: 3rem;
-}
-.testi-page-hero h1 {
-  font-size: 1.8rem;
-  font-weight: 800;
-  margin-bottom: .5rem;
-}
-.testi-page-hero p {
-  color: var(--text-dim);
-  font-size: .95rem;
-  max-width: 600px;
-  margin: 0 auto;
-}
-.testi-page-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-  gap: 1.2rem;
-}
-.testi-page-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 1.8rem 1.6rem;
-  transition: all .25s ease;
-}
-.testi-page-card:hover {
-  border-color: var(--purple-light);
-  box-shadow: var(--shadow-purple);
-  transform: translateY(-3px);
-}
-.testi-page-user {
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-  margin-bottom: 1rem;
-}
-.testi-page-avatar {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: linear-gradient(135deg, var(--purple-light), var(--purple-dark));
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 1.2rem;
-  flex-shrink: 0;
-}
-.testi-page-name {
-  font-weight: 600;
-  font-size: .92rem;
-}
-.testi-page-game {
-  font-size: .78rem;
-  color: var(--text-mute);
-  margin-top: .1rem;
-}
-.testi-page-rating {
-  display: flex;
-  gap: .1rem;
-  margin-bottom: .75rem;
-}
-.testi-page-star {
-  font-size: 1rem;
-  color: var(--text-mute);
-  line-height: 1;
-}
-.testi-page-star.filled {
-  color: #f5b301;
-}
-.testi-page-quote {
-  font-size: .88rem;
-  color: var(--text-dim);
-  line-height: 1.7;
-  font-style: italic;
-}
-.testi-page-time {
-  font-size: .75rem;
-  color: var(--text-mute);
-  margin-top: .75rem;
-  padding-top: .6rem;
-  border-top: 1px solid var(--border);
-}
+.testi-page-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:.85rem;}
+.testi-page-card{width:auto;min-height:238px;height:100%;padding:1rem;}
+.testi-page-card .home-testi-rating{margin-right:0;}
+.testi-page-card .home-testi-quote{flex:1;}
+.testi-page-user-copy{min-width:0;}
+.testi-page-time{margin:0 0 0 3.05rem;padding-top:.55rem;border-top:1px solid color-mix(in srgb,var(--border) 82%,transparent);color:var(--text-mute);font-size:.62rem;line-height:1.3;}
 
 @media (max-width: 640px) {
-  .testi-page-grid {
-    grid-template-columns: 1fr;
-  }
-  .testi-page {
-    padding: 2rem 1rem 3rem;
-  }
-  .testi-page-hero h1 {
-    font-size: 1.4rem;
-  }
+  .testi-page{padding:2rem var(--layout-gutter) 3rem}
+  .testi-page-grid{grid-template-columns:1fr;gap:.7rem}
+  .testi-page-card{min-height:220px}
 }
 </style>
 

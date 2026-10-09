@@ -124,25 +124,29 @@ class HomeController extends Controller
             return redirect()->route('admin.dashboard');
         }
 
-        // Harga terendah per game (dari katalog produk aktif) supaya kartu
-        // beranda menampilkan angka nyata, bukan placeholder.
-        $minPrices = $this->activeGameProductsQuery()
-            ->where('selling_price', '>', 0)
-            ->groupBy('brand')
-            ->selectRaw('brand, MIN(selling_price) AS min_price')
-            ->pluck('min_price', 'brand')
-            ->map(fn ($v) => (int) $v)
-            ->all();
-
         $brands = $this->activeGameBrandsQuery()
+            ->orderByRaw("CASE
+                WHEN LOWER(name) IN ('free fire') THEN 0
+                WHEN LOWER(name) IN ('mobile legends', 'mobile legends: bang bang', 'mobile legends bang bang') THEN 1
+                WHEN LOWER(name) IN ('pubg', 'pubg mobile') THEN 2
+                WHEN LOWER(name) IN ('honor of kings') THEN 3
+                WHEN LOWER(name) IN ('roblox') THEN 4
+                WHEN LOWER(name) IN ('valorant') THEN 5
+                WHEN LOWER(name) IN ('efootball', 'e-football') THEN 6
+                WHEN LOWER(name) IN ('fc mobile', 'ea sports fc mobile') THEN 7
+                WHEN LOWER(name) IN ('genshin impact') THEN 8
+                ELSE 9
+            END")
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();
 
-        $popularBrands = $this->activeGameBrandsQuery()
-            ->where('is_popular', true)
+        $popularTopupGames = $this->activeGameBrandsQuery()
+            ->where('is_topup_popular', true)
+            ->whereNotNull('topup_popular_image')
             ->orderBy('sort_order')
             ->orderBy('name')
+            ->limit(6)
             ->get();
 
         $flashDeals = FlashDeal::with('product')
@@ -153,7 +157,38 @@ class HomeController extends Controller
             ->filter(fn (FlashDeal $deal) => $deal->product && $deal->flash_price > 0)
             ->values();
 
-        return view('home', compact('brands', 'popularBrands', 'flashDeals', 'minPrices'));
+        $stockArtwork = [
+            'mlbb' => 'mobile-legends.png',
+            'pubg' => 'pubg.png',
+            'efootball' => 'efootball.png',
+            'fcm' => 'fc-mobile.png',
+            'ff' => 'freefire.png',
+            'roblox' => 'roblox.png',
+            'valorant' => 'valorant.png',
+        ];
+
+        $latestAccountStock = collect(static::JBA_GAME_SLUGS)
+            ->map(function (string $game, string $slug) use ($stockArtwork) {
+                $listings = AccountListing::query()
+                    ->where('game', $game)
+                    ->where('is_active', true)
+                    ->where('is_sold', false)
+                    ->orderByDesc('created_at')
+                    ->orderByDesc('id')
+                    ->limit(15)
+                    ->get();
+
+                return [
+                    'game' => $game,
+                    'slug' => $slug,
+                    'artwork' => 'assets/produk-terbaru/'.$stockArtwork[$slug],
+                    'listings' => $listings,
+                ];
+            })
+            ->filter(fn (array $category) => $category['listings']->isNotEmpty())
+            ->values();
+
+        return view('home', compact('brands', 'flashDeals', 'latestAccountStock', 'popularTopupGames'));
     }
 
     public function getApiProducts(Request $request)

@@ -106,7 +106,7 @@ class SyncMedia extends Command
             }
         }
 
-        $fields = ['icon', 'thumbnail', 'featured_thumbnail', 'featured_img_1', 'featured_img_2', 'featured_img_3', 'carousel_bg', 'detail_bg'];
+        $fields = ['icon', 'thumbnail', 'topup_character_image', 'featured_thumbnail', 'featured_img_1', 'featured_img_2', 'featured_img_3', 'carousel_bg', 'detail_bg'];
         foreach (Brand::all($fields) as $row) {
             foreach ($fields as $field) {
                 $value = $row->{$field};

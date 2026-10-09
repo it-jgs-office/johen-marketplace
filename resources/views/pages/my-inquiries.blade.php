@@ -4,7 +4,7 @@
 
 @push('styles')
 <style>
-.inq-page{max-width:860px;margin:0 auto;padding:2rem 1.5rem 4rem;animation:inqFadeIn .4s ease}
+.inq-page{width:100%;max-width:var(--layout-max);margin:0 auto;padding:2rem var(--layout-gutter) 4rem;animation:inqFadeIn .4s ease}
 @keyframes inqFadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .inq-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:2rem;flex-wrap:wrap}
 .inq-header-left{min-width:0}
@@ -70,7 +70,7 @@
 .inq-help-btn{display:inline-flex;align-items:center;gap:.35rem;padding:.45rem 1rem;border-radius:8px;font-size:.78rem;font-weight:700;text-decoration:none;transition:all .2s;height:36px;border:1px solid var(--glass-border);color:var(--text-dim);background:transparent}
 .inq-help-btn:hover{border-color:var(--accent);color:var(--accent)}
 @media(max-width:640px){
-.inq-page{padding:1.5rem .75rem 3rem}
+.inq-page{padding:1.5rem var(--layout-gutter) 3rem}
 .inq-card{flex-direction:column;gap:12px;padding:16px}
 .inq-icon-wrap{width:36px;height:36px}
 .inq-header{flex-direction:column;align-items:stretch}

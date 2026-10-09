@@ -3,7 +3,7 @@
 @section('title', 'Cek Transaksi — ' . config('app.name'))
 
 @section('content')
-<section class="page-section" style="padding-top:8rem;padding-bottom:4rem;min-height:60vh;padding-left:1rem;padding-right:1rem">
+<section class="page-section" style="padding-top:8rem;padding-bottom:4rem;min-height:60vh;padding-left:var(--layout-gutter);padding-right:var(--layout-gutter)">
     <div class="section-inner" style="max-width:560px;margin:0 auto">
         <div style="text-align:center;margin-bottom:2rem">
             <h1 style="font-size:1.5rem;font-weight:800;margin-bottom:.5rem">Cek Transaksi</h1>

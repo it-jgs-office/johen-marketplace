@@ -86,7 +86,7 @@
                 <span id="admin-rec-time" style="font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--text);min-width:34px">0:00</span>
                 <span style="flex:1;font-size:11px;color:var(--text-mute)">Merekam...</span>
                 <button type="button" onclick="cancelAdminVoiceRec()" title="Batal" style="width:28px;height:28px;border-radius:50%;border:none;background:rgba(239,68,68,.85);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" width="14" height="14" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg></button>
-                <button type="button" onclick="finishAdminVoiceRec()" title="Kirim" style="width:28px;height:28px;border-radius:50%;border:none;background:var(--purple, #8b5cf6);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" width="14" height="14" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
+                <button type="button" onclick="finishAdminVoiceRec()" title="Kirim" style="width:28px;height:28px;border-radius:50%;border:none;background:#2563eb;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg viewBox="0 0 24 24" width="14" height="14" stroke="#fff" stroke-width="2" fill="none" stroke-linecap="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
             </div>
             <div id="admin-controls" style="display:flex;align-items:flex-end">
                 <button class="btn-icon" onclick="document.getElementById('admin-file-input').click()" title="Kirim gambar/video">
@@ -127,10 +127,10 @@
 .chat-video-wrap { position: relative; }
 .chat-video-play { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 2; width: 44px; height: 44px; border: none; border-radius: 50%; background: rgba(0,0,0,.55); color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: background .2s ease, transform .2s ease; }
 .chat-video-play svg { width: 20px; height: 20px; fill: #fff; margin-left: 2px; }
-.chat-video-play:hover { background: rgba(124,58,237,.85); transform: translate(-50%,-50%) scale(1.08); }
+.chat-video-play:hover { background: rgba(37,99,235,.85); transform: translate(-50%,-50%) scale(1.08); }
 .chat-video-play.is-hidden { display: none; }
 .chat-voice { display: flex; align-items: center; gap: 10px; max-width: 240px; min-width: 170px; padding: 6px 12px; border-radius: 14px; background: var(--surface-2, rgba(255,255,255,.06)); cursor: pointer; user-select: none; }
-.chat-voice-btn { width: 30px; height: 30px; border-radius: 50%; background: var(--purple, #8b5cf6); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.chat-voice-btn { width: 30px; height: 30px; border-radius: 50%; background: #2563eb; color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .chat-voice-btn svg { width: 14px; height: 14px; fill: #fff; }
 .chat-voice-btn:not(.is-playing) svg { transform: translateX(1px); }
 .chat-voice-btn.is-playing svg { transform: none; }

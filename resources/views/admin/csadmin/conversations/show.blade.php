@@ -58,7 +58,7 @@
 .cs-video-play svg { width: 20px; height: 20px; fill: #fff; margin-left: 2px; }
 .cs-video-play.is-hidden { display: none; }
 .cs-voice { display: flex; align-items: center; gap: 10px; max-width: 240px; min-width: 170px; padding: 6px 12px; border-radius: 14px; background: #103A5C; cursor: pointer; user-select: none; }
-.cs-voice-btn { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #3F6DF5, #8b5cf6); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.cs-voice-btn { width: 30px; height: 30px; border-radius: 50%; background: linear-gradient(135deg, #2563eb, #0ea5e9); color: #fff; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .cs-voice-btn svg { width: 14px; height: 14px; fill: #fff; }
 .cs-voice-btn:not(.is-playing) svg { transform: translateX(1px); }
 .cs-voice-btn.is-playing svg { transform: none; }
@@ -84,7 +84,7 @@
 .cs-composer-input:focus { border-color: #3F6DF5; }
 .cs-send-btn {
     width: 38px; height: 38px; border-radius: 12px; border: none; flex-shrink: 0;
-    background: linear-gradient(135deg, #3F6DF5, #8b5cf6); color: #fff;
+    background: linear-gradient(135deg, #2563eb, #0ea5e9); color: #fff;
     cursor: pointer; display: flex; align-items: center; justify-content: center;
 }
 .cs-send-btn:disabled { opacity: .4; cursor: default; }
@@ -94,7 +94,7 @@
 .cs-rec-hint { flex: 1; font-size: 11px; color: #6F89A7; }
 .cs-rec-btn { width: 28px; height: 28px; border-radius: 50%; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .cs-rec-btn.cancel { background: rgba(239,68,68,.85); color: #fff; }
-.cs-rec-btn.send { background: linear-gradient(135deg, #3F6DF5, #8b5cf6); color: #fff; }
+.cs-rec-btn.send { background: linear-gradient(135deg, #2563eb, #0ea5e9); color: #fff; }
 .cs-msg-actions { position: relative; display: inline-flex; }
 .cs-del-trigger { background: none; border: none; cursor: pointer; font-size: 10px; opacity: .5; color: inherit; padding: 0 3px; }
 .cs-del-trigger:hover { opacity: 1; }
@@ -566,7 +566,7 @@ function csShowPreview() {
             <input type="text" id="cs-preview-caption" placeholder="Caption (opsional)" style="width:100%;margin-bottom:12px;border-radius:12px;padding:10px 14px;background:#102A47;border:1px solid #1A4168;color:#F5F7FB;outline:none;font-family:'Poppins',sans-serif">
             <div style="display:flex;gap:8px;justify-content:center">
                 <button onclick="csCancelPreview()" style="padding:8px 20px;border-radius:8px;border:1px solid #1A4168;background:transparent;color:#8FA8C4;cursor:pointer;font-family:'Poppins',sans-serif">Batal</button>
-                <button onclick="csConfirmSend()" style="padding:8px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#3F6DF5,#8b5cf6);color:#fff;cursor:pointer;font-weight:600;font-family:'Poppins',sans-serif">Kirim</button>
+                <button onclick="csConfirmSend()" style="padding:8px 20px;border-radius:8px;border:none;background:linear-gradient(135deg,#2563eb,#0ea5e9);color:#fff;cursor:pointer;font-weight:600;font-family:'Poppins',sans-serif">Kirim</button>
             </div>
         </div>`;
     document.body.appendChild(overlay);

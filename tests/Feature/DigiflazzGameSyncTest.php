@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\User;
 use App\Services\DigiflazzService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Route;
 use Tests\TestCase;
@@ -21,6 +22,7 @@ class DigiflazzGameSyncTest extends TestCase
 
         config()->set('digiflazz.username', 'test-game-sync');
         config()->set('digiflazz.key', 'test-key');
+        config()->set('digiflazz.price_list_refresh_cooldown_seconds', 0);
     }
 
     private function item(string $sku, string $brand, string $category = 'Games'): array
@@ -75,6 +77,65 @@ class DigiflazzGameSyncTest extends TestCase
         Http::assertSent(fn ($request) => $request->url() === config('digiflazz.base_url').'/price-list'
             && $request['cmd'] === 'prepaid'
             && $request['category'] === 'Games');
+    }
+
+    public function test_admin_manual_sync_bypasses_cached_price_list(): void
+    {
+        $cacheKey = 'digiflazz_pricelist_games_'.md5('test-game-sync');
+        Cache::put($cacheKey, [$this->item('OLD-CACHED', 'Old Cached Game')], now()->addHour());
+
+        Http::fake(['*/price-list' => Http::response([
+            'data' => [$this->item('NEW-FRESH', 'New Fresh Game')],
+        ])]);
+
+        $admin = User::factory()->create(['is_admin' => true]);
+        $this->actingAs($admin, 'admin')
+            ->post(route('admin.products.sync'))
+            ->assertRedirect(route('admin.products'))
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('products', ['buyer_sku_code' => 'NEW-FRESH']);
+        $this->assertDatabaseMissing('products', ['buyer_sku_code' => 'OLD-CACHED']);
+        Http::assertSentCount(1);
+    }
+
+    public function test_failed_force_refresh_keeps_valid_cache_and_reports_api_message(): void
+    {
+        $cacheKey = 'digiflazz_pricelist_games_'.md5('test-game-sync');
+        $cached = [$this->item('SAFE-CACHED', 'Safe Cached Game')];
+        Cache::put($cacheKey, $cached, now()->addHour());
+
+        Http::fake(['*/price-list' => Http::response([
+            'data' => [
+                'rc' => '83',
+                'message' => 'Anda telah mencapai limitasi pengecekan pricelist.',
+            ],
+        ])]);
+
+        $result = app(DigiflazzService::class)->syncProducts(true);
+
+        $this->assertFalse($result['success']);
+        $this->assertStringContainsString('limitasi pengecekan pricelist', $result['message']);
+        $this->assertSame($cached, Cache::get($cacheKey));
+        $this->assertDatabaseMissing('products', ['buyer_sku_code' => 'SAFE-CACHED']);
+    }
+
+    public function test_force_refresh_respects_local_cooldown_before_calling_api(): void
+    {
+        config()->set('digiflazz.price_list_refresh_cooldown_seconds', 120);
+        Cache::put(
+            'digiflazz_pricelist_force_until_'.md5('test-game-sync'),
+            now()->addSeconds(60)->getTimestamp(),
+            now()->addSeconds(60)
+        );
+
+        Http::fake();
+
+        $result = app(DigiflazzService::class)->syncProducts(true);
+
+        $this->assertFalse($result['success']);
+        $this->assertStringContainsString('Tunggu', $result['message']);
+        Http::assertNothingSent();
     }
 
     public function test_sync_deactivates_only_missing_game_products(): void

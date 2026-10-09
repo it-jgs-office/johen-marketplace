@@ -27,7 +27,7 @@
 @endphp
 
 <style>
-.ck-wrap{max-width:1040px;margin:0 auto;padding:2.5rem 1.25rem 5rem;}
+.ck-wrap{width:100%;max-width:var(--layout-max);margin:0 auto;padding:2.5rem var(--layout-gutter) 5rem;}
 .ck-head{margin-bottom:1.6rem;}
 .ck-head h1{font-family:var(--font-display);font-size:1.6rem;font-weight:800;color:var(--text);}
 .ck-head p{font-size:.85rem;color:var(--text-mute);margin-top:.25rem;}

@@ -8,8 +8,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" href="{{ pwa_asset('logo.png') }}">
-    <link rel="shortcut icon" href="{{ pwa_asset('logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}?v={{ pwa_build() }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.png') }}?v={{ pwa_build() }}">
     @include('partials.pwa')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     @stack('styles')
@@ -17,7 +17,7 @@
         :root{
             --auth-primary:#2563eb;
             --auth-accent:#00d4ff;
-            --auth-purple:#7c3aed;
+            --auth-purple:#0ea5e9;
             --auth-gradient:linear-gradient(92deg,var(--auth-primary),var(--auth-purple));
             --auth-bg:linear-gradient(160deg,#01203c,#020D2E);
             --auth-text:#F0F4FF;

@@ -189,9 +189,10 @@
   --jba-accent: #2563eb;
 }
 .jba-detail-page {
-  max-width: 1200px;
+  width: 100%;
+  max-width: var(--layout-max);
   margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
+  padding: 2rem var(--layout-gutter) 4rem;
 }
 .jba-detail-wrap {
   display: grid;

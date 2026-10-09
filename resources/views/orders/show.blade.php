@@ -332,7 +332,7 @@
 </div>
 
 <style>
-.dt-wrap{max-width:1400px;margin:1.5rem auto 3rem;padding:0 2rem;}
+.dt-wrap{width:100%;max-width:var(--layout-max);margin:1.5rem auto 3rem;padding:0 var(--layout-gutter);}
 .dt-breadcrumb{display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--text-dim);margin-bottom:1.5rem;}
 .dt-breadcrumb a{color:var(--text-dim);text-decoration:none;transition:color .2s;}
 .dt-breadcrumb a:hover{color:var(--text);}
@@ -442,7 +442,7 @@
   .dt-title{font-size:1.8rem;}
 }
 @media(max-width:480px){
-  .dt-wrap{padding:0 1rem;}
+  .dt-wrap{padding:0 var(--layout-gutter);}
   .dt-timeline-time{display:none;}
 }
 </style>

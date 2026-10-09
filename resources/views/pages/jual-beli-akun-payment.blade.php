@@ -267,9 +267,10 @@
 
 <style>
 .jpay-wrap {
-  max-width: 1200px;
+  width: 100%;
+  max-width: var(--layout-max);
   margin: 0 auto;
-  padding: 2rem 1.5rem 4rem;
+  padding: 2rem var(--layout-gutter) 4rem;
 }
 .jpay-header {
   display: flex;
@@ -319,8 +320,8 @@
 .jpay-money-value { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; color: var(--text); letter-spacing: .02em; word-break: break-all; line-height: 1.2; }
 .jpay-money-note { font-size: .7rem; color: var(--text-dim); }
 .jpay-copy-big { margin-top: .35rem; }
-.jpay-pay-btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; width: 100%; padding: .85rem 1.5rem; border: none; border-radius: 12px; background: linear-gradient(135deg, var(--purple-light), var(--purple)); color: #fff; font-weight: 700; font-size: .95rem; cursor: pointer; transition: transform .2s, box-shadow .2s; box-shadow: 0 4px 20px -4px var(--purple-glow); font-family: var(--font-body); text-decoration: none; box-sizing: border-box; }
-.jpay-pay-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px -4px var(--purple-glow); }
+.jpay-pay-btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; width: 100%; padding: .85rem 1.5rem; border: none; border-radius: 12px; background: linear-gradient(135deg, #2563eb, #0ea5e9); color: #fff; font-weight: 700; font-size: .95rem; cursor: pointer; transition: transform .2s, box-shadow .2s; box-shadow: 0 4px 20px -4px rgba(37,99,235,.45); font-family: var(--font-body); text-decoration: none; box-sizing: border-box; }
+.jpay-pay-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px -4px rgba(37,99,235,.6); }
 .jpay-pay-btn:active { transform: translateY(0); }
 
 .jpay-method-qr-wrap { display: flex; flex-direction: column; align-items: center; margin-bottom: 1rem; }

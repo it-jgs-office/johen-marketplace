@@ -24,6 +24,9 @@ class DigiflazzService
 
     protected float $marginPercent = 5.0;
 
+    /** Pesan error terakhir saat mengambil price list langsung dari API. */
+    protected ?string $priceListError = null;
+
     public function __construct()
     {
         // Kredensial API hanya dibaca dari .env/config, bukan dari database.
@@ -226,19 +229,33 @@ class DigiflazzService
     public function getPriceList(bool $forceRefresh = false): array
     {
         $cacheKey = 'digiflazz_pricelist_games_'.md5($this->username);
+        $refreshCooldownKey = 'digiflazz_pricelist_force_until_'.md5($this->username);
+        $cached = Cache::get($cacheKey);
 
-        if (! $forceRefresh && Cache::has($cacheKey)) {
-            return (array) Cache::get($cacheKey);
+        $this->priceListError = null;
+
+        if (! $forceRefresh && is_array($cached) && $cached !== []) {
+            return $cached;
         }
 
-        if ($forceRefresh) {
-            Cache::forget($cacheKey);
+        $cooldown = max(0, (int) config('digiflazz.price_list_refresh_cooldown_seconds', 120));
+        $refreshAllowedAt = (int) Cache::get($refreshCooldownKey, 0);
+        $remainingSeconds = $refreshAllowedAt - now()->getTimestamp();
+
+        if ($forceRefresh && $cooldown > 0 && $remainingSeconds > 0) {
+            $this->priceListError = 'Tunggu '.max(1, $remainingSeconds).' detik sebelum memperbarui katalog dari Digiflazz lagi.';
+
+            return [];
         }
 
         $sign = md5($this->username.$this->key.'pricelist');
 
         try {
-            $response = Http::post($this->baseUrl.'/price-list', [
+            if ($forceRefresh && $cooldown > 0) {
+                Cache::put($refreshCooldownKey, now()->getTimestamp() + $cooldown, now()->addSeconds($cooldown));
+            }
+
+            $response = Http::timeout(20)->post($this->baseUrl.'/price-list', [
                 'cmd' => 'prepaid',
                 'category' => 'Games',
                 'username' => $this->username,
@@ -246,6 +263,7 @@ class DigiflazzService
             ]);
 
             if ($response->failed()) {
+                $this->priceListError = 'HTTP error '.$response->status().'.';
                 Log::error('Digiflazz price list HTTP error: status='.$response->status());
 
                 return [];
@@ -254,13 +272,15 @@ class DigiflazzService
             $data = $response->json();
 
             if (isset($data['rc']) && $data['rc'] !== '00') {
-                Log::error('Digiflazz price list error: '.($data['message'] ?? 'Unknown error'));
+                $this->priceListError = (string) ($data['message'] ?? 'Digiflazz menolak permintaan price list.');
+                Log::error('Digiflazz price list error: '.$this->priceListError);
 
                 return [];
             }
 
             if (isset($data['data']['rc']) && $data['data']['rc'] !== '00') {
-                Log::error('Digiflazz price list error: '.($data['data']['message'] ?? 'Unknown error'));
+                $this->priceListError = (string) ($data['data']['message'] ?? 'Digiflazz menolak permintaan price list.');
+                Log::error('Digiflazz price list error: '.$this->priceListError);
 
                 return [];
             }
@@ -275,10 +295,13 @@ class DigiflazzService
 
             if (! empty($list)) {
                 Cache::put($cacheKey, $list, now()->addHour());
+            } else {
+                $this->priceListError = 'Price list terbaru tidak berisi produk kategori Games.';
             }
 
             return $list;
         } catch (\Exception $e) {
+            $this->priceListError = $e->getMessage();
             Log::error('Digiflazz getPriceList failed: '.$e->getMessage());
 
             return [];
@@ -294,7 +317,11 @@ class DigiflazzService
                 return ['success' => false, 'message' => 'Digiflazz belum dikonfigurasi.'];
             }
 
-            return ['success' => false, 'message' => 'Tidak ada produk kategori Games yang dapat diambil dari Digiflazz. Periksa akses API dan katalog akun Anda.'];
+            $detail = $this->priceListError
+                ? ' Detail: '.$this->priceListError
+                : '';
+
+            return ['success' => false, 'message' => 'Katalog terbaru gagal diambil dari Digiflazz; data lama tetap dipertahankan.'.$detail];
         }
 
         $brands = Brand::query()->get(['name', 'catalog_group']);

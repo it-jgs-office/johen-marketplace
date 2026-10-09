@@ -6,6 +6,8 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="theme-color" content="#01203c">
     <title>Admin - {{ config('app.name') }}</title>
+    <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}?v={{ pwa_build() }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.png') }}?v={{ pwa_build() }}">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,7 +25,7 @@
             --accent: #2563eb;
             --accent-hover: #1d4ed8;
             --brand-cyan: #00d4ff;
-            --brand-purple: #7c3aed;
+            --brand-purple: #0ea5e9;
             --brand-gradient: linear-gradient(135deg, var(--accent), var(--brand-purple));
             --text: #f0f4ff;
             --text-muted: #94a3b8;
@@ -649,7 +651,7 @@
 
                 <div class="nav-section">Produk</div>
                 <a href="{{ route('admin.products') }}" class="{{ request()->routeIs('admin.products*') ? 'active' : '' }}">
-                    <i class="fas fa-bolt"></i> Top Up
+                    <i class="fas fa-gem"></i> Top Up
                 </a>
                 <a href="{{ route('admin.account-listings') }}" class="{{ request()->routeIs('admin.account-listings*') ? 'active' : '' }}">
                     <i class="fas fa-store"></i> Jual Beli Akun

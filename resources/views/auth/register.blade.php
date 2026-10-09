@@ -74,6 +74,13 @@
         </div>
     </div>
 
+    <div class="form-group">
+        <div class="g-recaptcha" data-sitekey="{{ config('recaptcha.site_key') }}" data-theme="dark"></div>
+        @error('g-recaptcha-response')
+            <div class="error-text"><i class="fas fa-exclamation-circle"></i> {{ $message }}</div>
+        @enderror
+    </div>
+
     <button type="submit" class="btn-primary" id="registerBtn">
         <span class="spinner"></span>
         <span class="btn-text"><i class="fas fa-user-plus"></i> Daftar</span>
@@ -92,6 +99,7 @@
 </div>
 
 @push('scripts')
+<script src="https://www.google.com/recaptcha/api.js" async defer></script>
 <script>
 function togglePass(btn) {
     const input = btn.closest('.input-wrap').querySelector('input');

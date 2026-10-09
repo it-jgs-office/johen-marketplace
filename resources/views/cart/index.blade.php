@@ -4,7 +4,7 @@
 
 @section('content')
 <style>
-.cart-page{max-width:960px;margin:0 auto;padding:2.5rem 1.25rem 5rem;}
+.cart-page{width:100%;max-width:var(--layout-max);margin:0 auto;padding:2.5rem var(--layout-gutter) 5rem;}
 
 .cart-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.75rem;}
 .cart-head h1{font-family:var(--font-display);font-size:1.6rem;font-weight:800;color:var(--text);}

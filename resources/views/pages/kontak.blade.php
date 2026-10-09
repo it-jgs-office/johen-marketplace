@@ -62,9 +62,10 @@
 
 <style>
 .kontak-page {
-  max-width: 1100px;
+  width: 100%;
+  max-width: var(--layout-max);
   margin: 0 auto;
-  padding: 2rem 1.5rem 2rem;
+  padding: 2rem var(--layout-gutter);
   min-height: calc(100vh - 140px);
   display: flex;
   flex-direction: column;
@@ -185,7 +186,7 @@
 }
 @media (max-width: 640px) {
   .kontak-page {
-    padding: 1.5rem 1rem;
+    padding: 1.5rem var(--layout-gutter);
   }
   .kontak-grid {
     grid-template-columns: 1fr;

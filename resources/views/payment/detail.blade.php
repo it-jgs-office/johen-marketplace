@@ -399,7 +399,7 @@
 
 <style>
 /* ===== Replate status detail dengan design system yang sama dengan halaman transaksi existing (dt-*) ===== */
-.pd-wrap{max-width:1200px;}
+.pd-wrap{max-width:var(--layout-max);}
 .pd-breadcrumb{display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--text-dim);margin:-.2rem 0 1.2rem;}
 .pd-breadcrumb a{color:var(--text-dim);text-decoration:none;transition:color .2s;}
 .pd-breadcrumb a:hover{color:var(--text);}

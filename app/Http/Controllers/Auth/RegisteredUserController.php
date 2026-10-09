@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Mail\SendOtpMail;
 use App\Models\OtpCode;
 use App\Models\User;
+use App\Services\RecaptchaService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Mail;
@@ -27,7 +28,14 @@ class RegisteredUserController extends Controller
             'username' => ['required', 'string', 'max:255', 'unique:'.User::class],
             'email' => ['required', 'string', 'lowercase', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
+            'g-recaptcha-response' => ['required', 'string'],
         ]);
+
+        if (! app(RecaptchaService::class)->passes($request->string('g-recaptcha-response')->toString(), $request->ip())) {
+            throw ValidationException::withMessages([
+                'g-recaptcha-response' => 'Silakan centang verifikasi reCAPTCHA terlebih dahulu.',
+            ]);
+        }
 
         $data = $request->only('name', 'username', 'email', 'password');
 
