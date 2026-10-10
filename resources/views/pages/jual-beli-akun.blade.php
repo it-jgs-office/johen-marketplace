@@ -128,8 +128,8 @@
       <a class="jba-game-btn" href="{{ $slug ? '/jual-beli-akun/' . $slug : '#' }}"
          data-game="{{ $brand->name }}" @if($slug)data-slug="{{ $slug }}"@endif>
         <div class="jba-game-btn-icon">
-          @if($brand->thumbnail_url)
-            <img src="{{ $brand->thumbnail_url }}" alt="{{ $brand->name }}">
+          @if($brand->jba_card_image_url)
+            <img src="{{ $brand->jba_card_image_url }}" alt="{{ $brand->name }}">
           @else
             <span style="font-size:2.4rem">🎮</span>
           @endif

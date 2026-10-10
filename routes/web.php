@@ -180,6 +180,10 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::patch('/account-listings/{accountListing}/toggle', [App\Http\Controllers\AdminAccountListingController::class, 'toggle'])->name('account-listings.toggle');
     Route::delete('/account-listings/{accountListing}', [App\Http\Controllers\AdminAccountListingController::class, 'destroy'])->name('account-listings.destroy');
 
+    Route::get('/jba-game-cards', [App\Http\Controllers\Admin\JbaGameCardController::class, 'index'])->name('jba-game-cards');
+    Route::put('/jba-game-cards/{brand}', [App\Http\Controllers\Admin\JbaGameCardController::class, 'update'])->name('jba-game-cards.update');
+    Route::delete('/jba-game-cards/{brand}', [App\Http\Controllers\Admin\JbaGameCardController::class, 'destroy'])->name('jba-game-cards.destroy');
+
     Route::get('/brands', [AdminController::class, 'brands'])->name('brands');
     Route::get('/brands/{brand}/edit', [AdminController::class, 'brandsEdit'])->name('brands.edit');
     Route::put('/brands/{brand}', [AdminController::class, 'brandsUpdate'])->name('brands.update');

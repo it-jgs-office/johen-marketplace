@@ -393,12 +393,46 @@ function fillTestimonialLane(lane, items) {
   const group = document.createElement('div');
   group.className = 'home-testi-lane-group';
   items.forEach(item => group.appendChild(createTestiCard(item)));
-  lane.replaceChildren(group, group.cloneNode(true));
+  lane.replaceChildren(group);
 }
 
 if (testiTrack) {
   fillTestimonialLane(testiTrack, TESTIMONIALS);
 }
+
+// Each half of the track must cover the visible area before it is duplicated.
+// Otherwise short lists expose an empty tail on wide screens before looping.
+document.querySelectorAll('.home-testi-lane').forEach(lane => {
+  const group = lane.querySelector('.home-testi-lane-group');
+  const wrap = lane.closest('.home-testi-lane-wrap');
+  if (!group || !wrap || !group.children.length) return;
+
+  const cards = Array.from(group.children).map(card => card.cloneNode(true));
+  let lastWidth = 0;
+
+  function rebuildLane() {
+    const width = wrap.clientWidth;
+    if (!width || width === lastWidth) return;
+    lastWidth = width;
+
+    group.replaceChildren(...cards.map(card => card.cloneNode(true)));
+    while (group.getBoundingClientRect().width < width) {
+      cards.forEach(card => group.appendChild(card.cloneNode(true)));
+    }
+
+    const copy = group.cloneNode(true);
+    copy.setAttribute('aria-hidden', 'true');
+    copy.querySelectorAll('article').forEach(card => card.setAttribute('tabindex', '-1'));
+    lane.replaceChildren(group, copy);
+  }
+
+  rebuildLane();
+  if (typeof ResizeObserver !== 'undefined') {
+    new ResizeObserver(rebuildLane).observe(wrap);
+  } else {
+    window.addEventListener('resize', rebuildLane);
+  }
+});
 
 // ============ NEWSLETTER ============
 document.getElementById('newsletterForm')?.addEventListener('submit', (e) => {

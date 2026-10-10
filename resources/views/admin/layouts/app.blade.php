@@ -622,6 +622,27 @@
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
         ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+
+        /* IMAGE DROPZONE */
+        .admin-image-dropzone {
+            display: flex; align-items: center; gap: 0.7rem; width: 100%; min-height: 58px;
+            padding: 0.65rem 0.75rem; border: 1px dashed color-mix(in srgb, var(--accent) 52%, var(--border));
+            border-radius: 10px; background: color-mix(in srgb, var(--accent) 5%, transparent);
+            color: var(--text); cursor: pointer; flex: 1 1 12rem;
+            transition: border-color .18s ease, background .18s ease, transform .18s ease;
+        }
+        .admin-image-dropzone:hover, .admin-image-dropzone:focus-visible, .admin-image-dropzone.is-dragging {
+            border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, transparent); outline: none;
+        }
+        .admin-image-dropzone.is-dragging { transform: scale(1.01); }
+        .admin-image-dropzone.is-disabled { cursor: not-allowed; opacity: .55; }
+        .admin-image-dropzone > input[type="file"] { position: absolute !important; width: 1px !important; height: 1px !important; overflow: hidden !important; clip: rect(0 0 0 0) !important; clip-path: inset(50%) !important; white-space: nowrap !important; }
+        .admin-image-dropzone__icon { display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 32px; border-radius: 9px; background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--accent); font-size: .9rem; }
+        .admin-image-dropzone__copy { display: grid; gap: .1rem; min-width: 0; color: var(--text-dim); font-size: .68rem; line-height: 1.35; }
+        .admin-image-dropzone__title { overflow: hidden; color: var(--text); font-size: .75rem; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+        .admin-image-dropzone__action { margin-left: auto; padding: .3rem .45rem; border: 1px solid var(--glass-border); border-radius: 6px; color: var(--text-muted); font-size: .63rem; font-weight: 600; white-space: nowrap; }
+        .admin-image-dropzone.has-file .admin-image-dropzone__icon { background: rgba(16,185,129,.16); color: #6ee7b7; }
+        @media (max-width: 480px) { .admin-image-dropzone__action { display: none; } }
     </style>
     @stack('styles')
 </head>
@@ -655,6 +676,9 @@
                 </a>
                 <a href="{{ route('admin.account-listings') }}" class="{{ request()->routeIs('admin.account-listings*') ? 'active' : '' }}">
                     <i class="fas fa-store"></i> Jual Beli Akun
+                </a>
+                <a href="{{ route('admin.jba-game-cards') }}" class="{{ request()->routeIs('admin.jba-game-cards*') ? 'active' : '' }}">
+                    <i class="fas fa-images"></i> Gambar Card Jual Beli
                 </a>
                 <div class="nav-section">Event</div>
                 <a href="{{ route('admin.popup-banners') }}" class="{{ request()->routeIs('admin.popup-banners*') ? 'active' : '' }}">
@@ -922,6 +946,121 @@
         document.addEventListener('keydown', function (e) {
             if (e.key === 'Escape') document.getElementById('modalOverlay')?.classList.remove('show');
         });
+
+        // ===== IMAGE DROPZONE =====
+        // Terapkan ke field gambar murni saja. Lampiran chat yang dapat berisi
+        // video/dokumen tetap memakai alur lampiran khususnya masing-masing.
+        function enhanceAdminImageUpload(input) {
+            if (input.dataset.adminDropzoneReady === 'true') return;
+
+            const acceptValues = (input.getAttribute('accept') || '')
+                .split(',')
+                .map((value) => value.trim())
+                .filter(Boolean);
+            const isImageOnly = acceptValues.length > 0 && acceptValues.every((value) => value.startsWith('image/'));
+
+            if (!isImageOnly || input.closest('.thumbnail-dropzone') || input.closest('.chat-composer') || input.hasAttribute('capture')) {
+                return;
+            }
+
+            const label = input.id ? document.querySelector(`label[for="${input.id}"]`) : null;
+            const fieldName = label?.textContent?.trim() || input.name?.replace(/[_\[\]]/g, ' ').trim() || 'gambar';
+            const dropzone = document.createElement('div');
+            const icon = document.createElement('span');
+            const copy = document.createElement('span');
+            const title = document.createElement('strong');
+            const subtitle = document.createElement('span');
+            const action = document.createElement('span');
+            let dragDepth = 0;
+
+            dropzone.className = 'admin-image-dropzone';
+            dropzone.setAttribute('role', 'button');
+            dropzone.setAttribute('tabindex', input.disabled ? '-1' : '0');
+            dropzone.setAttribute('aria-label', `Pilih atau seret gambar untuk ${fieldName}`);
+            dropzone.classList.toggle('is-disabled', input.disabled);
+
+            icon.className = 'admin-image-dropzone__icon';
+            icon.setAttribute('aria-hidden', 'true');
+            icon.innerHTML = '<i class="fas fa-cloud-arrow-up"></i>';
+            copy.className = 'admin-image-dropzone__copy';
+            title.className = 'admin-image-dropzone__title';
+            subtitle.textContent = input.multiple ? 'Seret satu atau beberapa gambar ke sini' : 'Seret gambar ke sini atau klik untuk memilih';
+            action.className = 'admin-image-dropzone__action';
+            action.setAttribute('aria-hidden', 'true');
+            action.textContent = 'Pilih gambar';
+            copy.append(title, subtitle);
+
+            input.parentNode.insertBefore(dropzone, input);
+            dropzone.append(input, icon, copy, action);
+            input.dataset.adminDropzoneReady = 'true';
+            input.setAttribute('tabindex', '-1');
+
+            const updateFileLabel = function () {
+                const files = Array.from(input.files || []);
+                if (!files.length) {
+                    title.textContent = input.multiple ? 'Belum ada gambar dipilih' : 'Belum ada gambar dipilih';
+                    dropzone.classList.remove('has-file');
+                    return;
+                }
+
+                title.textContent = files.length === 1 ? files[0].name : `${files.length} gambar dipilih`;
+                dropzone.classList.add('has-file');
+            };
+
+            const openPicker = function () {
+                if (!input.disabled) input.click();
+            };
+
+            dropzone.addEventListener('click', function (event) {
+                if (event.target !== input) openPicker();
+            });
+            dropzone.addEventListener('keydown', function (event) {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    openPicker();
+                }
+            });
+            input.addEventListener('change', updateFileLabel);
+
+            dropzone.addEventListener('dragenter', function (event) {
+                event.preventDefault();
+                dragDepth += 1;
+                if (!input.disabled) dropzone.classList.add('is-dragging');
+            });
+            dropzone.addEventListener('dragover', function (event) {
+                event.preventDefault();
+            });
+            dropzone.addEventListener('dragleave', function (event) {
+                event.preventDefault();
+                dragDepth = Math.max(0, dragDepth - 1);
+                if (!dragDepth) dropzone.classList.remove('is-dragging');
+            });
+            dropzone.addEventListener('drop', function (event) {
+                event.preventDefault();
+                dragDepth = 0;
+                dropzone.classList.remove('is-dragging');
+                if (input.disabled) return;
+
+                const files = Array.from(event.dataTransfer?.files || []).filter((file) => file.type.startsWith('image/'));
+                if (!files.length) return;
+
+                const transfer = new DataTransfer();
+                (input.multiple ? files : files.slice(0, 1)).forEach((file) => transfer.items.add(file));
+                input.files = transfer.files;
+                input.dispatchEvent(new Event('change', { bubbles: true }));
+            });
+            input.form?.addEventListener('reset', function () {
+                requestAnimationFrame(updateFileLabel);
+            });
+
+            updateFileLabel();
+        }
+
+        function enhanceAdminImageUploads(root = document) {
+            root.querySelectorAll('input[type="file"][accept*="image"]').forEach(enhanceAdminImageUpload);
+        }
+
+        enhanceAdminImageUploads();
 
         // ===== CONFIRM DELETE =====
         let deleteForm = null;

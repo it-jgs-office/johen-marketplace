@@ -182,6 +182,7 @@ class OptimizeImages extends Command
                 'rows' => Brand::all(),
                 'attrs' => [
                     'thumbnail' => [640, 640],
+                    'jba_card_image' => [960, 960],
                     'featured_thumbnail' => [1280, 1280],
                     'featured_img_1' => [1280, 1280],
                     'featured_img_2' => [1280, 1280],

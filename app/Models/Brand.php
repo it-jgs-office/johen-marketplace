@@ -10,6 +10,7 @@ class Brand extends Model
         'name',
         'icon',
         'thumbnail',
+        'jba_card_image',
         'topup_character_image',
         'featured_thumbnail',
         'featured_img_1',
@@ -39,7 +40,12 @@ class Brand extends Model
         'sort_order' => 'integer',
     ];
 
-    protected $appends = ['thumbnail_url', 'topup_character_image_url', 'featured_thumbnail_url', 'featured_img_urls', 'carousel_bg_url', 'detail_bg_url', 'topup_popular_image_url', 'topup_popular_logo_url'];
+    protected $appends = ['thumbnail_url', 'jba_card_image_url', 'topup_character_image_url', 'featured_thumbnail_url', 'featured_img_urls', 'carousel_bg_url', 'detail_bg_url', 'topup_popular_image_url', 'topup_popular_logo_url'];
+
+    public function getJbaCardImageUrlAttribute(): ?string
+    {
+        return $this->jba_card_image ? media_url($this->jba_card_image) : null;
+    }
 
     public function getTopupCharacterImageUrlAttribute(): ?string
     {

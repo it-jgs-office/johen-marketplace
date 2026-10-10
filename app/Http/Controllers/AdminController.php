@@ -381,7 +381,7 @@ class AdminController extends Controller
         ];
 
         if ($request->hasFile('thumbnail') && $request->file('thumbnail')->isValid()) {
-            if ($brand->thumbnail) {
+            if ($brand->thumbnail && $brand->thumbnail !== $brand->jba_card_image) {
                 MediaStore::delete($brand->thumbnail);
             }
             $data['thumbnail'] = ImageOptimizer::storeOptimized($request->file('thumbnail'), 'brands', 640, 640);
@@ -461,6 +461,9 @@ class AdminController extends Controller
     {
         if ($brand->thumbnail) {
             MediaStore::delete($brand->thumbnail);
+        }
+        if ($brand->jba_card_image && $brand->jba_card_image !== $brand->thumbnail) {
+            MediaStore::delete($brand->jba_card_image);
         }
         if ($brand->topup_character_image) {
             MediaStore::delete($brand->topup_character_image);

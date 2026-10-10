@@ -9,6 +9,10 @@
         <span class="badge badge-neutral">{{ $listings->total() }} total</span>
     </div>
     <div class="flex items-center gap-3">
+        <a href="{{ route('admin.jba-game-cards') }}" class="btn btn-ghost">
+            <i class="fas fa-images"></i>
+            <span>Gambar Card Game</span>
+        </a>
         <form action="{{ route('admin.account-listings.sync') }}" method="POST" onsubmit="return confirm('Sinkronkan semua listing dari johengaming.id? Proses berjalan di latar belakang dan bisa memakan beberapa menit.')">
             @csrf
             <button type="submit" class="btn btn-ghost" @if(($syncStatus['state'] ?? null) === 'running') disabled @endif>

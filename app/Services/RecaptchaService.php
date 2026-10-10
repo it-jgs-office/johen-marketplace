@@ -27,6 +27,6 @@ class RecaptchaService
             return false;
         }
 
-        return $response->successful() && $response->boolean('success');
+        return $response->successful() && $response->json('success') === true;
     }
 }
