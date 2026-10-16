@@ -21,6 +21,9 @@
     ];
     $methodLabel = $methodLabels[strtolower((string) $checkout->payment_method)] ?? 'QRIS';
     $gatewayType = (string) $checkout->gateway_type;
+    if ($gatewayType === 'doku_checkout') {
+        $methodLabel = 'DOKU Checkout';
+    }
     $extra = (array) $checkout->gateway_extra;
 
     $statusMeta = match ($checkout->status) {
@@ -101,7 +104,7 @@
     @if($isDemo)
         <div class="pd-demo-banner">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 2l7-4A2 2 0 0021 16z"/><circle cx="12" cy="12" r="4"/></svg>
-            <span>@if($isSimulation)Mode Simulasi Aktif &mdash; tidak ada pembayaran sungguhan. Tekan &ldquo;Simulasi Bayar&rdquo; untuk menyelesaikan seluruh item.@else Mode Demo &mdash; Xendit belum dikonfigurasi.@endif</span>
+            <span>@if($isSimulation)Mode Simulasi Aktif &mdash; tidak ada pembayaran sungguhan. Tekan &ldquo;Simulasi Bayar&rdquo; untuk menyelesaikan seluruh item.@else Mode Demo &mdash; {{ $gatewayName }} belum dikonfigurasi.@endif</span>
         </div>
     @endif
 
@@ -197,7 +200,7 @@
                             <div class="pd-method-illus">
                                 <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--purple-light)" stroke-width="1.4"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6"/></svg>
                             </div>
-                            <p class="pd-method-placeholder-text">Bayar melalui halaman invoice Xendit.</p>
+                            <p class="pd-method-placeholder-text">Bayar melalui halaman aman {{ $gatewayName }}. Pilih kanal pembayaran lalu selesaikan transaksi.</p>
                             <button class="btn btn-solid btn-lg" type="button" id="ckpInvoiceBtn">Buka Halaman Pembayaran</button>
                         </div>
                     @else

@@ -108,9 +108,11 @@ class Checkout extends Model
         $total = (int) $counts->sum();
         $success = (int) ($counts['success'] ?? 0);
         $failed = (int) ($counts['failed'] ?? 0);
+        $pending = (int) ($counts['pending'] ?? 0);
 
         $status = match (true) {
             $total === 0 => $this->status,
+            $this->status === 'pending' && $pending === $total => 'pending',
             ($success + $failed) < $total => 'processing',
             $success > 0 => 'success',
             default => 'failed',

@@ -8,6 +8,7 @@
     // tampilan metode pembayaran tidak berbeda.
     $channelCategory = function (string $code): string {
         $code = strtolower($code);
+        if ($code === 'doku_checkout') return 'doku';
         if (in_array($code, ['qris'], true)) return 'qris';
         if (in_array($code, ['gopay', 'dana', 'ovo', 'shopeepay', 'linkaja', 'gcash'], true)) return 'ewallet';
         if (in_array($code, ['bca', 'bca_va', 'bri', 'bri_va', 'bni', 'bni_va', 'mandiri', 'mandiri_va', 'permata', 'permata_va', 'sa', 'saham', 'other_bank'], true)) return 'va';
@@ -15,6 +16,7 @@
         return 'ewallet';
     };
     $categories = [
+        'doku' => 'Pembayaran Aman',
         'qris' => 'QRIS',
         'ewallet' => 'E-Wallet',
         'va' => 'Virtual Account / Bank',

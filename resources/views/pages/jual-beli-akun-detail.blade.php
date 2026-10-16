@@ -1,9 +1,35 @@
 @extends('layouts.topup')
 
+@php
+  $jbaDetailBackgrounds = [
+    'mlbb' => asset('assets/backround/bg-ml.jpg'),
+    'pubg' => asset('assets/backround/bg-pubg.png'),
+    'efootball' => asset('assets/backround/bg-efootball.png'),
+    'fcm' => asset('assets/backround/bg-fcmobile.png'),
+    'ff' => asset('assets/backround/bg-ff.png'),
+    'roblox' => asset('assets/backround/bg-roblox.png'),
+    'valorant' => asset('assets/backround/bg-valo.png'),
+  ];
+  $jbaDetailBackground = $gameSlug ? ($jbaDetailBackgrounds[$gameSlug] ?? null) : null;
+  $hasListingVideo = filled($listing->video_url);
+  $isYoutubeVideo = filled($listing->youtube_video_id);
+@endphp
+
 @section('title', $listing->product_name . ' - Jual Beli Akun - ' . config('app.name'))
+
+@push('styles')
+@if($jbaDetailBackground)
+<link rel="preload" as="image" href="{{ $jbaDetailBackground }}" fetchpriority="high">
+@endif
+@endpush
 
 @section('content')
 <div class="jba-detail-page">
+  @if($jbaDetailBackground)
+    <div class="jba-detail-category-background" aria-hidden="true">
+      <img src="{{ $jbaDetailBackground }}" alt="">
+    </div>
+  @endif
   <div class="jba-detail-wrap">
     <div class="jba-detail-gallery {{ $listing->is_sold ? 'jba-detail-gallery--sold' : '' }}">
       <a href="{{ $gameSlug ? route('jual-beli-akun.game', $gameSlug) : route('jual-beli-akun') }}" class="jba-back-btn" title="Kembali">
@@ -22,10 +48,24 @@
             <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
           </div>
         @endif
-        @if($listing->youtube_video_id)
+        @if($hasListingVideo)
         <div class="jba-detail-video" id="jbaVideoContainer" style="display:none">
           <div class="jba-detail-video-wrap">
-            <iframe src="https://www.youtube.com/embed/{{ $listing->youtube_video_id }}" frameborder="0" allowfullscreen></iframe>
+            @if($isYoutubeVideo)
+              <iframe src="https://www.youtube.com/embed/{{ $listing->youtube_video_id }}" frameborder="0" allowfullscreen></iframe>
+            @else
+              <video controls playsinline preload="auto" id="jbaDirectVideo">
+                <source src="{{ $listing->video_url }}" type="video/mp4">
+                Browser Anda tidak mendukung pemutaran video.
+              </video>
+              <div class="jba-video-loading" id="jbaVideoLoading" role="status" aria-live="polite">
+                <div class="jba-video-loading-head">
+                  <span>Memuat video</span>
+                  <strong id="jbaVideoProgress">0%</strong>
+                </div>
+                <div class="jba-video-progress-track"><span id="jbaVideoProgressBar"></span></div>
+              </div>
+            @endif
           </div>
         </div>
         @endif
@@ -33,18 +73,22 @@
           <div class="jba-ribbon jba-ribbon--sold" style="font-size:.85rem;padding:4px 44px;top:20px;left:-36px">SOLD</div>
         @endif
       </div>
-      @if($listing->photo_url || count($listing->detail_photo_urls) > 0 || $listing->youtube_video_id)
+      @if($listing->photo_url || count($listing->detail_photo_urls) > 0 || $hasListingVideo)
       <div class="jba-detail-thumbs">
-        @if($listing->youtube_video_id)
+        @if($hasListingVideo)
           <button class="jba-thumb jba-thumb--video active-video" onclick="showVideo(this)" title="Video preview">
-            <img src="https://img.youtube.com/vi/{{ $listing->youtube_video_id }}/hqdefault.jpg" alt="Video">
+            @if($isYoutubeVideo)
+              <img src="https://img.youtube.com/vi/{{ $listing->youtube_video_id }}/hqdefault.jpg" alt="Video">
+            @else
+              <span class="jba-video-thumb-placeholder" aria-hidden="true"></span>
+            @endif
             <span class="jba-thumb-play">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="#fff"><polygon points="5 3 19 12 5 21 5 3"/></svg>
             </span>
           </button>
         @endif
         @if($listing->photo_url)
-          <button class="jba-thumb{{ $listing->youtube_video_id ? '' : ' active' }}" onclick="changeMainPhoto(this, '{{ $listing->photo_url }}')" title="Foto utama">
+          <button class="jba-thumb{{ $hasListingVideo ? '' : ' active' }}" onclick="changeMainPhoto(this, '{{ $listing->photo_url }}')" title="Foto utama">
             <img src="{{ $listing->photo_url }}" alt="main">
           </button>
         @endif
@@ -193,6 +237,34 @@
   max-width: var(--layout-max);
   margin: 0 auto;
   padding: 2rem var(--layout-gutter) 4rem;
+  position: relative;
+  isolation: isolate;
+}
+.jba-detail-page > :not(.jba-detail-category-background) {
+  position: relative;
+  z-index: 1;
+}
+.jba-detail-category-background {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+}
+.jba-detail-category-background::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: rgba(3, 14, 29, .42);
+}
+.jba-detail-category-background img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
 }
 .jba-detail-wrap {
   display: grid;
@@ -203,6 +275,12 @@
 .jba-detail-gallery {
   position: sticky;
   top: 2rem;
+  padding: 1rem;
+  border: 1px solid rgba(96, 165, 250, .35);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(12, 54, 120, .96), rgba(5, 27, 73, .94));
+  box-shadow: 0 16px 36px rgba(1, 13, 38, .3);
+  backdrop-filter: blur(10px);
 }
 .jba-back-btn {
   display: inline-flex;
@@ -350,6 +428,11 @@
   object-fit: cover;
   opacity: .75;
 }
+.jba-video-thumb-placeholder {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(135deg, #0b326b, #071a40);
+}
 .jba-thumb--video.active-video {
   border-color: #ff0000;
 }
@@ -394,12 +477,34 @@
   overflow: hidden;
   background: #000;
 }
-.jba-detail-video-wrap iframe {
+.jba-detail-video-wrap iframe,
+.jba-detail-video-wrap video {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
 }
+.jba-detail-video-wrap video { object-fit: contain; }
+.jba-video-loading {
+  position: absolute;
+  z-index: 3;
+  left: 50%;
+  bottom: 1rem;
+  width: min(78%, 280px);
+  padding: .6rem .7rem;
+  border: 1px solid rgba(96, 165, 250, .45);
+  border-radius: 9px;
+  background: rgba(4, 21, 55, .88);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .28);
+  transform: translateX(-50%);
+  transition: opacity .25s ease, visibility .25s ease;
+  pointer-events: none;
+}
+.jba-video-loading.is-ready { opacity: 0; visibility: hidden; }
+.jba-video-loading-head { display: flex; justify-content: space-between; gap: .75rem; color: #dbeafe; font-size: .7rem; font-weight: 600; }
+.jba-video-loading-head strong { color: #60a5fa; font-variant-numeric: tabular-nums; }
+.jba-video-progress-track { height: 4px; margin-top: .45rem; overflow: hidden; border-radius: 999px; background: rgba(147, 197, 253, .22); }
+.jba-video-progress-track span { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #38bdf8, #2563eb); transition: width .2s linear; }
 .jba-detail-photo-fallback {
   width: 100%;
   min-height: 320px;
@@ -436,7 +541,14 @@
   height: 100%;
   object-fit: contain;
 }
-.jba-detail-info {}
+.jba-detail-info {
+  padding: 1.35rem;
+  border: 1px solid rgba(96, 165, 250, .35);
+  border-radius: 18px;
+  background: linear-gradient(145deg, rgba(12, 54, 120, .96), rgba(5, 27, 73, .94));
+  box-shadow: 0 16px 36px rgba(1, 13, 38, .3);
+  backdrop-filter: blur(10px);
+}
 .jba-detail-game {
   font-size: .8rem;
   color: var(--jba-accent);
@@ -481,7 +593,7 @@
 .jba-detail-specs h3 {
   font-size: .95rem;
   font-weight: 700;
-  margin-bottom: -1rem;
+  margin-bottom: .55rem;
 }
 .jba-detail-specs-content {
   font-size: .88rem;
@@ -496,16 +608,29 @@
   flex-wrap: wrap;
 }
 @media (max-width: 640px) {
+  .jba-detail-gallery { padding: .75rem; border-radius: 14px; }
+  .jba-detail-info { padding: 1rem; border-radius: 14px; }
   .jba-detail-actions {
+    gap: .45rem;
     flex-wrap: nowrap;
   }
   .jba-detail-actions .jba-btn,
   .jba-detail-actions .jba-sold-notice {
-    flex: 1;
+    flex: 1 1 0;
     min-width: 0;
+    min-height: 38px;
     justify-content: center;
-    font-size: .82rem;
-    padding: .65rem .8rem;
+    gap: .32rem;
+    padding: .45rem .35rem;
+    font-size: .68rem;
+    line-height: 1.1;
+    white-space: nowrap;
+  }
+  .jba-detail-actions .jba-btn svg,
+  .jba-detail-actions .jba-sold-notice svg {
+    flex: 0 0 14px;
+    width: 14px;
+    height: 14px;
   }
 }
 .jba-btn {
@@ -569,9 +694,11 @@
   gap: .75rem;
   padding: .85rem 1rem;
   margin: 2rem 0 .5rem;
-  border-radius: 12px;
-  background: rgba(37, 99, 235, .08);
-  border: 1px solid rgba(37, 99, 235, .25);
+  border-radius: 14px;
+  background: linear-gradient(145deg, rgba(12, 54, 120, .96), rgba(5, 27, 73, .94));
+  border: 1px solid rgba(96, 165, 250, .35);
+  box-shadow: 0 12px 28px rgba(1, 13, 38, .25);
+  backdrop-filter: blur(10px);
   animation: jbaGlowPulse 2s ease-in-out infinite;
 }
 @keyframes jbaGlowPulse {
@@ -586,16 +713,16 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(37, 99, 235, .15);
-  color: var(--jba-accent);
+  background: rgba(96, 165, 250, .18);
+  color: #bfdbfe;
 }
 .jba-transfer-text {
   font-size: .8rem;
-  color: var(--text-dim);
+  color: rgba(219, 234, 254, .84);
   line-height: 1.5;
 }
 .jba-transfer-text strong {
-  color: var(--text);
+  color: #fff;
 }
 .jba-related {
   margin-top: .75rem;
@@ -857,6 +984,35 @@ function showVideo(btn) {
   const hint = document.querySelector('.jba-zoom-hint');
   if (hint) hint.style.display = 'none';
 }
+
+(function bindDirectVideoProgress() {
+  const video = document.getElementById('jbaDirectVideo');
+  const loader = document.getElementById('jbaVideoLoading');
+  const label = document.getElementById('jbaVideoProgress');
+  const bar = document.getElementById('jbaVideoProgressBar');
+  if (!video || !loader || !label || !bar) return;
+
+  function setProgress(percent) {
+    const value = Math.max(0, Math.min(100, Math.round(percent)));
+    label.textContent = value + '%';
+    bar.style.width = value + '%';
+  }
+
+  function updateProgress() {
+    if (!Number.isFinite(video.duration) || !video.buffered.length) return;
+    setProgress((video.buffered.end(video.buffered.length - 1) / video.duration) * 100);
+  }
+
+  video.addEventListener('loadedmetadata', updateProgress);
+  video.addEventListener('progress', updateProgress);
+  video.addEventListener('canplay', function () {
+    updateProgress();
+    window.setTimeout(() => loader.classList.add('is-ready'), 350);
+  }, { once: true });
+  video.addEventListener('waiting', function () { loader.classList.remove('is-ready'); updateProgress(); });
+  video.addEventListener('playing', function () { loader.classList.add('is-ready'); });
+  video.addEventListener('error', function () { label.textContent = 'Gagal dimuat'; });
+})();
 
 (function(){
   const container = document.getElementById('jbaZoomContainer');

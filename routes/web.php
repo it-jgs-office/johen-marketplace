@@ -73,9 +73,9 @@ Route::get('/jual-beli-akun/{game}', [App\Http\Controllers\HomeController::class
 Route::get('/jual-beli-akun/pesanan-saya', [App\Http\Controllers\HomeController::class, 'jualBeliAkunOrders'])
     ->name('jual-beli-akun.orders')
     ->middleware('auth:web');
-Route::get('/jual-beli-akun/{listing}', [App\Http\Controllers\HomeController::class, 'jualBeliAkunDetail'])->name('jual-beli-akun.detail');
-Route::get('/jual-beli-akun/{listing}/checkout', [App\Http\Controllers\HomeController::class, 'jualBeliAkunCheckout'])->name('jual-beli-akun.checkout');
-Route::post('/jual-beli-akun/{listing}/checkout', [App\Http\Controllers\HomeController::class, 'jualBeliAkunCheckoutStore'])->name('jual-beli-akun.checkout.store');
+Route::get('/jual-beli-akun/{listing}', [App\Http\Controllers\HomeController::class, 'jualBeliAkunDetail'])->whereNumber('listing')->name('jual-beli-akun.detail');
+Route::get('/jual-beli-akun/{listing}/checkout', [App\Http\Controllers\HomeController::class, 'jualBeliAkunCheckout'])->whereNumber('listing')->name('jual-beli-akun.checkout');
+Route::post('/jual-beli-akun/{listing}/checkout', [App\Http\Controllers\HomeController::class, 'jualBeliAkunCheckoutStore'])->whereNumber('listing')->name('jual-beli-akun.checkout.store');
 Route::get('/jual-beli-akun/order/{accountOrder}/payment', [App\Http\Controllers\HomeController::class, 'jualBeliAkunPayment'])->name('jual-beli-akun.payment');
 Route::get('/jual-beli-akun/order/{accountOrder}/status', [App\Http\Controllers\HomeController::class, 'jualBeliAkunPaymentStatus'])->name('jual-beli-akun.payment.status');
 Route::get('/testimoni', [HomeController::class, 'testimoni'])->name('testimoni');
@@ -98,6 +98,7 @@ Route::middleware('auth:web,admin')->group(function () {
     Route::get('/dashboard', fn () => redirect()->route('orders.my'))->name('dashboard');
 
     Route::get('/orders', [OrderController::class, 'myOrders'])->name('orders.my');
+    Route::get('/ulasan-saya', [ReviewController::class, 'index'])->name('reviews.my')->middleware('auth:web');
     Route::get('/pesan-saya', [HomeController::class, 'myInquiries'])->name('my-inquiries');
 
     Route::get('/vouchers', [VoucherController::class, 'index'])->name('vouchers.index');
@@ -141,8 +142,11 @@ Route::post('/payment/simulate/{order}', [PaymentController::class, 'simulatePay
     ->name('payment.simulate');
 
 Route::post('/payment/notification', [PaymentController::class, 'notificationHandler'])->name('payment.notification');
+Route::post('/payment/doku/notification', \App\Http\Controllers\DokuNotificationController::class)
+    ->name('payment.doku.notification');
 
-Route::post('/reviews/{order}', [ReviewController::class, 'store'])->name('reviews.store');
+Route::post('/reviews/{order}', [ReviewController::class, 'store'])->name('reviews.store')->middleware('auth:web');
+Route::post('/account-reviews/{accountOrder}', [ReviewController::class, 'storeAccount'])->name('account-reviews.store')->middleware('auth:web');
 
 Route::post('/digiflazz/callback', [PaymentController::class, 'digiflazzCallback'])->name('payment.digiflazz.callback');
 
@@ -171,14 +175,12 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::post('/products/sync', [AdminController::class, 'productsSync'])->name('products.sync');
 
     Route::get('/account-listings', [App\Http\Controllers\AdminAccountListingController::class, 'index'])->name('account-listings');
-    Route::post('/account-listings/sync', [App\Http\Controllers\AdminAccountListingController::class, 'sync'])->name('account-listings.sync');
-    Route::get('/account-listings/sync/status', [App\Http\Controllers\AdminAccountListingController::class, 'syncStatus'])->name('account-listings.sync-status');
     Route::get('/account-listings/create', [App\Http\Controllers\AdminAccountListingController::class, 'create'])->name('account-listings.create');
     Route::post('/account-listings', [App\Http\Controllers\AdminAccountListingController::class, 'store'])->name('account-listings.store');
-    Route::get('/account-listings/{accountListing}/edit', [App\Http\Controllers\AdminAccountListingController::class, 'edit'])->name('account-listings.edit');
-    Route::put('/account-listings/{accountListing}', [App\Http\Controllers\AdminAccountListingController::class, 'update'])->name('account-listings.update');
-    Route::patch('/account-listings/{accountListing}/toggle', [App\Http\Controllers\AdminAccountListingController::class, 'toggle'])->name('account-listings.toggle');
-    Route::delete('/account-listings/{accountListing}', [App\Http\Controllers\AdminAccountListingController::class, 'destroy'])->name('account-listings.destroy');
+    Route::get('/account-listings/{listing}/edit', [App\Http\Controllers\AdminAccountListingController::class, 'edit'])->whereNumber('listing')->name('account-listings.edit');
+    Route::put('/account-listings/{listing}', [App\Http\Controllers\AdminAccountListingController::class, 'update'])->whereNumber('listing')->name('account-listings.update');
+    Route::patch('/account-listings/{listing}/toggle', [App\Http\Controllers\AdminAccountListingController::class, 'toggle'])->whereNumber('listing')->name('account-listings.toggle');
+    Route::delete('/account-listings/{listing}', [App\Http\Controllers\AdminAccountListingController::class, 'destroy'])->whereNumber('listing')->name('account-listings.destroy');
 
     Route::get('/jba-game-cards', [App\Http\Controllers\Admin\JbaGameCardController::class, 'index'])->name('jba-game-cards');
     Route::put('/jba-game-cards/{brand}', [App\Http\Controllers\Admin\JbaGameCardController::class, 'update'])->name('jba-game-cards.update');
@@ -363,6 +365,11 @@ Route::middleware(['auth:web'])->prefix('api')->name('api.')->group(function () 
 });
 
 Route::prefix('api')->name('api.')->group(function () {
+    Route::middleware(['jba-api-key', 'throttle:60,1'])->prefix('jba')->name('jba.')->group(function () {
+        Route::get('/listings', [App\Http\Controllers\JbaListingApiController::class, 'index'])->name('listings.index');
+        Route::get('/listings/{listing}', [App\Http\Controllers\JbaListingApiController::class, 'show'])->name('listings.show');
+    });
+
     Route::get('/gacha', [GachaController::class, 'index'])->name('gacha.index');
     Route::post('/gacha/spin', [GachaController::class, 'spin'])
         ->middleware('throttle:20,1')

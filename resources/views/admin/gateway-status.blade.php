@@ -10,7 +10,7 @@
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
     <div>
         <h2 class="text-lg font-semibold">Status Gateway Pembayaran</h2>
-        <p class="text-sm" style="color:var(--text-muted)">Cek kesiapan Xendit & Digiflazz sebelum menerima pembayaran live.</p>
+        <p class="text-sm" style="color:var(--text-muted)">Cek kesiapan {{ $gatewayLabel }} & Digiflazz sebelum menerima pembayaran live.</p>
     </div>
     <span class="badge {{ $allOk ? 'badge-success' : 'badge-error' }}" style="font-size:0.8rem">
         <i class="fas {{ $allOk ? 'fa-check-circle' : 'fa-exclamation-triangle' }}"></i>
@@ -123,10 +123,17 @@
     <h3 class="font-semibold mb-3"><i class="fas fa-clipboard-check" style="color:var(--accent)"></i> Urutan Persiapan Live</h3>
     <ol class="list-decimal list-inside space-y-1 text-sm" style="color:var(--text-muted)">
         <li>Deploy aplikasi ke hosting + domain + SSL, set <code>APP_URL=https://domainmu</code>.</li>
+        @if(config('services.payment.gateway') === 'doku')
+        <li>Di DOKU Back Office Sandbox, set Notification URL ke <code>{{ route('payment.doku.notification') }}</code>.</li>
+        <li>Aktifkan channel pembayaran yang ingin ditampilkan pada DOKU Checkout.</li>
+        <li>Selesaikan pengujian Sandbox dan verifikasi notifikasi sukses.</li>
+        <li>Setelah siap live, gunakan credential production dan set <code>DOKU_ENVIRONMENT=production</code>.</li>
+        @else
         <li>Set webhook <strong>QR Code paid</strong> &amp; <strong>Invoice paid</strong> di dashboard Xendit ke <code>{{ route('payment.notification') }}</code> dengan Callback Token sesuai <code>XENDIT_CALLBACK_TOKEN</code>.</li>
         <li>Aktifkan produk QRIS/VA/dll di akun Xendit.</li>
         <li>Ajukan verifikasi business Xendit &amp; tunggu approve.</li>
         <li>Setelah approve: ganti ke secret key live, set <code>XENDIT_IS_PRODUCTION=true</code>.</li>
+        @endif
         <li>Set key &amp; mode Digiflazz konsisten (key live, <code>DIGIFLAZZ_PRODUCTION=true</code>), set webhook Digiflazz ke <code>{{ route('payment.digiflazz.callback') }}</code>.</li>
         <li>Set <code>PAYMENT_SIMULATION=false</code> (kecuali ingin menguji aman).</li>
     </ol>

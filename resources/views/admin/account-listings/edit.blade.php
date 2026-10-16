@@ -10,6 +10,7 @@
 
     <div class="bg-gray-800 rounded-xl border border-gray-700 p-6">
         <h2 class="text-xl font-semibold mb-6">Edit Listing Akun</h2>
+        @php($jbaRaw = (array) $accountListing->getAttribute('jba_raw'))
 
         <form action="{{ route('admin.account-listings.update', $accountListing) }}" method="POST" enctype="multipart/form-data">
             @csrf
@@ -33,6 +34,18 @@
                     <input type="text" name="product_name" value="{{ old('product_name', $accountListing->product_name) }}" required
                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500">
                     @error('product_name') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">ID Game</label>
+                    <input type="text" name="id_game" value="{{ old('id_game', $jbaRaw['id_game'] ?? '') }}" required
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500">
+                    @error('id_game') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
+                </div>
+                <div class="mb-4">
+                    <label class="block text-sm font-medium mb-2">Urutan</label>
+                    <input type="number" name="urutan" min="0" value="{{ old('urutan', $jbaRaw['urutan'] ?? 0) }}" required
+                           class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500">
+                    @error('urutan') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
             </div>
 
@@ -61,28 +74,27 @@
                 </div>
 
                 <div class="mb-4">
-                    <label class="block text-sm font-medium mb-2">Nama Owner</label>
-                    <select name="owner_name"
+                    <label class="block text-sm font-medium mb-2">Penjual</label>
+                    <select name="penjual" required
                             class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500">
-                        <option value="">Pilih Owner</option>
-                        <option value="Johen PUBG" {{ old('owner_name', $accountListing->owner_name) === 'Johen PUBG' ? 'selected' : '' }}>Johen PUBG</option>
-                        <option value="Monkey PUBG" {{ old('owner_name', $accountListing->owner_name) === 'Monkey PUBG' ? 'selected' : '' }}>Monkey PUBG</option>
-                        <option value="Johen MLBB" {{ old('owner_name', $accountListing->owner_name) === 'Johen MLBB' ? 'selected' : '' }}>Johen MLBB</option>
-                        <option value="Johen FF" {{ old('owner_name', $accountListing->owner_name) === 'Johen FF' ? 'selected' : '' }}>Johen FF</option>
-                        <option value="Johen Roblox" {{ old('owner_name', $accountListing->owner_name) === 'Johen Roblox' ? 'selected' : '' }}>Johen Roblox</option>
-                        <option value="Johen E-Football" {{ old('owner_name', $accountListing->owner_name) === 'Johen E-Football' ? 'selected' : '' }}>Johen E-Football</option>
-                        <option value="Johen FCM" {{ old('owner_name', $accountListing->owner_name) === 'Johen FCM' ? 'selected' : '' }}>Johen FCM</option>
-                        <option value="Johen Valorant" {{ old('owner_name', $accountListing->owner_name) === 'Johen Valorant' ? 'selected' : '' }}>Johen Valorant</option>
+                        <option value="">Pilih Penjual</option>
+                        <option value="Johen PUBG" {{ old('penjual', $accountListing->owner_name) === 'Johen PUBG' ? 'selected' : '' }}>Johen PUBG</option>
+                        <option value="Monkey PUBG" {{ old('penjual', $accountListing->owner_name) === 'Monkey PUBG' ? 'selected' : '' }}>Monkey PUBG</option>
+                        <option value="Johen MLBB" {{ old('penjual', $accountListing->owner_name) === 'Johen MLBB' ? 'selected' : '' }}>Johen MLBB</option>
+                        <option value="Johen FF" {{ old('penjual', $accountListing->owner_name) === 'Johen FF' ? 'selected' : '' }}>Johen FF</option>
+                        <option value="Johen Roblox" {{ old('penjual', $accountListing->owner_name) === 'Johen Roblox' ? 'selected' : '' }}>Johen Roblox</option>
+                        <option value="Johen E-Football" {{ old('penjual', $accountListing->owner_name) === 'Johen E-Football' ? 'selected' : '' }}>Johen E-Football</option>
+                        <option value="Johen FCM" {{ old('penjual', $accountListing->owner_name) === 'Johen FCM' ? 'selected' : '' }}>Johen FCM</option>
+                        <option value="Johen Valorant" {{ old('penjual', $accountListing->owner_name) === 'Johen Valorant' ? 'selected' : '' }}>Johen Valorant</option>
                     </select>
-                    @error('owner_name') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
+                    @error('penjual') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
                 </div>
 
                 <div class="mb-4">
                     <label class="block text-sm font-medium mb-2">No. WhatsApp</label>
-                    <input type="text" name="whatsapp" value="{{ old('whatsapp', $accountListing->whatsapp) }}"
+                    <input type="text" value="Diatur dari company profile"
                            class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500"
-                           placeholder="6281234567890">
-                    @error('whatsapp') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
+                           disabled>
                 </div>
             </div>
 

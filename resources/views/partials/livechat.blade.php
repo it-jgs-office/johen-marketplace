@@ -2,6 +2,8 @@
 <style>
 /* Critical state: cegah modal sempat tampil sebelum stylesheet eksternal siap. */
 #lc-overlay:not(.active),#lc-popup:not(.active){opacity:0!important;visibility:hidden!important;pointer-events:none!important}
+#lc-fab-greeting{background:linear-gradient(135deg,#2563eb,#0ea5e9)!important}
+#lc-fab-greeting::after{background:#0b8fd8!important}
 </style>
 
 <div id="lc-overlay" class="lc-overlay" aria-hidden="true"></div>

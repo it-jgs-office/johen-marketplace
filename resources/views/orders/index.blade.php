@@ -20,7 +20,7 @@
 .ord-help-btn{display:inline-flex;align-items:center;gap:.45rem;padding:.55rem 1.1rem;border-radius:10px;background:var(--ord-primary-subtle);color:var(--text);font-size:.8rem;font-weight:700;border:1px solid transparent;transition:all .2s;text-decoration:none;white-space:nowrap;font-family:'Poppins',sans-serif}
 .ord-help-btn:hover{background:rgba(133,77,234,.18);border-color:var(--border-strong);transform:translateY(-2px);box-shadow:0 4px 14px -4px var(--ord-primary-glow)}
 .ord-tabs{display:flex;gap:.5rem;margin-bottom:1.5rem;flex-wrap:wrap}
-.ord-balance{background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:1.5rem;position:relative;overflow:hidden}
+.ord-balance{display:none;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:1.5rem;position:relative;overflow:hidden}
 .ord-balance::after{content:'';position:absolute;inset:0 0 auto auto;width:220px;height:220px;margin-top:-90px;margin-right:-60px;border-radius:50%;background:radial-gradient(circle,rgba(133,77,234,.16),transparent 70%);pointer-events:none}
 .ord-balance-main{position:relative;z-index:1}
 .ord-balance-label{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-mute)}
@@ -140,8 +140,8 @@
 .ord-help-left{flex-direction:column;text-align:center}
 }
 @media(max-width:600px){
-.ord-list{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.ord-card{display:flex;flex-direction:column;padding:14px 25px;gap:12px;border-radius:14px;width:100%;box-sizing:border-box;overflow:hidden}
+.ord-list{display:grid;grid-template-columns:minmax(0,1fr);gap:10px}
+.ord-card{display:flex;flex-direction:column;padding:14px;gap:12px;border-radius:14px;width:100%;box-sizing:border-box;overflow:hidden}
 .ord-card-left,.ord-card-right{width:100%;box-sizing:border-box}
 .ord-card-left{display:flex;flex-direction:column;gap:10px}
 .ord-separator{width:100%;height:1px;margin:0}
@@ -249,7 +249,7 @@
     </button>
   </div>
 
-  @if($orders->isNotEmpty())
+  @if($orders->isNotEmpty() || $accountOrders->isNotEmpty())
   <div class="ord-filter-card">
     <div class="ord-search-wrap">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4.35-4.35"/></svg>
@@ -271,7 +271,7 @@
   </div>
   @endif
 
-  @if($orders->isEmpty())
+  @if($orders->isEmpty() && $accountOrders->isEmpty())
     <div class="ord-empty">
       <div class="ord-empty-icon">
         <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round">
@@ -292,8 +292,8 @@
           $product = $products->get($order->buyer_sku_code);
           $thumbnail = $brand?->thumbnail_url;
           $paymentType = $order->transaction?->payment_type;
-          $cat = strtolower($order->category ?? 'topup');
-          $tabCat = in_array($cat, ['joki', 'marketplace']) ? $cat : 'topup';
+          $cat = strtolower($order->category ?? '');
+          $tabCat = $cat === 'joki' || $brand?->service_type === 'joki' ? 'joki' : 'topup';
           $dateStr = $order->created_at->format('d M Y');
           $timeStr = $order->created_at->format('H:i') . ' WIB';
           $payLogo = payment_logo_asset($paymentType);
@@ -382,6 +382,80 @@
         </div>
       @endforeach
 
+      @foreach($accountOrders as $accountOrder)
+        @php
+          $accountListing = $accountOrder->listing;
+          $accountStatus = in_array($accountOrder->status, ['success', 'pending', 'processing'], true)
+            ? $accountOrder->status : 'failed';
+          $accountPaymentLogo = payment_logo_asset($accountOrder->payment_method);
+          $accountSearch = strtolower(implode(' ', array_filter([
+            $accountOrder->order_ref,
+            $accountListing?->game,
+            $accountListing?->product_name,
+          ])));
+        @endphp
+        <div class="ord-card" data-category="marketplace" data-status="{{ $accountStatus }}" data-date="{{ $accountOrder->created_at->format('Y-m-d') }}" data-search="{{ $accountSearch }}">
+          <div class="ord-card-left">
+            <div class="ord-thumb" @if($accountListing?->photo_url) style="background-image:url('{{ $accountListing->photo_url }}')" @endif>
+              @if(!$accountListing?->photo_url)
+                <span>AK</span>
+              @endif
+            </div>
+            <div class="ord-info">
+              <div class="ord-info-top">
+                <span class="ord-product-name">{{ $accountListing?->product_name ?? 'Akun Game' }}</span>
+                <span class="ord-status-badge ord-status-badge--{{ $accountStatus }}">
+                  @if($accountStatus === 'success') SUKSES
+                  @elseif($accountStatus === 'pending') PENDING
+                  @elseif($accountStatus === 'processing') DIPROSES
+                  @else GAGAL
+                  @endif
+                </span>
+              </div>
+              <div class="ord-meta">
+                <span class="ord-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/></svg>
+                  <strong>{{ $accountListing?->game ?? 'Jual Beli Akun' }}</strong>
+                </span>
+                <span class="ord-meta-item">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 9H2"/></svg>
+                  <strong>{{ $accountOrder->customer_phone }}</strong>
+                </span>
+              </div>
+              <div class="ord-right-total ord-left-total">Rp{{ number_format((float) $accountOrder->total_price, 0, ',', '.') }}</div>
+            </div>
+          </div>
+
+          <div class="ord-separator"></div>
+
+          <div class="ord-card-right">
+            <div class="ord-right-order-id">#{{ $accountOrder->order_ref }}</div>
+            <div class="ord-right-grid">
+              <div>
+                <div class="ord-right-label">Tanggal Order</div>
+                <div class="ord-right-value ord-date-value">{{ $accountOrder->created_at->format('d M Y H:i') }} WIB</div>
+              </div>
+              <div>
+                <div class="ord-right-label">Metode Pembayaran</div>
+                <div class="ord-right-value">
+                  @if($accountPaymentLogo)
+                    <div class="ord-payment-display"><img src="{{ $accountPaymentLogo }}" alt="{{ $accountOrder->payment_method }}" loading="lazy"></div>
+                  @else
+                    <span>{{ strtoupper((string) $accountOrder->payment_method) }}</span>
+                  @endif
+                </div>
+              </div>
+            </div>
+
+            @if($accountStatus === 'pending')
+              <a href="{{ route('jual-beli-akun.payment', $accountOrder) }}" class="ord-detail-btn">Bayar Sekarang</a>
+            @else
+              <a href="{{ route('jual-beli-akun.orders') }}" class="ord-detail-btn">Detail Pesanan Akun</a>
+            @endif
+          </div>
+        </div>
+      @endforeach
+
       <div class="ord-no-results" id="ordNoResults">
         <div class="ord-no-results-title">Tidak ada transaksi ditemukan</div>
         <div class="ord-no-results-desc">Coba ubah filter atau kata kunci pencarian.</div>
@@ -435,7 +509,7 @@
   </div>
 </div>
 
-@if($orders->isNotEmpty())
+@if($orders->isNotEmpty() || $accountOrders->isNotEmpty())
 <script>
 (function(){
   const tabs = document.querySelectorAll('.ord-tab');

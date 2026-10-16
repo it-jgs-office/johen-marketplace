@@ -11,6 +11,8 @@ use App\Models\Review;
 use App\Services\BalanceService;
 use App\Services\CheckoutSettlementService;
 use App\Services\DigiflazzService;
+use App\Services\DokuService;
+use App\Services\PaymentGatewayService;
 use App\Services\TopupSettlementService;
 use App\Services\XenditService;
 use Illuminate\Http\Request;
@@ -22,6 +24,10 @@ class PaymentController extends Controller
 
     protected XenditService $xendit;
 
+    protected DokuService $doku;
+
+    protected PaymentGatewayService $gateway;
+
     protected TopupSettlementService $settlement;
 
     protected BalanceService $balance;
@@ -31,12 +37,16 @@ class PaymentController extends Controller
     public function __construct(
         DigiflazzService $digiflazz,
         XenditService $xendit,
+        DokuService $doku,
+        PaymentGatewayService $gateway,
         TopupSettlementService $settlement,
         BalanceService $balance,
         CheckoutSettlementService $checkoutSettlement,
     ) {
         $this->digiflazz = $digiflazz;
         $this->xendit = $xendit;
+        $this->doku = $doku;
+        $this->gateway = $gateway;
         $this->settlement = $settlement;
         $this->balance = $balance;
         $this->checkoutSettlement = $checkoutSettlement;
@@ -46,7 +56,7 @@ class PaymentController extends Controller
     {
         $invoiceUrl = $order->gateway_invoice_url;
         $isSimulation = (bool) config('services.payment.simulation');
-        $isDemo = $isSimulation || ! $this->xendit->isConfigured() || empty($order->gateway_invoice_id);
+        $isDemo = $isSimulation || ! $this->gateway->isConfigured() || empty($order->gateway_invoice_id);
         $isQris = $order->gateway_type === 'qris' || (! empty($order->qr_string));
         $qrString = $order->qr_string;
         $gatewayType = $order->gateway_type ?: ($isQris ? 'qris' : 'invoice');
@@ -54,16 +64,23 @@ class PaymentController extends Controller
         $paymentCode = $order->payment_code;
         $checkoutUrl = $order->checkout_url;
         $gatewayExtra = $order->gateway_extra ?: [];
+        $gatewayName = $this->gateway->providerLabel();
         $brand = Brand::where('name', $order->brand)->first();
-        $hasReviewed = Review::where('order_id', $order->order_id)->exists();
+        $hasReviewed = Review::where('order_id', $order->order_id)
+            ->where('service_type', 'topup')
+            ->exists();
+        $reviewUser = auth('web')->user();
+        $canReview = $reviewUser && ($order->user_id
+            ? (int) $order->user_id === (int) $reviewUser->id
+            : ($order->email && mb_strtolower(trim($order->email)) === mb_strtolower(trim($reviewUser->email))));
         $reorderProduct = Product::where('buyer_sku_code', $order->buyer_sku_code)
             ->where('is_active', true)
             ->where('stock', '>', 0)
             ->first();
 
         return view('payment.detail', compact(
-            'order', 'invoiceUrl', 'isDemo', 'isSimulation', 'brand', 'isQris', 'qrString', 'gatewayType', 'hasReviewed', 'reorderProduct',
-            'vaNumber', 'paymentCode', 'checkoutUrl', 'gatewayExtra'
+            'order', 'invoiceUrl', 'isDemo', 'isSimulation', 'brand', 'isQris', 'qrString', 'gatewayType', 'hasReviewed', 'canReview', 'reorderProduct',
+            'vaNumber', 'paymentCode', 'checkoutUrl', 'gatewayExtra', 'gatewayName'
         ));
     }
 
@@ -514,6 +531,40 @@ class PaymentController extends Controller
     private function syncFromGateway(Order $order): void
     {
         if ($order->status !== 'pending' || empty($order->gateway_invoice_id)) {
+            return;
+        }
+
+        if ($order->gateway_type === 'doku_checkout') {
+            if (! $this->doku->isConfigured()) {
+                return;
+            }
+
+            $extra = (array) $order->gateway_extra;
+            $invoiceNumber = (string) ($extra['invoice_number'] ?? $order->order_id);
+            $data = $this->doku->checkStatus($invoiceNumber);
+            $status = strtoupper((string) data_get($data, 'transaction.status', ''));
+
+            if ($status === '') {
+                return;
+            }
+
+            $this->recordPayment($order, [
+                'transaction_id' => data_get($data, 'transaction.original_request_id'),
+                'payment_type' => 'DOKU - '.(data_get($data, 'channel.name') ?: data_get($data, 'channel.id', 'Checkout')),
+                'status' => $status === 'SUCCESS' ? 'paid' : 'pending',
+                'raw_response' => $data,
+            ]);
+
+            if ($status === 'SUCCESS') {
+                $this->handlePaid($order);
+            } elseif ($status === 'EXPIRED') {
+                $order->update(['status' => 'failed']);
+                $order->transaction?->update(['status' => 'failed']);
+                $order->releaseDiscounts();
+            }
+
+            // FAILED pada DOKU Checkout tidak final karena pengguna dapat
+            // mencoba kanal lain dari URL checkout yang sama.
             return;
         }
 

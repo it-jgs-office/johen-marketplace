@@ -120,7 +120,7 @@ class TopupOrderBuilder
         $order = Order::create([
             'user_id' => ($input['user'] ?? null)?->id,
             'checkout_id' => ($input['checkout'] ?? null)?->id,
-            'order_id' => 'TUP-'.strtoupper(Str::random(10)),
+            'order_id' => 'JOHEN-'.strtoupper(Str::random(10)),
             'buyer_sku_code' => $product->buyer_sku_code,
             'customer_number' => trim((string) $input['customer_number']),
             'zone_id' => $input['zone_id'] ?? null,

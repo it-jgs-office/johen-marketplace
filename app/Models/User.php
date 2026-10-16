@@ -39,6 +39,11 @@ class User extends Authenticatable
         return $this->hasMany(BalanceTransaction::class)->latest('id');
     }
 
+    public function reviews(): HasMany
+    {
+        return $this->hasMany(Review::class)->latest('id');
+    }
+
     public function isAdmin(): bool
     {
         return (bool) $this->is_admin;

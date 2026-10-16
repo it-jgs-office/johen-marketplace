@@ -1,9 +1,33 @@
 @extends('layouts.topup')
 
-@php $pageType = $brand->service_type === 'joki' ? 'Joki' : 'Top Up'; @endphp
+@php
+  $pageType = $brand->service_type === 'joki' ? 'Joki' : 'Top Up';
+  $brandName = mb_strtolower($brand->name);
+  $categoryBackgrounds = [
+    'mobile legends' => 'assets/backround/bg-ml.jpg',
+    'pubg' => 'assets/backround/bg-pubg.png',
+    'efootball' => 'assets/backround/bg-efootball.png',
+    'fc mobile' => 'assets/backround/bg-fcmobile.png',
+    'free fire' => 'assets/backround/bg-ff.png',
+    'roblox' => 'assets/backround/bg-roblox.png',
+    'valorant' => 'assets/backround/bg-valo.png',
+  ];
+  $defaultCategoryBackground = null;
+  foreach ($categoryBackgrounds as $gameName => $path) {
+    if (str_contains($brandName, $gameName)) {
+      $defaultCategoryBackground = pwa_asset($path);
+      break;
+    }
+  }
+  $detailBackground = $brand->detail_bg_url ?: $defaultCategoryBackground;
+  $detailBackgroundPosition = $brand->detail_bg_url ? ($brand->detail_bg_position ?: 'center') : 'center';
+@endphp
 @section('title', $brand->name . ' — ' . $pageType . ' ' . $brand->name)
 
 @push('styles')
+@if($detailBackground)
+<link rel="preload" as="image" href="{{ $detailBackground }}" fetchpriority="high">
+@endif
 <style>
 .gd-header-wrap .gd-header-inner {
   flex-direction: column;
@@ -45,6 +69,7 @@
   // tetap benar). Pastikan channel code sesuai Xendit.
   $channelCategory = function (string $code): string {
       $code = strtolower($code);
+      if ($code === 'doku_checkout') return 'doku';
       if (in_array($code, ['qris'], true)) return 'qris';
       if (in_array($code, ['gopay', 'dana', 'ovo', 'shopeepay', 'linkaja', 'gcash'], true)) return 'ewallet';
       if (in_array($code, ['bca', 'bca_va', 'bri', 'bri_va', 'bni', 'bni_va', 'mandiri', 'mandiri_va', 'permata', 'permata_va', 'sa', 'saham', 'other_bank'], true)) return 'va';
@@ -55,7 +80,7 @@
   // Virtual Account & minimarket = 10.000 (error "expectedAmount above 10000" bila kurang).
   $channelMinAmount = function (string $cat): int {
       return match ($cat) {
-          'qris', 'ewallet' => 1000,
+          'qris', 'ewallet', 'doku' => 1000,
           default => 10000,
       };
   };
@@ -72,6 +97,7 @@
       ];
   })->values();
   $categories = [
+      'doku' => 'Pembayaran Aman',
       'qris' => 'QRIS',
       'ewallet' => 'E-Wallet',
       'va' => 'Virtual Account / Bank',
@@ -83,7 +109,7 @@
 @section('content')
 <!-- ===== BANNER (background only) ===== -->
 <section class="game-hero">
-  <div class="game-hero-bg"@if($brand->detail_bg_url) style="background-image:url('{{ $brand->detail_bg_url }}');background-position:{{ $brand->detail_bg_position ?? 'center' }}"@endif></div>
+  <div class="game-hero-bg"@if($detailBackground) style="background-image:url('{{ $detailBackground }}');background-position:{{ $detailBackgroundPosition }}"@endif></div>
   <div class="game-hero-overlay"></div>
 </section>
 
@@ -106,15 +132,15 @@
   </div>
   <div class="gd-header-badges">
     <span class="gd-header-badge">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h7l-1 8 10-12h-7z"/></svg>
+      <img src="{{ asset('assets/icon/lightning.gif') }}" alt="" aria-hidden="true">
       Proses Cepat
     </span>
     <span class="gd-header-badge">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/></svg>
+      <img src="{{ asset('assets/icon/contact-support.gif') }}" alt="" aria-hidden="true">
       Layanan 24/7
     </span>
     <span class="gd-header-badge">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      <img src="{{ asset('assets/icon/secure.gif') }}" alt="" aria-hidden="true">
       Transaksi Aman
     </span>
   </div>
@@ -313,7 +339,7 @@
     <div class="gd-pay-group" id="payGroup">
       @foreach($categories as $catKey => $catLabel)
         @php $catMethods = $groupedPay->get($catKey, collect()); @endphp
-        <div class="gd-pay-category{{ $catKey === 'qris' && $catMethods->isNotEmpty() ? ' open' : '' }}" data-category="{{ $catKey }}">
+        <div class="gd-pay-category{{ in_array($catKey, ['doku', 'qris'], true) && $catMethods->isNotEmpty() ? ' open' : '' }}" data-category="{{ $catKey }}">
           <button type="button" class="gd-pay-cat-head">
             <span class="gd-pay-cat-label">{{ $catLabel }}</span>
             <svg class="gd-pay-cat-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>

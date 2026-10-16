@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Brand;
+use App\Models\AccountOrder;
 use App\Models\Order;
 use App\Models\Product;
 use App\Services\BalanceService;
@@ -10,7 +11,6 @@ use App\Services\DigiflazzService;
 use App\Services\GameAccountService;
 use App\Services\PaymentGatewayService;
 use App\Services\TopupOrderBuilder;
-use App\Services\XenditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -18,20 +18,17 @@ use Illuminate\Support\Facades\DB;
 class OrderController extends Controller
 {
     protected DigiflazzService $digiflazz;
-    protected XenditService $xendit;
     protected PaymentGatewayService $gateway;
     protected BalanceService $balance;
     protected TopupOrderBuilder $builder;
 
     public function __construct(
         DigiflazzService $digiflazz,
-        XenditService $xendit,
         PaymentGatewayService $gateway,
         BalanceService $balance,
         TopupOrderBuilder $builder
     ) {
         $this->digiflazz = $digiflazz;
-        $this->xendit = $xendit;
         $this->gateway = $gateway;
         $this->balance = $balance;
         $this->builder = $builder;
@@ -218,7 +215,7 @@ class OrderController extends Controller
                 $voucher->markUsed($order);
             }
 
-            if (!config('services.payment.simulation') && $this->xendit->isConfigured()) {
+            if (! config('services.payment.simulation') && $this->gateway->isConfigured()) {
                 $method = !empty($input['payment_method']) ? $input['payment_method'] : config('services.payment.channel', 'qris');
 
                 $charged = $this->gateway->charge($order, $method, [
@@ -267,6 +264,15 @@ class OrderController extends Controller
 
         $orders->load('transaction');
 
+        $accountOrders = AccountOrder::with('listing')
+            ->where(function ($query) use ($user) {
+                $query->where('user_id', $user->id)
+                    ->orWhere('customer_email', $user->email);
+            })
+            ->latest()
+            ->limit(50)
+            ->get();
+
         $brandNames = $orders->pluck('brand')->unique()->filter();
         $brands = Brand::whereIn('name', $brandNames)
             ->orWhereIn(DB::raw('UPPER(name)'), $brandNames->map(fn($n) => strtoupper((string) $n)))
@@ -280,6 +286,6 @@ class OrderController extends Controller
         $balance = $this->balance->balanceFor($user->id);
         $balanceTransactions = $this->balance->recentFor($user->id, 10);
 
-        return view('orders.index', compact('orders', 'brands', 'products', 'balance', 'balanceTransactions'));
+        return view('orders.index', compact('orders', 'accountOrders', 'brands', 'products', 'balance', 'balanceTransactions'));
     }
 }

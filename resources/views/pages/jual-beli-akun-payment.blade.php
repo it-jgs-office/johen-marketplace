@@ -43,7 +43,7 @@
       <div class="jpay-card">
         <div class="jpay-card-head">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-          <span>Scan QRIS untuk Membayar</span>
+          <span>{{ $gatewayType === 'doku_checkout' ? 'Pembayaran Aman DOKU' : 'Metode Pembayaran' }}</span>
         </div>
         <div class="jpay-method" id="jpayMethodBody">
 
@@ -60,7 +60,7 @@
               </div>
               <div>
                 <div class="jpay-method-result-label">Pembayaran via</div>
-                <div class="jpay-method-result-name">{{ $paymentMethod?->name ?: strtoupper((string) $accountOrder->payment_method) }}</div>
+                <div class="jpay-method-result-name">{{ $gatewayType === 'doku_checkout' ? 'DOKU Checkout' : ($paymentMethod?->name ?: strtoupper((string) $accountOrder->payment_method)) }}</div>
               </div>
             </div>
 
@@ -138,7 +138,7 @@
               </a>
               <p class="jpay-next-step">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-mute)" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                <span>Kamu akan dialihkan ke halaman pembayaran. Setelah selesai, status di halaman ini ter-update otomatis.</span>
+                <span>Kamu akan dialihkan ke halaman aman {{ $gatewayName }}. Setelah selesai, status di halaman ini ter-update otomatis.</span>
               </p>
             @endif
             @else
@@ -219,7 +219,7 @@
             </div>
             <div class="jpay-ringkasan-row">
               <span class="jpay-r-label">Metode Bayar</span>
-              <span class="jpay-r-value">{{ $paymentMethod?->name ?: strtoupper((string) $accountOrder->payment_method) }}</span>
+              <span class="jpay-r-value">{{ $gatewayType === 'doku_checkout' ? 'DOKU Checkout' : ($paymentMethod?->name ?: strtoupper((string) $accountOrder->payment_method)) }}</span>
             </div>
             <div class="jpay-ringkasan-row">
               <span class="jpay-r-label">Status</span>
@@ -262,6 +262,43 @@
         </div>
       </div>
     </div>
+  </div>
+</div>
+
+{{-- REVIEW POPUP (muncul otomatis saat pembelian akun sukses) --}}
+<div class="modal-overlay" id="accountReviewModal" aria-hidden="true">
+  <div class="modal-box jpay-review-modal" role="dialog" aria-modal="true" aria-labelledby="accountReviewTitle">
+    <button type="button" class="modal-close" id="accountReviewClose" aria-label="Tutup">&times;</button>
+    <div class="jpay-review-head">
+      <div class="jpay-review-product">
+        @if($listing->photo_url || $listing->thumbnail_url)
+          <img src="{{ $listing->photo_url ?: $listing->thumbnail_url }}" alt="{{ $listing->product_name }}">
+        @else
+          <span>★</span>
+        @endif
+      </div>
+      <div>
+        <h3 id="accountReviewTitle">Pembelian Akun Berhasil!</h3>
+        <p>Beri rating untuk pengalaman pembelian akun kamu.</p>
+      </div>
+    </div>
+    <form id="accountReviewForm" class="modal-form jpay-review-form">
+      <input type="hidden" name="rating" value="">
+      <div class="jpay-review-stars" aria-label="Pilih rating">
+        @for($i = 1; $i <= 5; $i++)
+          <button type="button" data-value="{{ $i }}" aria-label="{{ $i }} bintang">
+            <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+          </button>
+        @endfor
+      </div>
+      <p class="jpay-review-note">Bagaimana pengalamanmu membeli {{ $listing->product_name }}?</p>
+      <label>
+        <span>Ulasan (opsional)</span>
+        <textarea class="jpay-review-textarea" name="comment" maxlength="1000" placeholder="Ceritakan pengalaman pembelian akun kamu..."></textarea>
+      </label>
+      <button type="submit" class="btn btn-solid btn-full jpay-review-submit">Kirim Ulasan</button>
+      <p class="jpay-review-msg" id="accountReviewMsg"></p>
+    </form>
   </div>
 </div>
 
@@ -377,6 +414,44 @@
 
 .jpay-ringkasan-actions { padding: .8rem 1.1rem; border-top: 1px solid var(--border); }
 
+.jpay-review-modal { max-width: 430px; }
+.jpay-review-head { display: flex; align-items: center; gap: .85rem; padding-right: 1.5rem; }
+.jpay-review-head h3 { margin: 0 0 .2rem; padding: 0; font-size: 1.15rem; }
+.jpay-review-head p { margin: 0; color: var(--text-mute); font-size: .76rem; line-height: 1.45; }
+.jpay-review-product { display: grid; place-items: center; flex: 0 0 54px; width: 54px; height: 54px; overflow: hidden; color: #fbbf24; font-size: 1.4rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 13px; }
+.jpay-review-product img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.jpay-review-form { margin-top: 1.15rem; }
+.jpay-review-stars { display: flex; justify-content: center; gap: .35rem; }
+.jpay-review-stars button { display: grid; place-items: center; padding: 0; color: #506783; cursor: pointer; background: none; border: 0; transition: color .15s ease, transform .15s ease; }
+.jpay-review-stars button:hover { transform: scale(1.1); }
+.jpay-review-stars button.on { color: #fbbf24; }
+.jpay-review-note { margin: -.35rem 0 0; color: var(--text-dim); font-size: .76rem; line-height: 1.45; text-align: center; }
+.jpay-review-textarea { width: 100%; min-height: 90px; padding: .72rem .85rem; resize: vertical; color: var(--text); font: inherit; font-size: .86rem; background: var(--surface-2); border: 1px solid var(--border); border-radius: 10px; }
+.jpay-review-textarea:focus { outline: none; border-color: #38a8f8; box-shadow: 0 0 0 3px rgba(56,168,248,.1); }
+.jpay-review-submit { justify-content: center; }
+.jpay-review-msg { min-height: 18px; margin: -.35rem 0 0; font-size: .78rem; text-align: center; }
+
+[data-theme="light"] .jpay-review-modal {
+  background: #fff;
+  border-color: rgba(37,99,171,.16);
+  box-shadow: 0 24px 65px rgba(35,72,112,.2);
+}
+[data-theme="light"] .jpay-review-head h3 { color: #102a4a; }
+[data-theme="light"] .jpay-review-head p,
+[data-theme="light"] .jpay-review-note { color: #60758f; }
+[data-theme="light"] .jpay-review-product { color: #b77900; background: #eef6ff; border-color: #d8e7f6; }
+[data-theme="light"] .jpay-review-stars button { color: #c3cfdd; }
+[data-theme="light"] .jpay-review-stars button.on { color: #d99a18; }
+[data-theme="light"] .jpay-review-form label { color: #435a73; }
+[data-theme="light"] .jpay-review-textarea { color: #102a4a; background: #f8fbff; border-color: #d7e4f1; }
+[data-theme="light"] .jpay-review-textarea::placeholder { color: #8798aa; }
+[data-theme="light"] .jpay-review-textarea:focus { border-color: #2588df; box-shadow: 0 0 0 3px rgba(37,136,223,.11); }
+
+@media (max-width: 640px) {
+  .jpay-review-modal { width: calc(100vw - 24px); padding: 1.1rem; }
+  .jpay-review-textarea { font-size: 16px; }
+}
+
 .spin-slow { animation: spin 1.2s linear infinite; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
 </style>
@@ -389,6 +464,29 @@
   const gatewayType = @json($gatewayType);
   const checkoutUrl = @json($checkoutUrl);
   const invoiceUrl = @json($invoiceUrl);
+  const accountReviewUrl = @json(route('account-reviews.store', $accountOrder));
+  const accountReviewCsrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
+  let accountHasReviewed = @json($hasReviewed);
+  const accountCanReview = @json($canReview);
+  const accountReviewShownKey = 'account_review_shown_' + @json($accountOrder->order_ref);
+  let accountReviewPrompted = sessionStorage.getItem(accountReviewShownKey) === '1';
+
+  function openAccountReviewModal() {
+    const modal = document.getElementById('accountReviewModal');
+    if (modal) modal.classList.add('open');
+  }
+
+  function closeAccountReviewModal() {
+    const modal = document.getElementById('accountReviewModal');
+    if (modal) modal.classList.remove('open');
+  }
+
+  function maybeShowAccountReview(type) {
+    if (type !== 'success' || !accountCanReview || accountHasReviewed || accountReviewPrompted) return;
+    accountReviewPrompted = true;
+    sessionStorage.setItem(accountReviewShownKey, '1');
+    setTimeout(openAccountReviewModal, 700);
+  }
 
   // logo metode ikut tema (dark/light)
   function applyThemeToMethodLogos() {
@@ -403,7 +501,7 @@
   document.addEventListener('themeChanged', function() { setTimeout(applyThemeToMethodLogos, 50); });
 
   // e-wallet / invoice: alihkan ke halaman pembayaran (sekali saja per pesanan).
-  if (initialStatus === 'pending' && (gatewayType === 'ewallet' || gatewayType === 'invoice') && (checkoutUrl || invoiceUrl)) {
+  if (initialStatus === 'pending' && (gatewayType === 'ewallet' || gatewayType === 'invoice' || gatewayType === 'doku_checkout') && (checkoutUrl || invoiceUrl)) {
     const target = checkoutUrl || invoiceUrl;
     const shownKey = 'jpay_redirect_' + @json($accountOrder->order_ref);
     if (!sessionStorage.getItem(shownKey)) {
@@ -456,6 +554,7 @@
       if (methodSuccess) methodSuccess.style.display = 'flex';
       if (methodFailed) methodFailed.style.display = 'none';
       setSummaryStatus('success');
+      maybeShowAccountReview('success');
     } else if (type === 'failed' || type === 'cancelled') {
       icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" width="44" height="44"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
       label.textContent = 'Pembayaran Gagal';
@@ -505,6 +604,81 @@
       setTimeout(function() { btn.textContent = orig; btn.style.background = ''; btn.style.color = ''; }, 2000);
     });
   });
+
+  const accountReviewModal = document.getElementById('accountReviewModal');
+  const accountReviewClose = document.getElementById('accountReviewClose');
+  const accountReviewForm = document.getElementById('accountReviewForm');
+
+  if (accountReviewModal) {
+    accountReviewModal.addEventListener('click', function(e) {
+      if (e.target === accountReviewModal) closeAccountReviewModal();
+    });
+  }
+
+  if (accountReviewClose) accountReviewClose.addEventListener('click', closeAccountReviewModal);
+
+  if (accountReviewForm) {
+    accountReviewForm.querySelectorAll('.jpay-review-stars button').forEach(function(button) {
+      button.addEventListener('click', function() {
+        const value = parseInt(button.dataset.value, 10);
+        accountReviewForm.querySelectorAll('.jpay-review-stars button').forEach(function(star) {
+          star.classList.toggle('on', parseInt(star.dataset.value, 10) <= value);
+        });
+        accountReviewForm.querySelector('input[name="rating"]').value = value;
+      });
+    });
+
+    accountReviewForm.addEventListener('submit', function(e) {
+      e.preventDefault();
+      const rating = accountReviewForm.querySelector('input[name="rating"]').value;
+      const message = document.getElementById('accountReviewMsg');
+      const submit = accountReviewForm.querySelector('button[type="submit"]');
+
+      if (!rating) {
+        message.textContent = 'Pilih rating bintang terlebih dahulu.';
+        message.style.color = '#f87171';
+        return;
+      }
+
+      submit.disabled = true;
+      submit.textContent = 'Mengirim...';
+
+      fetch(accountReviewUrl, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': accountReviewCsrf,
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          rating: rating,
+          comment: accountReviewForm.querySelector('textarea[name="comment"]').value
+        })
+      })
+        .then(function(response) { return response.json(); })
+        .then(function(data) {
+          if (data.success) {
+            accountHasReviewed = true;
+            message.textContent = data.message;
+            message.style.color = '#34d399';
+            setTimeout(closeAccountReviewModal, 1400);
+            return;
+          }
+
+          const errors = data.errors || {};
+          message.textContent = (errors.rating || errors.order || errors.comment || ['Gagal mengirim ulasan.']).join(' ');
+          message.style.color = '#f87171';
+          submit.disabled = false;
+          submit.textContent = 'Kirim Ulasan';
+        })
+        .catch(function() {
+          message.textContent = 'Terjadi kesalahan. Coba lagi.';
+          message.style.color = '#f87171';
+          submit.disabled = false;
+          submit.textContent = 'Kirim Ulasan';
+        });
+    });
+  }
 })();
 </script>
 @endpush

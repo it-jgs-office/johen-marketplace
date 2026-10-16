@@ -53,6 +53,7 @@ return [
 
     'payment' => [
         'simulation' => env('PAYMENT_SIMULATION', false),
+        'gateway' => env('PAYMENT_GATEWAY', 'xendit'),
         /*
         |--------------------------------------------------------------------------
         | Saluran Pembayaran
@@ -74,6 +75,20 @@ return [
         'public_key' => env('VAPID_PUBLIC_KEY'),
         'private_key' => env('VAPID_PRIVATE_KEY'),
         'notif_brand' => env('VAPID_NOTIF_BRAND', 'Johen Gaming'),
+    ],
+
+    'jba_api' => [
+        'base_url' => rtrim((string) env('JBA_API_BASE_URL', 'http://localhost:8000/api'), '/'),
+        'clients' => [
+            'johen' => [
+                'key' => env('JBA_API_KEY_JOHEN'),
+                'name' => env('JBA_API_NAME_JOHEN', 'Johen API'),
+            ],
+            'marketplace' => [
+                'key' => env('JBA_API_KEY_MARKETPLACE'),
+                'name' => env('JBA_API_NAME_MARKETPLACE', 'Marketplace API'),
+            ],
+        ],
     ],
 
 ];

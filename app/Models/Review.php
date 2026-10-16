@@ -14,6 +14,7 @@ class Review extends Model
         'rating',
         'comment',
         'status',
+        'service_type',
     ];
 
     public function user()

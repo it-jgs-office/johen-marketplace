@@ -564,6 +564,32 @@ class CartCheckoutTest extends TestCase
         $this->actingAs($other)->getJson(route('checkout.status', $checkout))->assertForbidden();
     }
 
+    public function test_status_poll_does_not_mark_unpaid_checkout_as_processing(): void
+    {
+        Queue::fake();
+
+        $user = $this->user();
+        $this->addToCart($user, $this->product('Free Fire'), 1);
+
+        $this->actingAs($user)->post('/checkout', [
+            'accounts' => ['free fire' => ['customer_number' => '12345678']],
+        ])->assertRedirect();
+
+        $checkout = Checkout::firstOrFail();
+
+        $this->actingAs($user)
+            ->getJson(route('checkout.status', $checkout))
+            ->assertOk()
+            ->assertJsonPath('status', 'pending');
+
+        $this->assertSame('pending', $checkout->fresh()->status);
+
+        app(CheckoutSettlementService::class)->markPaid($checkout->fresh());
+
+        $this->assertSame('processing', $checkout->fresh()->status);
+        Queue::assertPushed(SettleCheckoutJob::class, 1);
+    }
+
     /* ==================== SETTLEMENT ==================== */
 
     private function fakeDigiflazz(array $status = ['data' => ['status' => 'Pending']]): void

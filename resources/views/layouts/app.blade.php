@@ -15,6 +15,7 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         <link rel="stylesheet" href="{{ pwa_asset('css/frontend-promo.css') }}">
+        <style>@media(max-width:860px){input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea{font-size:16px!important;}}</style>
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100">

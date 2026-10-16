@@ -8,10 +8,6 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Sinkronisasi rutin listing Jual Beli Akun dari johengaming.id.
-// Aktif bila cron `php artisan schedule:run` dipasang di server.
-Schedule::command('jba:sync-johengaming')->dailyAt('02:30');
-
 /*
  * Rekonsiliasi topup Digiflazz.
  *
@@ -23,6 +19,13 @@ Schedule::command('jba:sync-johengaming')->dailyAt('02:30');
  * dikembalikan ke user.
  */
 Schedule::command('digiflazz:reconcile')->everyFiveMinutes()->withoutOverlapping();
+
+/*
+ * Perbarui katalog, harga, stok, dan status produk game dari Digiflazz.
+ * Refresh paksa dipakai supaya setiap jadwal selalu membaca price list terbaru,
+ * bukan cache katalog sebelumnya.
+ */
+Schedule::command('digiflazz:sync --force')->everyTenMinutes()->withoutOverlapping();
 
 /*
  * Settlement checkout keranjang berjalan lewat queue (butuh `queue:work`).

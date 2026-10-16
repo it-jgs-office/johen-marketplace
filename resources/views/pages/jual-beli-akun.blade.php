@@ -2,6 +2,12 @@
 
 @section('title', 'Jual Beli Akun - ' . config('app.name'))
 
+@push('styles')
+  @if($activeSlug && !empty($gameBackgrounds[$activeSlug]))
+    <link rel="preload" as="image" href="{{ $gameBackgrounds[$activeSlug] }}" fetchpriority="high">
+  @endif
+@endpush
+
 @section('content')
 @php
   $jbaBanner  = \App\Models\SiteSetting::get('jba_hero_banner');
@@ -11,18 +17,32 @@
 @endphp
 
 <div class="jba-page">
+  <div class="jba-game-layout-background" id="jbaGameLayoutBackground" aria-hidden="true"
+       style="{{ $activeSlug && !empty($gameBackgrounds[$activeSlug]) ? '' : 'display:none' }}">
+    @foreach($gameBackgrounds as $slug => $background)
+      <img class="jba-game-layout-bg"
+           data-game-background="{{ $slug }}" data-src="{{ $background }}"
+           @if($activeSlug === $slug) src="{{ $background }}" fetchpriority="high" @endif
+           alt="">
+    @endforeach
+  </div>
+  <div class="jba-game-background-loader" id="jbaGameBackgroundLoader" aria-live="polite" style="display:none">
+    <span class="jba-game-background-spinner" aria-hidden="true"></span>
+    <span>Memuat background game…</span>
+  </div>
+
   <section class="hero-section hero-peek-carousel" id="jba-hero">
     @if(count($jbaBanners))
       <div class="hero-banner-track{{ count($jbaBanners) === 1 ? ' is-single' : '' }}"
            data-banners='{{ json_encode(array_map(fn($b) => media_url($b), $jbaBanners)) }}'>
         <button type="button" class="hero-banner-card hero-banner-card-prev" data-banner-slot="prev" aria-label="Lihat banner sebelumnya">
-          <img src="{{ media_url($jbaBanners[array_key_last($jbaBanners)]) }}" alt="Banner promo sebelumnya">
+          <img src="{{ media_url($jbaBanners[array_key_last($jbaBanners)]) }}" alt="Banner promo sebelumnya" loading="lazy" fetchpriority="low" decoding="async">
         </button>
         <button type="button" class="hero-banner-card hero-banner-card-active" data-banner-slot="active" aria-live="polite" tabindex="-1">
-          <img src="{{ media_url($jbaBanners[0]) }}" alt="Banner promo 1">
+          <img src="{{ media_url($jbaBanners[0]) }}" alt="Banner promo 1" loading="eager" fetchpriority="high" decoding="async">
         </button>
         <button type="button" class="hero-banner-card hero-banner-card-next" data-banner-slot="next" aria-label="Lihat banner selanjutnya">
-          <img src="{{ media_url($jbaBanners[1] ?? $jbaBanners[0]) }}" alt="Banner promo selanjutnya">
+          <img src="{{ media_url($jbaBanners[1] ?? $jbaBanners[0]) }}" alt="Banner promo selanjutnya" loading="lazy" fetchpriority="low" decoding="async">
         </button>
       </div>
       @if(count($jbaBanners) > 1)<div class="hero-banner-dots" data-banner-dots aria-label="Pilih banner"></div>@endif
@@ -120,24 +140,26 @@
   </div>
 
   <div class="games-grid" id="jba-game-grid">
-    @foreach($popularGames as $i => $brand)
-      @php
-        $count = $listings->get($brand->name)?->count() ?? 0;
-        $slug  = $gameSlugs[$brand->name] ?? null;
-      @endphp
-      <a class="jba-game-btn" href="{{ $slug ? '/jual-beli-akun/' . $slug : '#' }}"
-         data-game="{{ $brand->name }}" @if($slug)data-slug="{{ $slug }}"@endif>
+    @foreach($jbaGames as $game)
+      <a class="jba-game-btn" href="{{ '/jual-beli-akun/' . $game['slug'] }}"
+         data-game="{{ $game['name'] }}" data-slug="{{ $game['slug'] }}">
+        @if($game['slug'] === 'pubg')
+          <span class="jba-game-best-seller">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v4h2.5A1.5 1.5 0 0 1 20 8.5v1A5.5 5.5 0 0 1 15 15v2h2v2H7v-2h2v-2a5.5 5.5 0 0 1-5-5.5v-1A1.5 1.5 0 0 1 5.5 7H8V3Zm-2 6.5A3.5 3.5 0 0 0 8 12.7V9H6v.5Zm10 3.2A3.5 3.5 0 0 0 18 9.5V9h-2v3.7Z"/></svg>
+            Best Seller
+          </span>
+        @endif
         <div class="jba-game-btn-icon">
-          @if($brand->jba_card_image_url)
-            <img src="{{ $brand->jba_card_image_url }}" alt="{{ $brand->name }}">
+          @if($game['thumbnail_url'])
+            <img src="{{ $game['thumbnail_url'] }}" alt="{{ $game['name'] }}">
           @else
             <span style="font-size:2.4rem">🎮</span>
           @endif
         </div>
         <div class="jba-game-btn-overlay"></div>
         <div class="jba-game-btn-info">
-          <div class="jba-game-btn-name">{{ $brand->name }}</div>
-          <div class="jba-game-btn-cat">{{ $count }} akun tersedia</div>
+          <div class="jba-game-btn-name">{{ $game['name'] }}</div>
+          <div class="jba-game-btn-cat">{{ $game['count'] }} akun tersedia</div>
         </div>
       </a>
     @endforeach
@@ -163,7 +185,7 @@
             <div class="jba-game-stats">
               <span class="jba-stat"><b id="jbaStatRating">{{ $jbaRating }}</b>/5</span>
               <span class="jba-stat-dot"></span>
-              <span class="jba-stat"><b id="jbaStatCount">{{ count($listings[$activeGame] ?? []) }}</b> akun tersedia</span>
+              <span class="jba-stat"><b id="jbaStatCount">{{ ($listings->get($activeGame) ?? collect())->where('is_sold', false)->count() }}</b> akun tersedia</span>
               <span class="jba-stat-dot"></span>
               <span class="jba-stat">Garansi 100%</span>
             </div>
@@ -294,6 +316,9 @@
     </div>
   @endforelse
 </div>
+<div class="jba-load-more" id="jbaLoadMore" style="display:none">
+  <button type="button" class="jba-load-more-btn" id="jbaLoadMoreButton">Tampilkan akun lainnya</button>
+</div>
   </div>
 </div>
 
@@ -307,7 +332,36 @@
   max-width: var(--layout-max);
   margin: 0 auto;
   padding: var(--banner-navbar-gap, 0px) var(--layout-gutter) 1.5rem;
+  position: relative;
+  isolation: isolate;
 }
+.jba-page > :not(.jba-game-layout-background):not(.jba-game-background-loader) {
+  position: relative;
+  z-index: 1;
+}
+.jba-game-background-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  place-content: center;
+  justify-items: center;
+  gap: .75rem;
+  color: #fff;
+  font-size: .85rem;
+  font-weight: 700;
+  background: rgba(8, 10, 24, .52);
+  backdrop-filter: blur(3px);
+  pointer-events: none;
+}
+.jba-game-background-spinner {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 3px solid rgba(255, 255, 255, .3);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: jbaGameBackgroundSpin .7s linear infinite;
+}
+@keyframes jbaGameBackgroundSpin { to { transform: rotate(360deg); } }
 .jba-page .games-grid {
   align-items: start;
 }
@@ -502,6 +556,26 @@
   color: inherit;
   text-decoration: none;
 }
+.jba-game-best-seller {
+  position: absolute;
+  z-index: 4;
+  top: .55rem;
+  left: .55rem;
+  display: inline-flex;
+  align-items: center;
+  gap: .28rem;
+  padding: .28rem .48rem;
+  border: 1px solid rgba(255,255,255,.38);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f59e0b, #ea580c);
+  box-shadow: 0 7px 18px rgba(154, 52, 8, .35);
+  color: #fff;
+  font-size: .58rem;
+  font-weight: 800;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.jba-game-best-seller svg { width: .8rem; height: .8rem; fill: currentColor; }
 .jba-game-btn:hover {
   transform: translateY(-6px) scale(1.02);
   box-shadow: 0 20px 40px -14px rgba(0,0,0,.65);
@@ -557,7 +631,44 @@
 
 /* Game section */
 .jba-game-section {
+  position: relative;
+  isolation: isolate;
   animation: jbaFadeIn .25s ease;
+}
+.jba-game-section > :not(.jba-game-layout-background) {
+  position: relative;
+  z-index: 1;
+}
+.jba-game-layout-background {
+  position: fixed;
+  z-index: 0;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+  pointer-events: none;
+  background: none;
+}
+.jba-game-layout-background img {
+  display: none;
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+.jba-game-layout-background img.is-active { display: block; }
+.jba-load-more { padding-top: 1.25rem; text-align: center; }
+.jba-load-more-btn {
+  padding: .72rem 1.2rem;
+  border: 1px solid var(--border-strong);
+  border-radius: 10px;
+  background: var(--surface-2);
+  color: var(--text);
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 700;
 }
 @keyframes jbaFadeIn {
   from { opacity: 0; transform: translateY(8px); }
@@ -957,7 +1068,7 @@
   .jba-grid{grid-template-columns:repeat(5,minmax(0,1fr));}
 }
 @media(max-width:920px){
-  .jba-grid{grid-template-columns:repeat(2,1fr);}
+  .jba-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
 }
 @media(max-width:640px){
   .jba-page{padding:var(--banner-navbar-gap, 0px) var(--layout-gutter) 1.5rem;}
@@ -1337,13 +1448,19 @@
   const gameDesc = document.getElementById('jbaGameDesc');
   const statCount = document.getElementById('jbaStatCount');
   const heroBg = document.getElementById('jbaGameHeroBg');
+  const layoutBackground = document.getElementById('jbaGameLayoutBackground');
+  const layoutBackgroundImages = document.querySelectorAll('[data-game-background]');
+  const backgroundLoader = document.getElementById('jbaGameBackgroundLoader');
   const resultCount = document.getElementById('jbaResultCount');
   const backBtn = document.getElementById('jbaBackBtn');
   const grid = document.getElementById('jbaGrid');
+  const loadMore = document.getElementById('jbaLoadMore');
+  const loadMoreButton = document.getElementById('jbaLoadMoreButton');
 
-  const allListings = @json($listings);
+  const allListings = @json($clientListings);
   const gameSlugs = @json($gameSlugs);
   const gameBanners = @json($gameBanners);
+  const gameBackgrounds = @json($gameBackgrounds);
   const baseUrl = '/jual-beli-akun';
   const slugToGame = {};
   Object.keys(gameSlugs).forEach(function(name) { slugToGame[gameSlugs[name]] = name; });
@@ -1354,6 +1471,9 @@
   let priceMax = null;
   let collectorTier = null;
   let budgetId = null;
+  let backgroundRequest = 0;
+  let visibleCardLimit = 12;
+  let currentRenderedListings = [];
   const budgetRange = {};
 
   function applyFilters(listings) {
@@ -1376,11 +1496,19 @@
     });
   }
 
+  function availableListingCount(game) {
+    return (allListings[game] || []).filter(function(listing) {
+      return !listing.is_sold;
+    }).length;
+  }
+
   function renderCards(listings) {
     grid.innerHTML = '';
+    currentRenderedListings = listings || [];
+    const pagedListings = currentRenderedListings.slice(0, visibleCardLimit);
     let visible = 0;
 
-    (listings || []).forEach(function(l) {
+    pagedListings.forEach(function(l) {
       visible++;
 
       const isSold = l.is_sold;
@@ -1407,7 +1535,7 @@
       }
 
       const thumbHtml = l.photo_url
-        ? '<img src="' + l.photo_url + '" alt="' + l.product_name + '" class="' + (isSold ? 'jba-img-sold' : '') + '">'
+        ? '<img src="' + l.photo_url + '" alt="' + l.product_name + '" class="' + (isSold ? 'jba-img-sold' : '') + '" loading="lazy" decoding="async">'
         : '<div class="jba-card-img-fallback"><svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg></div>';
 
       const href = isSold ? '#' : '/jual-beli-akun/' + l.id;
@@ -1434,7 +1562,8 @@
     if (visible === 0) {
       grid.innerHTML = '<div class="jba-empty"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="color:#555;margin-bottom:.75rem"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg><h3>Tidak Ada Akun</h3><p>Tidak ada akun untuk filter ini.</p></div>';
     }
-    if (resultCount) resultCount.textContent = visible + ' akun';
+    if (resultCount) resultCount.textContent = currentRenderedListings.length + ' akun';
+    if (loadMore) loadMore.style.display = currentRenderedListings.length > visible ? '' : 'none';
   }
 
   function fmtCompact(n) {
@@ -1503,6 +1632,7 @@
 
   function renderFiltered() {
     if (!currentGame) return;
+    visibleCardLimit = 12;
     renderCards(applyFilters(allListings[currentGame] || []));
   }
 
@@ -1524,6 +1654,7 @@
 
   function showGame(game) {
     currentGame = game;
+    const selectedSlug = gameSlugs[game] || '';
     gameGrid.style.display = 'none';
     gameSection.style.display = '';
     if (jbaHero) jbaHero.style.display = 'none';
@@ -1532,7 +1663,7 @@
     if (jbaTransfer) jbaTransfer.style.display = 'none';
     gameTitle.textContent = game;
     if (heroBg) {
-      const slug = gameSlugs[game] || '';
+      const slug = selectedSlug;
       const url = gameBanners[slug] || null;
       if (url) {
         heroBg.src = url;
@@ -1542,8 +1673,9 @@
         heroBg.style.display = 'none';
       }
     }
+    setGameBackground(selectedSlug);
     gameDesc.textContent = 'Pusat jual beli akun ' + game + ' resmi tanpa ribet \u2014 terverifikasi, cepat, dan 100% aman dibantu langsung oleh admin.';
-    statCount.textContent = (allListings[game] || []).length;
+    if (statCount) statCount.textContent = availableListingCount(game);
     resetFilters();
     if (jbaFilterBar) {
       jbaFilterBar.style.display = String(game).toLowerCase() === 'mobile legends' ? '' : 'none';
@@ -1555,6 +1687,11 @@
   function showGameGrid() {
     gameSection.style.display = 'none';
     gameGrid.style.display = '';
+    currentGame = null;
+    backgroundRequest++;
+    if (backgroundLoader) backgroundLoader.style.display = 'none';
+    if (layoutBackground) layoutBackground.style.display = 'none';
+    layoutBackgroundImages.forEach(function(image) { image.classList.remove('is-active'); });
     if (jbaHero) jbaHero.style.display = '';
     if (jbaBanner) jbaBanner.style.display = '';
     if (jbaFlash) jbaFlash.style.display = '';
@@ -1562,6 +1699,44 @@
     resetFilters();
     if (jbaFilterBar) jbaFilterBar.style.display = 'none';
     window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function setGameBackground(slug) {
+    const request = ++backgroundRequest;
+    const background = Array.from(layoutBackgroundImages)
+      .find(function(image) { return image.dataset.gameBackground === slug; });
+
+    layoutBackgroundImages.forEach(function(image) { image.classList.remove('is-active'); });
+
+    if (!layoutBackground || !background || !gameBackgrounds[slug]) {
+      if (layoutBackground) layoutBackground.style.display = 'none';
+      if (backgroundLoader) backgroundLoader.style.display = 'none';
+      return;
+    }
+
+    layoutBackground.style.display = '';
+
+    const revealBackground = function() {
+      if (request !== backgroundRequest) return;
+      background.classList.add('is-active');
+      if (backgroundLoader) backgroundLoader.style.display = 'none';
+    };
+
+    if (background.complete && background.naturalWidth > 0) {
+      revealBackground();
+      return;
+    }
+
+    if (backgroundLoader) backgroundLoader.style.display = 'grid';
+    background.addEventListener('load', revealBackground, { once: true });
+    background.addEventListener('error', function() {
+      if (request !== backgroundRequest) return;
+      layoutBackground.style.display = 'none';
+      if (backgroundLoader) backgroundLoader.style.display = 'none';
+    }, { once: true });
+    if (!background.getAttribute('src')) {
+      background.src = background.dataset.src;
+    }
   }
 
   function slugFromPath(p) {
@@ -1684,17 +1859,16 @@
 
   document.querySelectorAll('.jba-game-btn').forEach(function(btn) {
     btn.addEventListener('click', function(e) {
-      const game = this.dataset.game;
-      const slug = gameSlugs[game] || null;
-      e.preventDefault();
-      showGame(game);
-      if (slug) {
-        history.pushState({ game: game }, '', baseUrl + '/' + slug);
-      } else {
-        history.pushState({ game: game }, '', baseUrl);
-      }
+      if (btn.getAttribute('href') === '#') e.preventDefault();
     });
   });
+
+  if (loadMoreButton) {
+    loadMoreButton.addEventListener('click', function() {
+      visibleCardLimit += 12;
+      renderCards(currentRenderedListings);
+    });
+  }
 
   backBtn?.addEventListener('click', function() {
     showGameGrid();

@@ -20,13 +20,13 @@
     <div class="hero-banner-track{{ count($banners) === 1 ? ' is-single' : '' }}"
          data-banners='{{ json_encode(array_map(fn($b) => media_url($b), $banners)) }}'>
       <button type="button" class="hero-banner-card hero-banner-card-prev" data-banner-slot="prev" aria-label="Lihat banner sebelumnya">
-        <img src="{{ media_url($banners[count($banners) > 1 ? count($banners) - 1 : 0]) }}" alt="Banner promo sebelumnya">
+        <img src="{{ media_url($banners[count($banners) > 1 ? count($banners) - 1 : 0]) }}" alt="Banner promo sebelumnya" loading="lazy" fetchpriority="low" decoding="async">
       </button>
       <button type="button" class="hero-banner-card hero-banner-card-active" data-banner-slot="active" aria-live="polite" tabindex="-1">
-        <img src="{{ media_url($banners[0]) }}" alt="Banner promo 1">
+        <img src="{{ media_url($banners[0]) }}" alt="Banner promo 1" loading="eager" fetchpriority="high" decoding="async">
       </button>
       <button type="button" class="hero-banner-card hero-banner-card-next" data-banner-slot="next" aria-label="Lihat banner selanjutnya">
-        <img src="{{ media_url($banners[1] ?? $banners[0]) }}" alt="Banner promo selanjutnya">
+        <img src="{{ media_url($banners[1] ?? $banners[0]) }}" alt="Banner promo selanjutnya" loading="lazy" fetchpriority="low" decoding="async">
       </button>
     </div>
     @if(count($banners) > 1)<div class="hero-banner-dots" data-banner-dots aria-label="Pilih banner"></div>@endif
@@ -117,6 +117,11 @@
 
 <!-- ===== TOP UP GAME POPULER ===== -->
 @if(isset($popularTopupGames) && $popularTopupGames->isNotEmpty())
+@push('styles')
+  @foreach($popularTopupGames->take(3) as $popularGame)
+    <link rel="preload" as="image" href="{{ $popularGame->topup_popular_image_url }}" fetchpriority="high">
+  @endforeach
+@endpush
 <section class="popular-topup-section" aria-labelledby="popularTopupTitle">
   <div class="popular-topup-heading">
     <div>
@@ -125,12 +130,12 @@
     </div>
   </div>
   <div class="popular-topup-grid">
-    @foreach($popularTopupGames as $popularGame)
+    @foreach($popularTopupGames as $popularIndex => $popularGame)
       <a class="popular-topup-card" href="{{ route('games.show', $popularGame) }}" aria-label="Top up {{ $popularGame->name }}">
-        <img class="popular-topup-art" src="{{ $popularGame->topup_popular_image_url }}" alt="" loading="lazy">
+        <img class="popular-topup-art" src="{{ $popularGame->topup_popular_image_url }}" alt="" loading="{{ $popularIndex < 3 ? 'eager' : 'lazy' }}" fetchpriority="{{ $popularIndex < 3 ? 'high' : 'low' }}" decoding="async">
         <span class="popular-topup-gradient" aria-hidden="true"></span>
         @if($popularGame->topup_popular_logo_url)
-          <img class="popular-topup-logo" src="{{ $popularGame->topup_popular_logo_url }}" alt="Logo {{ $popularGame->name }}" loading="lazy">
+          <img class="popular-topup-logo" src="{{ $popularGame->topup_popular_logo_url }}" alt="Logo {{ $popularGame->name }}" loading="{{ $popularIndex < 3 ? 'eager' : 'lazy' }}" fetchpriority="{{ $popularIndex < 3 ? 'high' : 'low' }}" decoding="async">
         @endif
         <span class="popular-topup-copy">
           <span class="popular-topup-name">{{ $popularGame->name }}</span>
@@ -227,6 +232,8 @@
       @php
         $icon = $brand->icon ?? '🎮';
         $bg = $gradients[$i % count($gradients)];
+        $aboveFold = $i < 6;
+        $isPubg = in_array(mb_strtolower(trim($brand->name)), ['pubg', 'pubg mobile'], true);
       @endphp
       <a href="{{ route('games.show', $brand->name) }}" class="game-card{{ $brand->topup_character_image_url ? ' game-card--character' : '' }}"
          aria-label="Top up {{ $brand->name }}"
@@ -236,19 +243,25 @@
          data-icon="{{ $icon }}"
          data-thumbnail="{{ $brand->thumbnail_url ?? '' }}"
          data-index="{{ $i }}"
-         style="background:{{ $bg }};animation:cardIn .5s ease forwards;animation-delay:{{ $i * 0.04 }}s;opacity:0;{{ $i >= 12 ? 'display:none;' : '' }}">
+         style="background:{{ $bg }};{{ $i >= 12 ? 'display:none;' : '' }}">
+        @if($isPubg)
+          <span class="game-card-best-seller">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 3h8v4h2.5A1.5 1.5 0 0 1 20 8.5v1A5.5 5.5 0 0 1 15 15v2h2v2H7v-2h2v-2a5.5 5.5 0 0 1-5-5.5v-1A1.5 1.5 0 0 1 5.5 7H8V3Zm-2 6.5A3.5 3.5 0 0 0 8 12.7V9H6v.5Zm10 3.2A3.5 3.5 0 0 0 18 9.5V9h-2v3.7Z"/></svg>
+            Best Seller
+          </span>
+        @endif
         @if($brand->topup_character_image_url)
           @if($brand->thumbnail_url)
             <img class="game-card-backdrop" src="{{ $brand->thumbnail_url }}" alt="" aria-hidden="true"
-                 loading="lazy" decoding="async" fetchpriority="low" width="640" height="640">
+                 loading="{{ $aboveFold ? 'eager' : 'lazy' }}" decoding="async" fetchpriority="{{ $aboveFold ? 'high' : 'low' }}" width="640" height="640">
           @endif
           <span class="game-card-character-glow" aria-hidden="true"></span>
           <img class="game-card-character" src="{{ $brand->topup_character_image_url }}" alt="" aria-hidden="true"
-               loading="lazy" decoding="async" fetchpriority="low" width="1200" height="1600">
+               loading="{{ $aboveFold ? 'eager' : 'lazy' }}" decoding="async" fetchpriority="{{ $aboveFold ? 'high' : 'low' }}" width="1200" height="1600">
         @else
           <div class="game-card-icon">
             @if($brand->thumbnail_url)
-              <img src="{{ $brand->thumbnail_url }}" alt="" loading="lazy" decoding="async" fetchpriority="low"
+              <img src="{{ $brand->thumbnail_url }}" alt="" loading="{{ $aboveFold ? 'eager' : 'lazy' }}" decoding="async" fetchpriority="{{ $aboveFold ? 'high' : 'low' }}"
                    width="640" height="640" style="width:100%;height:100%;object-fit:cover;">
             @else
               {{ $icon }}
@@ -266,12 +279,15 @@
 </section>
 
 <style>
-@keyframes cardIn{from{opacity:0;translate:0 16px;}to{opacity:1;translate:0 0;}}
 @media (max-width: 768px) {
-  #joki { height: 250px; border-radius: 16px; }
+  #joki { height: 250px; border-radius: 0; }
 }
 @media (max-width: 480px) {
-  #joki { height: 200px; }
+  #joki { height: clamp(150px, 45vw, 190px); }
+}
+@media (max-width: 640px) {
+  #tabsWrap { display:grid !important; grid-template-columns:repeat(2, minmax(0, 1fr)) !important; gap:.4rem; }
+  #tabsWrap .tab-pill { padding:.45rem .3rem; font-size:.68rem; white-space:nowrap; }
 }
 </style>
 
@@ -310,9 +326,10 @@
     const timer = setInterval(tick, 1000);
 })();
 
-const largeGamesMedia = window.matchMedia('(min-width:1600px)');
-const initialGameCount = () => largeGamesMedia.matches ? 12 : 10;
-const loadMoreStep = () => largeGamesMedia.matches ? 6 : 5;
+const desktopGamesMedia = window.matchMedia('(min-width:861px)');
+const tabletGamesMedia = window.matchMedia('(min-width:641px)');
+const initialGameCount = () => desktopGamesMedia.matches ? 12 : (tabletGamesMedia.matches ? 8 : 9);
+const loadMoreStep = () => desktopGamesMedia.matches ? 6 : (tabletGamesMedia.matches ? 4 : 3);
 let loadMoreIndex = initialGameCount();
 const allCards = Array.from(document.querySelectorAll('.game-card'));
 const loadMoreBtn = document.getElementById('loadMoreBtn');
@@ -442,7 +459,8 @@ window.__loadMoreReset = function() {
   loadMoreBtn.textContent = 'Tampilkan Lainnya';
 };
 
-largeGamesMedia.addEventListener?.('change', () => window.__loadMoreReset());
+desktopGamesMedia.addEventListener?.('change', () => window.__loadMoreReset());
+tabletGamesMedia.addEventListener?.('change', () => window.__loadMoreReset());
 window.__loadMoreReset();
 </script>
 @endpush
@@ -453,7 +471,32 @@ window.__loadMoreReset();
   <p class="testi-sub">Ribuan orang telah mempercayai Top Up mereka di Johen Gaming</p>
   <div class="home-testi-wall" aria-label="Testimoni pelanggan Johen Gaming">
     <div class="home-testi-lane-wrap">
-      <div class="home-testi-lane" id="testiTrack"></div>
+      <div class="home-testi-lane" id="testiTrack">
+        @foreach([false, true] as $duplicate)
+          <div class="home-testi-lane-group" @if($duplicate) aria-hidden="true" @endif>
+            @foreach($homeTestimonials as $testimonial)
+              <article class="home-testi-card">
+                <div class="home-testi-card-head">
+                  <div class="home-testi-brand">
+                    <span>{{ preg_replace('/^Top Up\s*-\s*/', '', $testimonial['game']) }}</span>
+                  </div>
+                  <div class="home-testi-rating" aria-label="Rating {{ $testimonial['rating'] }} dari 5">
+                    <span aria-hidden="true">★★★★★</span><span>{{ number_format((float) $testimonial['rating'], 1) }}</span>
+                  </div>
+                </div>
+                <p class="home-testi-quote">{{ $testimonial['quote'] }}</p>
+                <div class="home-testi-user">
+                  <img class="home-testi-avatar" src="{{ asset('assets/icon/icon-testimoni.png') }}" alt="Foto profil {{ $testimonial['name'] }}" loading="lazy">
+                  <div>
+                    <div class="home-testi-name">{{ $testimonial['name'] }}</div>
+                    <div class="home-testi-game">Pembeli terverifikasi</div>
+                  </div>
+                </div>
+              </article>
+            @endforeach
+          </div>
+        @endforeach
+      </div>
     </div>
   </div>
   <div class="load-more-wrap" style="margin-top:1.2rem">

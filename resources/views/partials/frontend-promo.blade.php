@@ -20,7 +20,7 @@
 <div class="frontend-promo">
   <section class="cta-section" aria-labelledby="profileCtaTitle">
     <svg class="cta-wave" viewBox="0 0 1440 78" preserveAspectRatio="none" aria-hidden="true">
-      <path d="M0 0H1440V34C1320 69 1200 2 1080 34S840 69 720 34 480 2 360 34 120 69 0 34V0Z" fill="var(--bg, #f3f4f6)"/>
+      <path class="cta-wave-path" d="M1440 34C1320 69 1200 2 1080 34S840 69 720 34 480 2 360 34 120 69 0 34" fill="none"/>
     </svg>
     <div class="cta-card">
       <span class="cta-glow-2" aria-hidden="true"></span>

@@ -62,6 +62,7 @@
             <label class="block text-sm font-medium mb-2">Metode Pembayaran</label>
             @php
                 $categories = [
+                    'doku' => 'Pembayaran Aman',
                     'qris' => 'QRIS',
                     'ewallet' => 'E-Wallet',
                     'va' => 'Virtual Account',
@@ -78,7 +79,7 @@
                         @foreach($catMethods as $pm)
                         <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-700 bg-gray-700/40 cursor-pointer hover:border-purple-500 transition payment-method-option">
                             <input type="radio" name="payment_method" value="{{ $pm->code }}"
-                                   @if(old('payment_method', 'qris') === $pm->code) checked @endif
+                                   @if(old('payment_method', $paymentMethods->first()?->code) === $pm->code) checked @endif
                                    class="accent-purple-500">
                             @if(payment_logo_asset($pm->code))
                                 <img src="{{ payment_logo_asset($pm->code) }}" alt="{{ $pm->name }}" class="h-7 object-contain">

@@ -69,6 +69,8 @@ class AdminController extends Controller
 
         $xenditConfigured = app(\App\Services\XenditService::class)->isConfigured();
         $xenditSvc = app(\App\Services\XenditService::class);
+        $paymentGateway = app(\App\Services\PaymentGatewayService::class);
+        $gatewayLabel = $paymentGateway->providerLabel();
 
         $checks = [
             'domain_public' => [
@@ -126,6 +128,29 @@ class AdminController extends Controller
             ],
         ];
 
+        if ($paymentGateway->isDoku()) {
+            $doku = app(\App\Services\DokuService::class);
+            $checks['domain_public']['detail'] = $isLocal
+                ? 'APP_URL masih "'.$appUrl.'". HTTP Notification DOKU tidak dapat menjangkau localhost; gunakan domain HTTPS publik.'
+                : 'APP_URL = '.$appUrl;
+            $checks['xendit_configured'] = [
+                'label' => 'DOKU API credential terkonfigurasi',
+                'ok' => $doku->isConfigured(),
+                'detail' => $doku->isConfigured() ? 'Client ID dan Secret Key terisi.' : 'DOKU_CLIENT_ID / DOKU_SECRET_KEY masih kosong.',
+            ];
+            $checks['xendit_live'] = [
+                'label' => 'Environment DOKU',
+                'ok' => ! $doku->isSandbox(),
+                'detail' => $doku->isSandbox() ? 'Sandbox aktif untuk pengujian.' : 'Production aktif.',
+            ];
+            $checks['xendit_callback_token'] = [
+                'label' => 'Verifikasi signature webhook DOKU',
+                'ok' => $doku->isConfigured(),
+                'detail' => 'Signature HMAC-SHA256 diverifikasi otomatis memakai Secret Key.',
+            ];
+            $checks['webhook_route']['detail'] = 'payment/doku/notification, payment/notification, dan digiflazz/callback sudah dikecualikan dari CSRF.';
+        }
+
         $pushStats = [
             'configured' => !empty(config('services.vapid.public_key')) && !empty(config('services.vapid.private_key')),
             'web' => \App\Models\PushSubscription::where('guard', 'web')->count(),
@@ -145,6 +170,7 @@ class AdminController extends Controller
             'checks',
             'isLocal',
             'appUrl',
+            'gatewayLabel',
             'pushStats',
             'digiflazzConfigured',
             'digiflazzBalance',

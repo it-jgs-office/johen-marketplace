@@ -3,12 +3,27 @@
 .frontend-promo .cta-section{
   position:relative;isolation:isolate;overflow:hidden;
   width:100%;margin:3rem 0 0;padding:94px 0 52px;
+  background:transparent;
+}
+.frontend-promo .cta-section::before{
+  content:'';position:absolute;z-index:0;inset:0;
   background-color:#123d81;
   background-image:linear-gradient(105deg,rgba(20,112,225,.88),rgba(43,69,181,.84) 52%,rgba(92,53,172,.86)),url('/assets/card/bg-cta.png');
   background-position:center;background-size:cover;
+  -webkit-mask-image:url('/assets/card/cta-wave-mask.svg'),linear-gradient(#000,#000);
+  mask-image:url('/assets/card/cta-wave-mask.svg'),linear-gradient(#000,#000);
+  -webkit-mask-size:100% 78px,100% calc(100% - 78px);
+  mask-size:100% 78px,100% calc(100% - 78px);
+  -webkit-mask-position:top left,bottom left;
+  mask-position:top left,bottom left;
+  -webkit-mask-repeat:no-repeat;
+  mask-repeat:no-repeat;
+  pointer-events:none;
 }
 .frontend-promo .cta-wave{position:absolute;z-index:2;top:0;left:0;display:block;width:100%;height:78px;pointer-events:none;}
-.frontend-promo .cta-card{position:relative;width:min(100%,1050px);margin:0 auto;padding:0 var(--layout-gutter,1.5rem);text-align:center;background:transparent;border:0;border-radius:0;box-shadow:none;overflow:visible;}
+.frontend-promo .cta-wave-path{stroke:rgba(255,255,255,.28);stroke-width:1.5;stroke-dasharray:18 12;animation:frontend-cta-wave-flow 8s linear infinite;}
+@keyframes frontend-cta-wave-flow{to{stroke-dashoffset:-120;}}
+.frontend-promo .cta-card{position:relative;z-index:1;width:min(100%,1050px);margin:0 auto;padding:0 var(--layout-gutter,1.5rem);text-align:center;background:transparent;border:0;border-radius:0;box-shadow:none;overflow:visible;}
 .frontend-promo .cta-card::before{content:none;}
 .frontend-promo .cta-card::after{content:'';position:absolute;top:-8rem;right:4%;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(105,196,255,.22),transparent 70%);opacity:.55;pointer-events:none;animation:frontend-cta-float 8s ease-in-out infinite;}
 .frontend-promo .cta-glow-2{position:absolute;bottom:-7rem;left:8%;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,rgba(181,133,255,.23),transparent 70%);opacity:.7;pointer-events:none;animation:frontend-cta-float 10s ease-in-out infinite reverse;}
@@ -29,4 +44,4 @@
 .frontend-promo .pay-badge{flex-shrink:0;display:flex;align-items:center;justify-content:center;}
 .frontend-promo .pay-badge-img{display:block;width:84px;height:48px;object-fit:contain;background:transparent;}
 @keyframes frontend-payment-scroll{to{transform:translateX(-50%);}}
-@media(prefers-reduced-motion:reduce){.frontend-promo .cta-card::after,.frontend-promo .cta-glow-2,.frontend-promo .payment-track{animation:none;}.frontend-promo .payment-track-wrap{overflow-x:auto;}}
+@media(prefers-reduced-motion:reduce){.frontend-promo .cta-card::after,.frontend-promo .cta-glow-2,.frontend-promo .payment-track,.frontend-promo .cta-wave-path{animation:none;}.frontend-promo .payment-track-wrap{overflow-x:auto;}}

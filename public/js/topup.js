@@ -39,14 +39,23 @@ if (header) {
 const hamburgerBtn = document.getElementById('hamburgerBtn');
 const mobileMenu = document.getElementById('mobileMenu');
 if (hamburgerBtn && mobileMenu) {
-  hamburgerBtn.addEventListener('click', () => {
-    hamburgerBtn.classList.toggle('open');
-    mobileMenu.classList.toggle('open');
-  });
-  mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => {
+  const closeMobileMenu = () => {
     hamburgerBtn.classList.remove('open');
+    hamburgerBtn.setAttribute('aria-expanded', 'false');
     mobileMenu.classList.remove('open');
-  }));
+  };
+  hamburgerBtn.addEventListener('click', () => {
+    const isOpen = mobileMenu.classList.toggle('open');
+    hamburgerBtn.classList.toggle('open', isOpen);
+    hamburgerBtn.setAttribute('aria-expanded', String(isOpen));
+  });
+  mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMobileMenu));
+  document.addEventListener('click', e => {
+    if (!mobileMenu.contains(e.target) && !hamburgerBtn.contains(e.target)) closeMobileMenu();
+  });
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeMobileMenu();
+  });
 }
 
 // ============ AUTH DROPDOWN ============
@@ -999,7 +1008,6 @@ function initStockShowcase() {
 
   let activeIndex = 0;
   let timer = null;
-  let paused = false;
 
   function updateBrandColor(slide) {
     const color = stockBrandColors[slide.dataset.stockSlug];
@@ -1020,7 +1028,7 @@ function initStockShowcase() {
 
   function schedule() {
     clearTimer();
-    if (slides.length < 2 || paused || document.hidden || reducedMotion.matches) return;
+    if (slides.length < 2 || document.hidden || reducedMotion.matches) return;
     timer = window.setTimeout(() => show(activeIndex + 1, 1), 3000);
   }
 
@@ -1080,14 +1088,6 @@ function initStockShowcase() {
   schedule();
   section.querySelector('[data-stock-prev]')?.addEventListener('click', () => show(activeIndex - 1, -1));
   section.querySelector('[data-stock-next]')?.addEventListener('click', () => show(activeIndex + 1, 1));
-  section.addEventListener('mouseenter', () => { paused = true; clearTimer(); });
-  section.addEventListener('mouseleave', () => { paused = false; schedule(); });
-  section.addEventListener('focusin', () => { paused = true; clearTimer(); });
-  section.addEventListener('focusout', event => {
-    if (section.contains(event.relatedTarget)) return;
-    paused = false;
-    schedule();
-  });
   document.addEventListener('visibilitychange', schedule);
   reducedMotion.addEventListener?.('change', schedule);
 }

@@ -6,20 +6,13 @@
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
     <div class="flex items-center space-x-3">
         <h2 class="text-lg font-semibold">Jual Beli Akun</h2>
-        <span class="badge badge-neutral">{{ $listings->total() }} total</span>
+        <span class="badge badge-neutral">{{ $listings->total() }} hasil</span>
     </div>
     <div class="flex items-center gap-3">
         <a href="{{ route('admin.jba-game-cards') }}" class="btn btn-ghost">
             <i class="fas fa-images"></i>
             <span>Gambar Card Game</span>
         </a>
-        <form action="{{ route('admin.account-listings.sync') }}" method="POST" onsubmit="return confirm('Sinkronkan semua listing dari johengaming.id? Proses berjalan di latar belakang dan bisa memakan beberapa menit.')">
-            @csrf
-            <button type="submit" class="btn btn-ghost" @if(($syncStatus['state'] ?? null) === 'running') disabled @endif>
-                <i class="fas fa-sync"></i>
-                <span>Sinkron dari johengaming.id</span>
-            </button>
-        </form>
         <button onclick="openCreateModal()" class="btn btn-primary">
             <i class="fas fa-plus"></i>
             <span>Tambah Listing</span>
@@ -27,47 +20,40 @@
     </div>
 </div>
 
-<div id="johen-sync-status" role="status" aria-live="polite" class="mb-5 text-sm" @if(!isset($syncStatus['state']) || $syncStatus['state'] === 'idle') hidden @endif>
-    @if(($syncStatus['state'] ?? null) === 'running')
-        Mengambil produk terbaru dari johengaming.id. Halaman ini akan diperbarui saat selesai.
-    @elseif(isset($syncStatus['result']))
-        Sinkronisasi {{ $syncStatus['state'] === 'completed' ? 'selesai' : 'selesai dengan kendala' }}:
-        {{ $syncStatus['result']['created'] }} dibuat, {{ $syncStatus['result']['updated'] }} diperbarui,
-        {{ $syncStatus['result']['unchanged'] }} tidak berubah, {{ $syncStatus['result']['sold'] }} terjual,
-        {{ $syncStatus['result']['errors'] }} gagal.
-        @if($syncStatus['result']['errors'] > 0)
-            {{ implode('; ', array_slice($syncStatus['result']['failed'], 0, 2)) }}
-        @endif
-    @elseif(($syncStatus['state'] ?? null) === 'failed')
-        Sinkronisasi gagal: {{ $syncStatus['message'] ?? 'Lihat log aplikasi.' }}
-    @endif
-</div>
-
-@if(($syncStatus['state'] ?? null) === 'running')
-<script>
-    (() => {
-        const timer = setInterval(async () => {
-            try {
-                const response = await fetch(@json(route('admin.account-listings.sync-status')), { headers: { Accept: 'application/json' } });
-                if (!response.ok) return;
-                const status = await response.json();
-                if (status.state !== 'running') {
-                    clearInterval(timer);
-                    window.location.reload();
-                }
-            } catch (_) {
-                // Kegagalan jaringan sementara tidak menghentikan pemantauan.
-            }
-        }, 5000);
-    })();
-</script>
-@endif
+<form action="{{ route('admin.account-listings') }}" method="GET" class="listing-filter mb-5">
+    <div class="listing-filter-search">
+        <i class="fas fa-search"></i>
+        <input type="search" name="q" value="{{ $filters['q'] ?? '' }}" placeholder="Cari nama akun, ID game, atau penjual">
+    </div>
+    <select name="game" class="input-field">
+        <option value="">Semua game</option>
+        @foreach($games as $game)
+            <option value="{{ $game }}" @selected(($filters['game'] ?? '') === $game)>{{ $game }}</option>
+        @endforeach
+    </select>
+    <select name="status" class="input-field">
+        <option value="">Semua status</option>
+        <option value="tersedia" @selected(($filters['status'] ?? '') === 'tersedia')>Tersedia</option>
+        <option value="habis" @selected(($filters['status'] ?? '') === 'habis')>Terjual</option>
+    </select>
+    <select name="sort" class="input-field">
+        <option value="urutan_asc" @selected(($filters['sort'] ?? 'urutan_asc') === 'urutan_asc')>Urutkan: urutan</option>
+        <option value="terbaru" @selected(($filters['sort'] ?? '') === 'terbaru')>Urutkan: terbaru</option>
+        <option value="harga_asc" @selected(($filters['sort'] ?? '') === 'harga_asc')>Harga terendah</option>
+        <option value="harga_desc" @selected(($filters['sort'] ?? '') === 'harga_desc')>Harga tertinggi</option>
+    </select>
+    <div class="listing-filter-actions">
+        <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Filter</button>
+        <a href="{{ route('admin.account-listings') }}" class="btn btn-ghost" title="Reset filter"><i class="fas fa-rotate-left"></i></a>
+    </div>
+</form>
 
 <div class="table-wrap">
     <div class="overflow-x-auto">
         <table class="w-full">
             <thead>
                 <tr>
+                    <th class="text-center">Urutan</th>
                     <th>Game</th>
                     <th>Nama Produk</th>
                     <th class="text-right">Harga</th>
@@ -78,12 +64,13 @@
             <tbody>
                 @forelse($listings as $listing)
                 <tr>
+                    <td class="text-center">{{ data_get($listing->getAttribute('jba_raw'), 'urutan', '-') }}</td>
                     <td>{{ $listing->game }}</td>
                     <td style="font-size:0.88rem">{{ $listing->product_name }}</td>
                     <td class="text-right font-semibold" style="color:var(--accent)">Rp {{ number_format($listing->price, 0, ',', '.') }}</td>
                     <td class="text-center">
-                        <span class="badge {{ $listing->is_sold ? 'badge-danger' : ($listing->is_active ? 'badge-success' : 'badge-neutral') }}">
-                            {{ $listing->is_sold ? 'Terjual' : ($listing->is_active ? 'Aktif' : 'Nonaktif') }}
+                        <span class="badge {{ $listing->is_sold ? 'badge-danger' : 'badge-success' }}">
+                            {{ $listing->is_sold ? 'Terjual' : 'Tersedia' }}
                         </span>
                     </td>
                     <td>
@@ -94,8 +81,8 @@
                             <form action="{{ route('admin.account-listings.toggle', $listing) }}" method="POST" class="inline">
                                 @csrf
                                 @method('PATCH')
-                                <button type="submit" class="btn btn-ghost btn-xs" title="{{ $listing->is_active ? 'Nonaktifkan' : 'Aktifkan' }}">
-                                    <i class="fas {{ $listing->is_active ? 'fa-eye-slash' : 'fa-eye' }}"></i>
+                                <button type="submit" class="btn btn-ghost btn-xs" title="{{ $listing->is_sold ? 'Tandai tersedia' : 'Tandai terjual' }}">
+                                    <i class="fas {{ $listing->is_sold ? 'fa-eye' : 'fa-eye-slash' }}"></i>
                                 </button>
                             </form>
                             <form action="{{ route('admin.account-listings.destroy', $listing) }}" method="POST" class="inline" onsubmit="return confirm('Hapus listing {{ $listing->product_name }}?')">
@@ -110,10 +97,10 @@
                 </tr>
                 @empty
                 <tr>
-                    <td colspan="5">
+                    <td colspan="6">
                         <div class="empty-state">
                             <i class="fas fa-box-open"></i>
-                            <p>Belum ada listing akun.</p>
+                            <p>Tidak ada listing yang sesuai filter.</p>
                         </div>
                     </td>
                 </tr>
@@ -123,9 +110,12 @@
     </div>
 </div>
 
-<div class="pagination-wrap">
-    {{ $listings->links('vendor.pagination.admin') }}
-</div>
+@if($listings->hasPages())
+    <div class="listing-pagination">
+        <span>Menampilkan {{ $listings->firstItem() }}–{{ $listings->lastItem() }} dari {{ $listings->total() }} listing</span>
+        {{ $listings->onEachSide(1)->links() }}
+    </div>
+@endif
 
 <!-- ===== MODAL LISTING AKUN ===== -->
 <div class="fixed inset-0 z-50 flex items-center justify-center" id="createModal" style="display:none">
@@ -154,6 +144,16 @@
                     <input type="text" name="product_name" id="f_product_name" required class="input-field" placeholder="cth: Akun Mythic Glory">
                     <p class="text-red-400 text-xs mt-1 hidden" id="err_product_name"></p>
                 </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5">ID Game</label>
+                    <input type="text" name="id_game" id="f_id_game" required class="input-field" placeholder="cth: 123456789">
+                    <p class="text-red-400 text-xs mt-1 hidden" id="err_id_game"></p>
+                </div>
+                <div>
+                    <label class="block text-sm font-medium mb-1.5">Urutan</label>
+                    <input type="number" name="urutan" id="f_urutan" min="0" value="0" required class="input-field">
+                    <p class="text-red-400 text-xs mt-1 hidden" id="err_urutan"></p>
+                </div>
             </div>
 
             <div class="mt-4">
@@ -175,9 +175,9 @@
                     <p class="text-red-400 text-xs mt-1 hidden" id="err_price"></p>
                 </div>
                 <div>
-                    <label class="block text-sm font-medium mb-1.5">Nama Owner</label>
-                    <select name="owner_name" id="f_owner_name" class="input-field">
-                        <option value="">Pilih Owner</option>
+                    <label class="block text-sm font-medium mb-1.5">Penjual</label>
+                    <select name="penjual" id="f_penjual" required class="input-field">
+                        <option value="">Pilih Penjual</option>
                         <option value="Johen PUBG">Johen PUBG</option>
                         <option value="Monkey PUBG">Monkey PUBG</option>
                         <option value="Johen MLBB">Johen MLBB</option>
@@ -187,12 +187,11 @@
                         <option value="Johen FCM">Johen FCM</option>
                         <option value="Johen Valorant">Johen Valorant</option>
                     </select>
-                    <p class="text-red-400 text-xs mt-1 hidden" id="err_owner_name"></p>
+                    <p class="text-red-400 text-xs mt-1 hidden" id="err_penjual"></p>
                 </div>
                 <div>
                     <label class="block text-sm font-medium mb-1.5">No. WhatsApp</label>
-                    <input type="text" name="whatsapp" id="f_whatsapp" class="input-field" placeholder="6281234567890">
-                    <p class="text-red-400 text-xs mt-1 hidden" id="err_whatsapp"></p>
+                    <input type="text" id="f_whatsapp" class="input-field" placeholder="Diatur dari company profile" disabled>
                 </div>
             </div>
 
@@ -275,6 +274,59 @@
     </div>
 </div>
 @endsection
+
+@push('styles')
+<style>
+    .listing-filter {
+        display: grid;
+        grid-template-columns: minmax(240px, 1.7fr) repeat(3, minmax(150px, 1fr)) auto;
+        gap: .75rem;
+        padding: .875rem;
+        border: 1px solid var(--glass-border);
+        border-radius: 14px;
+        background: var(--bg-card);
+    }
+    .listing-filter-search { position: relative; }
+    .listing-filter-search i {
+        position: absolute;
+        top: 50%; left: .9rem;
+        transform: translateY(-50%);
+        color: var(--text-dim);
+        pointer-events: none;
+    }
+    .listing-filter-search input {
+        width: 100%; height: 100%; min-height: 42px;
+        padding: .65rem .8rem .65rem 2.5rem;
+        border: 1px solid var(--border);
+        border-radius: .5rem;
+        background: var(--bg-input);
+        color: var(--text-primary);
+        outline: none;
+    }
+    .listing-filter-actions { display: flex; gap: .5rem; align-items: center; }
+    .listing-filter-actions .btn { white-space: nowrap; }
+    .listing-pagination {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 1rem;
+        margin-top: 1rem;
+        color: var(--text-muted);
+        font-size: .82rem;
+    }
+    .listing-pagination nav { margin-left: auto; }
+    @media (max-width: 1024px) {
+        .listing-filter { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+        .listing-filter-search { grid-column: span 2; }
+    }
+    @media (max-width: 640px) {
+        .listing-filter, .listing-filter-search { grid-template-columns: 1fr; grid-column: auto; }
+        .listing-filter-actions .btn:first-child { flex: 1; }
+        .listing-pagination { flex-direction: column; align-items: flex-start; }
+        .listing-pagination nav { margin-left: 0; width: 100%; overflow-x: auto; }
+    }
+</style>
+@endpush
 
 @push('scripts')
 <script>

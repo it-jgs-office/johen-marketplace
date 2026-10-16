@@ -383,6 +383,9 @@
             .auth-container{padding:22px 20px 20px;border-radius:16px;}
             .auth-header h1{font-size:16px;}
         }
+        @media(max-width:860px){
+            input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea{font-size:16px !important;}
+        }
     </style>
 </head>
 <body>

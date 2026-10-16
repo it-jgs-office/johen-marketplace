@@ -9,10 +9,10 @@
     $biz = business_info();
 @endphp
 <!DOCTYPE html>
-<html lang="id" data-event-theme="{{ $themeEventSlug }}">
+<html lang="id" data-theme="dark" data-event-theme="{{ $themeEventSlug }}">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="csrf-token" content="{{ csrf_token() }}">
 <title>@yield('title', config('app.name', 'Johen Gaming Marketplace'))</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -31,6 +31,16 @@
 @stack('styles')
 </head>
 <body>
+<script>
+  if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+  }
+
+  window.scrollTo(0, 0);
+  window.addEventListener('pageshow', function () {
+    window.scrollTo(0, 0);
+  });
+</script>
 @include('partials.splash')
 @include('partials.floating-decoration')
 <div class="dark-meteor-field" aria-hidden="true">
@@ -97,9 +107,9 @@
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h14a2 2 0 002-2v-6z"/><path d="M16 6a4 4 0 00-8 0"/><path d="M12 9v3"/></svg>
               Voucher Saya
             </a>
-            <a href="{{ route('testimoni') }}" class="auth-dropdown-item">
+            <a href="{{ route('reviews.my') }}" class="auth-dropdown-item">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg>
-              Ulasan
+              Ulasan Saya
             </a>
             <a href="{{ route('my-inquiries') }}" class="auth-dropdown-item">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
@@ -138,16 +148,28 @@
       <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
     </button>
 
-    <button class="hamburger" id="hamburgerBtn" aria-label="Menu">
-      <span></span><span></span><span></span>
-    </button>
   </div>
+</header>
 
-  <div class="mobile-menu" id="mobileMenu">
-    <a href="{{ route('home') }}#topup" class="{{ request()->routeIs('home') || request()->routeIs('games.show') ? 'active' : '' }}">Top Up</a>
-    <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}">Jual Beli Akun</a>
-    <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">Cek Transaksi</a>
-    <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}">Leaderboard</a>
+<nav class="mobile-bottom-nav" aria-label="Navigasi utama mobile">
+  <a href="{{ route('home') }}" class="{{ request()->routeIs('home') || request()->routeIs('games.show') ? 'active' : '' }}" @if(request()->routeIs('home') || request()->routeIs('games.show')) aria-current="page" @endif>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-7h6v7"/></svg><span>Top Up</span>
+  </a>
+  <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}" @if(request()->routeIs('jual-beli-akun*')) aria-current="page" @endif>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="10" r="2"/><path d="M5 17c.5-2 2-3 3-3s2.5 1 3 3M14 9h5M14 13h5M14 17h4"/></svg><span>Jual Akun</span>
+  </a>
+  <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}" @if(request()->routeIs('check.transaction')) aria-current="page" @endif>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2z"/><path d="M8 8h8M8 12h8M8 16h4"/></svg><span>Cek Transaksi</span>
+  </a>
+  <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}" @if(request()->routeIs('leaderboard')) aria-current="page" @endif>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 3h10v7a5 5 0 0 1-10 0zM7 5H4v3a4 4 0 0 0 4 4M17 5h3v3a4 4 0 0 1-4 4"/></svg><span>Ranking</span>
+  </a>
+  <button type="button" id="hamburgerBtn" class="{{ request()->routeIs('cart.*') || request()->routeIs('checkout.*') || request()->routeIs('orders.*') || request()->routeIs('vouchers.*') || request()->routeIs('reviews.*') ? 'active' : '' }}" aria-label="Buka menu lainnya" aria-controls="mobileMenu" aria-expanded="false">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menu</span>
+  </button>
+</nav>
+
+  <div class="mobile-menu" id="mobileMenu" aria-label="Menu lainnya">
     <a href="{{ route('cart.index') }}" class="mobile-menu__cart {{ request()->routeIs('cart.*') || request()->routeIs('checkout.*') ? 'active' : '' }}">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
@@ -163,7 +185,7 @@
     @auth
       <a href="{{ route('orders.my') }}">Pesanan Saya</a>
       <a href="{{ route('vouchers.index') }}">Voucher Saya</a>
-      <a href="{{ route('testimoni') }}">Ulasan</a>
+      <a href="{{ route('reviews.my') }}">Ulasan Saya</a>
       <a href="{{ route('my-inquiries') }}">Riwayat Pesan</a>
       @if(Auth::user()->isAdmin())
         <a href="{{ route('admin.dashboard') }}">Admin Panel</a>
@@ -181,7 +203,6 @@
       </div>
     @endauth
   </div>
-</header>
 
 @php
     $popupBanners = \App\Models\PopupBanner::activeBanners();

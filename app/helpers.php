@@ -14,6 +14,13 @@ if (! function_exists('media_url')) {
         $path = (string) $path;
 
         if (preg_match('#^https?://#i', $path)) {
+            $host = parse_url($path, PHP_URL_HOST);
+            $appHost = parse_url((string) config('app.url'), PHP_URL_HOST);
+
+            if ($host && $host !== $appHost) {
+                return $path;
+            }
+
             $path = parse_url($path, PHP_URL_PATH) ?? $path;
             $path = preg_replace('#^(/)?storage/#', '', $path);
         } else {
@@ -24,6 +31,12 @@ if (! function_exists('media_url')) {
 
         if ($path === '') {
             return null;
+        }
+
+        // Artwork bawaan yang di-seed dari public/assets tidak melalui media
+        // storage agar dapat langsung tersedia setelah database di-seed.
+        if (str_starts_with($path, 'assets/') && is_file(public_path($path))) {
+            return asset($path);
         }
 
         return url('media/'.$path);

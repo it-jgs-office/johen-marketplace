@@ -44,9 +44,7 @@
     }
 
     function canOfferInstall() {
-        if (appInstalled || isStandalone()) return false;
-        if (isIos) return true;
-        return Boolean(installPrompt);
+        return !appInstalled && !isStandalone();
     }
 
     function updateInstallButtons() {
@@ -65,6 +63,7 @@
         var hamburger = document.getElementById('hamburgerBtn');
         var mobileMenu = document.getElementById('mobileMenu');
         if (hamburger) hamburger.classList.remove('open');
+        if (hamburger) hamburger.setAttribute('aria-expanded', 'false');
         if (mobileMenu) mobileMenu.classList.remove('open');
     }
 
@@ -127,15 +126,17 @@
             try {
                 var promptResult = prompt.prompt();
                 if (promptResult && typeof promptResult.catch === 'function') {
-                    promptResult.catch(function () {});
+                    promptResult.catch(function () {
+                        openGuide(isIos ? 'ios' : 'fallback');
+                    });
                 }
             } catch (error) {
-                if (isIos) openGuide('ios');
+                openGuide(isIos ? 'ios' : 'fallback');
             }
             return;
         }
 
-        if (isIos) openGuide('ios');
+        openGuide(isIos ? 'ios' : 'fallback');
     }
 
     window.JohenPwaInstall = {

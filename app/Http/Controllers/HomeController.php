@@ -14,6 +14,8 @@ use App\Models\Product;
 use App\Models\Review;
 use App\Models\SiteSetting;
 use App\Services\GameAccountService;
+use App\Services\DokuService;
+use App\Services\JbaApiClient;
 use App\Services\PaymentGatewayService;
 use App\Services\XenditService;
 use Carbon\Carbon;
@@ -35,15 +37,27 @@ class HomeController extends Controller
         'valorant' => 'Valorant',
     ];
 
+    private const JBA_REMOTE_GAME_SLUGS = [
+        'ml' => 'mlbb',
+        'pubg' => 'pubg',
+        'fc_mobile' => 'fcm',
+        'ff' => 'ff',
+        'roblox' => 'roblox',
+        'valorant' => 'valorant',
+        'efootball' => 'efootball',
+    ];
+
     private static function jbaPageData(?string $activeGame = null): array
     {
-        $listings = AccountListing::where(function ($q) {
-            $q->where('is_active', true)->orWhere('is_sold', true);
-        })
-            ->orderBy('is_sold', 'asc')
-            ->orderBy('game')
-            ->orderBy('product_name')
-            ->get()
+        $listings = app(JbaApiClient::class)
+            ->listings($activeGame)
+            ->sortBy(fn (AccountListing $listing) => sprintf(
+                '%d|%s|%s',
+                $listing->is_sold ? 1 : 0,
+                mb_strtolower($listing->game),
+                mb_strtolower($listing->product_name)
+            ))
+            ->values()
             ->groupBy('game');
 
         // Daftar awal untuk render server (SEO + fallback tanpa JavaScript).
@@ -53,7 +67,23 @@ class HomeController extends Controller
             ? ($listings->get($activeGame) ?? collect())
             : $listings->flatMap(fn ($items) => $items->take(4));
         $serverTotal = $serverSource->count();
-        $serverListings = $serverSource->take(24)->values();
+        $serverListings = $serverSource->take(12)->values();
+        $clientListings = $activeGame
+            ? $listings->map(fn ($gameListings) => $gameListings->map(fn (AccountListing $listing) => [
+                'id' => $listing->id,
+                'game' => $listing->game,
+                'product_name' => $listing->product_name,
+                'owner_name' => $listing->owner_name,
+                'price' => $listing->price,
+                'original_price' => $listing->original_price,
+                'photo_url' => $listing->photo_url,
+                'is_sold' => $listing->is_sold,
+                'promo_type' => $listing->promo_type,
+                'discount_percent' => $listing->discount_percent,
+                'collector_tier' => $listing->collector_tier,
+                'deal_type' => $listing->deal_type,
+            ]))
+            : collect();
 
         $popularGames = Brand::where('is_popular', true)
             ->where('is_active', true)
@@ -105,17 +135,59 @@ class HomeController extends Controller
 
         $gameSlugs = array_flip(static::JBA_GAME_SLUGS);
 
+        $remoteTampilan = app(JbaApiClient::class)->tampilan()->keyBy('game');
+        $remoteTampilanBySlug = $remoteTampilan
+            ->mapWithKeys(function (array $tampilan, string $remoteGame) {
+                $slug = static::JBA_REMOTE_GAME_SLUGS[$remoteGame] ?? null;
+
+                return $slug ? [$slug => $tampilan] : [];
+            });
+        $brandBySlug = $popularGames->mapWithKeys(function (Brand $brand) use ($gameSlugs) {
+            $slug = $gameSlugs[$brand->name] ?? null;
+
+            return $slug ? [$slug => $brand] : [];
+        });
+        $jbaGames = collect(static::JBA_GAME_SLUGS)
+            ->map(function (string $name, string $slug) use ($brandBySlug, $remoteTampilanBySlug, $listings) {
+                $tampilan = $remoteTampilanBySlug->get($slug, []);
+                $brand = $brandBySlug->get($slug);
+
+                return [
+                    'slug' => $slug,
+                    'name' => $name,
+                    'count' => $listings->get($name)?->where('is_sold', false)->count() ?? 0,
+                    'thumbnail_url' => $tampilan['thumbnail_url'] ?? $brand?->jba_card_image_url,
+                    'urutan' => (int) ($tampilan['urutan'] ?? 999),
+                ];
+            })
+            ->sortBy(fn (array $game) => sprintf('%d-%03d-%s', $game['slug'] === 'pubg' ? 0 : 1, $game['urutan'], $game['slug']))
+            ->values();
+
+        $stockGameBackgrounds = [
+            'mlbb' => 'assets/backround/bg-ml.jpg',
+            'pubg' => 'assets/backround/bg-pubg.png',
+            'efootball' => 'assets/backround/bg-efootball.png',
+            'fcm' => 'assets/backround/bg-fcmobile.png',
+            'ff' => 'assets/backround/bg-ff.png',
+            'roblox' => 'assets/backround/bg-roblox.png',
+            'valorant' => 'assets/backround/bg-valo.png',
+        ];
+
         $gameBanners = [];
         foreach (static::JBA_GAME_SLUGS as $slug => $game) {
             $path = SiteSetting::get('jba_game_banner_'.$slug);
-            $gameBanners[$slug] = $path ? media_url($path) : null;
+            $gameBanners[$slug] = $remoteTampilanBySlug->get($slug)['banner_url'] ?? ($path ? media_url($path) : null);
         }
+
+        $gameBackgrounds = collect($stockGameBackgrounds)
+            ->map(fn (string $path) => asset($path))
+            ->all();
 
         $jbaTestis = static::getTestimonials();
         $jbaRating = collect($jbaTestis)->filter(fn ($t) => ($t['layanan'] ?? '') === 'jual-beli-akun')->avg('rating');
         $jbaRating = $jbaRating ? round((float) $jbaRating, 1) : 4.9;
 
-        return compact('popularGames', 'listings', 'testimonials', 'flashSaleBanners', 'budgetBanners', 'gameSlugs', 'gameBanners', 'jbaRating', 'serverListings', 'serverTotal');
+        return compact('jbaGames', 'listings', 'clientListings', 'testimonials', 'flashSaleBanners', 'budgetBanners', 'gameSlugs', 'gameBanners', 'gameBackgrounds', 'jbaRating', 'serverListings', 'serverTotal');
     }
 
     public function index()
@@ -129,6 +201,7 @@ class HomeController extends Controller
             // Urutan berikutnya tetap memberi keunggulan pada game populer, lalu game
             // dengan thumbnail, sebelum memakai urutan manual dari admin.
             ->orderByRaw("CASE
+                WHEN LOWER(name) IN ('pubg', 'pubg mobile') THEN -1
                 WHEN is_topup_popular = 1 AND COALESCE(thumbnail, '') <> '' THEN 0
                 WHEN is_topup_popular = 1 THEN 1
                 WHEN COALESCE(thumbnail, '') <> '' THEN 2
@@ -164,16 +237,15 @@ class HomeController extends Controller
             'valorant' => 'valorant.png',
         ];
 
+        $apiAccountListings = app(JbaApiClient::class)->listings();
+
         $latestAccountStock = collect(static::JBA_GAME_SLUGS)
-            ->map(function (string $game, string $slug) use ($stockArtwork) {
-                $listings = AccountListing::query()
+            ->map(function (string $game, string $slug) use ($apiAccountListings, $stockArtwork) {
+                $listings = $apiAccountListings
                     ->where('game', $game)
-                    ->where('is_active', true)
                     ->where('is_sold', false)
-                    ->orderByDesc('created_at')
-                    ->orderByDesc('id')
-                    ->limit(15)
-                    ->get();
+                    ->take(15)
+                    ->values();
 
                 return [
                     'game' => $game,
@@ -185,7 +257,12 @@ class HomeController extends Controller
             ->filter(fn (array $category) => $category['listings']->isNotEmpty())
             ->values();
 
-        return view('home', compact('brands', 'flashDeals', 'latestAccountStock', 'popularTopupGames'));
+        $homeTestimonials = collect(static::getTestimonials())
+            ->where('layanan', 'topup')
+            ->take(6)
+            ->values();
+
+        return view('home', compact('brands', 'flashDeals', 'latestAccountStock', 'popularTopupGames', 'homeTestimonials'));
     }
 
     public function getApiProducts(Request $request)
@@ -344,7 +421,68 @@ class HomeController extends Controller
 
     public function checkTransaction()
     {
-        return view('check-transaction');
+        $recentTopups = Order::query()
+            ->select(['id', 'order_id', 'product_name', 'brand', 'customer_phone', 'price', 'status', 'created_at'])
+            ->latest('created_at')
+            ->latest('id')
+            ->limit(10)
+            ->get()
+            ->map(fn (Order $order) => [
+                'type' => 'topup',
+                'reference' => static::maskPublicTransactionReference($order->order_id, 'JOHEN-TOPUP-'.$order->id),
+                'product' => $order->product_name,
+                'game' => $order->brand,
+                'phone' => $order->customer_phone
+                    ? static::maskPublicTransactionReference($order->customer_phone, '-')
+                    : '—',
+                'total' => (float) $order->price,
+                'status' => $order->status,
+                'time' => $order->created_at?->translatedFormat('d M Y, H:i').' WIB',
+                'table_time' => $order->created_at?->format('d-m-Y H:i:s'),
+                'timestamp' => $order->created_at?->getTimestamp() ?? 0,
+            ]);
+
+        $recentAccountOrders = AccountOrder::query()
+            ->with('listing:id,product_name,game')
+            ->select(['id', 'account_listing_id', 'order_ref', 'customer_phone', 'total_price', 'status', 'created_at'])
+            ->latest('created_at')
+            ->latest('id')
+            ->limit(10)
+            ->get()
+            ->map(fn (AccountOrder $order) => [
+                'type' => 'account',
+                'reference' => static::maskPublicTransactionReference($order->order_ref, 'JOHEN-AKUN-'.$order->id),
+                'product' => $order->listing?->product_name ?? 'Akun Game',
+                'game' => $order->listing?->game ?? 'Jual Beli Akun',
+                'phone' => $order->customer_phone
+                    ? static::maskPublicTransactionReference($order->customer_phone, '-')
+                    : '—',
+                'total' => (float) $order->total_price,
+                'status' => $order->status,
+                'time' => $order->created_at?->translatedFormat('d M Y, H:i').' WIB',
+                'table_time' => $order->created_at?->format('d-m-Y H:i:s'),
+                'timestamp' => $order->created_at?->getTimestamp() ?? 0,
+            ]);
+
+        $recentTransactions = $recentTopups
+            ->concat($recentAccountOrders)
+            ->sortByDesc('timestamp')
+            ->take(10)
+            ->values();
+
+        return view('check-transaction', compact('recentTopups', 'recentAccountOrders', 'recentTransactions'));
+    }
+
+    private static function maskPublicTransactionReference(?string $reference, string $fallback): string
+    {
+        $value = trim((string) ($reference ?: $fallback));
+        $length = mb_strlen($value);
+
+        if ($length <= 6) {
+            return mb_substr($value, 0, 5).'••'.mb_substr($value, -2);
+        }
+
+        return mb_substr($value, 0, 5).'••••'.mb_substr($value, -3);
     }
 
     public function leaderboard(Request $request)
@@ -561,28 +699,32 @@ class HomeController extends Controller
         return view('pages.jual-beli-akun-orders', compact('orders'));
     }
 
-    public function jualBeliAkunDetail(AccountListing $listing)
+    public function jualBeliAkunDetail(int $listing)
     {
-        if (! $listing->is_active && ! $listing->is_sold) {
-            abort(404);
-        }
+        $listing = app(JbaApiClient::class)->find($listing);
+        abort_unless($listing && $listing->is_active, 404);
 
-        $related = AccountListing::where(function ($q) {
-            $q->where('is_active', true)->orWhere('is_sold', true);
-        })
+        $related = app(JbaApiClient::class)
+            ->listings($listing->game)
             ->where('game', $listing->game)
             ->where('id', '!=', $listing->id)
-            ->orderBy('is_sold', 'asc')
-            ->orderBy('product_name')
-            ->get();
+            ->sortBy(fn (AccountListing $item) => sprintf(
+                '%d|%s',
+                $item->is_sold ? 1 : 0,
+                mb_strtolower($item->product_name)
+            ))
+            ->values();
 
         $gameSlug = array_search($listing->game, static::JBA_GAME_SLUGS) ?: null;
 
         return view('pages.jual-beli-akun-detail', compact('listing', 'related', 'gameSlug'));
     }
 
-    public function jualBeliAkunCheckout(AccountListing $listing)
+    public function jualBeliAkunCheckout(int $listing)
     {
+        $listing = app(JbaApiClient::class)->find($listing);
+        abort_unless($listing, 404);
+
         if ($listing->is_sold || ! $listing->is_active) {
             return redirect()->route('jual-beli-akun.detail', $listing)
                 ->with('error', 'Produk ini sudah tidak tersedia.');
@@ -595,14 +737,20 @@ class HomeController extends Controller
         return view('pages.jual-beli-akun-checkout', compact('listing', 'paymentMethods'));
     }
 
-    public function jualBeliAkunCheckoutStore(Request $request, AccountListing $listing)
+    public function jualBeliAkunCheckoutStore(Request $request, int $listing)
     {
+        $listing = app(JbaApiClient::class)->find($listing);
+        abort_unless($listing, 404);
+
         if ($listing->is_sold || ! $listing->is_active) {
             return redirect()->route('jual-beli-akun.detail', $listing)
                 ->with('error', 'Produk ini sudah tidak tersedia.');
         }
 
         $availableCodes = PaymentMethod::where('is_active', true)->pluck('code')->all();
+        if (app(PaymentGatewayService::class)->isDoku()) {
+            $availableCodes[] = 'doku_checkout';
+        }
 
         $validated = $request->validate([
             'customer_name' => 'required|string|max:255',
@@ -616,10 +764,12 @@ class HomeController extends Controller
         $isSimulation = (bool) config('services.payment.simulation');
         $method = strtolower(trim((string) $validated['payment_method']));
 
+        $orderListing = $this->storeJbaApiOrderSnapshot($listing);
+
         $order = AccountOrder::create([
-            'account_listing_id' => $listing->id,
+            'account_listing_id' => $orderListing->id,
             'user_id' => auth()->id(),
-            'order_ref' => 'JBA-'.strtoupper(Str::random(10)),
+            'order_ref' => 'JOHEN-'.strtoupper(Str::random(10)),
             'customer_name' => $validated['customer_name'],
             'customer_email' => $validated['customer_email'],
             'customer_phone' => $validated['customer_phone'],
@@ -630,10 +780,10 @@ class HomeController extends Controller
             'notes' => $validated['notes'] ?? null,
         ]);
 
-        // Buat charge gateway (Xendit) untuk metode yang dipilih.
+        // Buat charge pada payment gateway aktif untuk metode yang dipilih.
         // Referensi webhook = order_ref; nominal = total_price.
-        if (! $isSimulation && app(XenditService::class)->isConfigured()) {
-            $gateway = app(PaymentGatewayService::class);
+        $gateway = app(PaymentGatewayService::class);
+        if (! $isSimulation && $gateway->isConfigured()) {
             $charged = $gateway->chargeAccount($order, $method, [
                 'item_name' => $listing->product_name,
             ]);
@@ -665,6 +815,35 @@ class HomeController extends Controller
             ->with('success', 'Pesanan berhasil dibuat! Silakan lakukan pembayaran.');
     }
 
+    private function storeJbaApiOrderSnapshot(AccountListing $listing): AccountListing
+    {
+        return AccountListing::updateOrCreate([
+            'source' => 'jba_api',
+            'source_id' => (string) $listing->id,
+        ], [
+            'source_url' => app(JbaApiClient::class)->sourceUrl((int) $listing->id),
+            'game' => $listing->game,
+            'product_name' => $listing->product_name,
+            'specifications' => $listing->specifications,
+            'price' => $listing->price,
+            'original_price' => $listing->original_price,
+            'owner_name' => $listing->owner_name,
+            'whatsapp' => $listing->whatsapp,
+            'promo_type' => $listing->promo_type,
+            'discount_percent' => $listing->discount_percent,
+            'collector_tier' => $listing->collector_tier,
+            'deal_type' => $listing->deal_type,
+            'is_active' => $listing->is_active,
+            'is_sold' => $listing->is_sold,
+            'photo' => $listing->photo,
+            'detail_photo_1' => $listing->detail_photo_1,
+            'detail_photo_2' => $listing->detail_photo_2,
+            'detail_photo_3' => $listing->detail_photo_3,
+            'detail_photo_4' => $listing->detail_photo_4,
+            'video_url' => $listing->video_url,
+        ]);
+    }
+
     public function jualBeliAkunPayment(AccountOrder $accountOrder)
     {
         $listing = $accountOrder->listing;
@@ -687,13 +866,21 @@ class HomeController extends Controller
         $checkoutUrl = $accountOrder->checkout_url;
         $invoiceUrl = $accountOrder->gateway_invoice_url;
         $gatewayExtra = $accountOrder->gateway_extra ?: [];
+        $gatewayName = app(PaymentGatewayService::class)->providerLabel();
 
         // Label & logo metode dari tabel payment_methods (map code → nama).
         $paymentMethod = PaymentMethod::where('code', strtolower((string) $accountOrder->payment_method))->first();
+        $hasReviewed = Review::where('order_id', $accountOrder->order_ref)
+            ->where('service_type', 'jual-beli-akun')
+            ->exists();
+        $reviewUser = auth('web')->user();
+        $canReview = $reviewUser && ($accountOrder->user_id
+            ? (int) $accountOrder->user_id === (int) $reviewUser->id
+            : mb_strtolower(trim($accountOrder->customer_email)) === mb_strtolower(trim($reviewUser->email)));
 
         return view('pages.jual-beli-akun-payment', compact(
             'accountOrder', 'listing', 'isSimulation', 'isDynamic', 'qrString', 'qrisImage',
-            'gatewayType', 'vaNumber', 'paymentCode', 'checkoutUrl', 'invoiceUrl', 'gatewayExtra', 'paymentMethod'
+            'gatewayType', 'vaNumber', 'paymentCode', 'checkoutUrl', 'invoiceUrl', 'gatewayExtra', 'paymentMethod', 'gatewayName', 'hasReviewed', 'canReview'
         ));
     }
 
@@ -706,51 +893,63 @@ class HomeController extends Controller
     {
         if ($accountOrder->status === 'pending'
             && ! empty($accountOrder->gateway_invoice_id)
-            && app(XenditService::class)->isConfigured()) {
-            $xendit = app(XenditService::class);
+            && app(PaymentGatewayService::class)->isConfigured()) {
             $type = $accountOrder->gateway_type ?: 'qris';
             $paid = false;
             $failed = null;
 
-            if ($type === 'qris' || ! empty($accountOrder->qr_string)) {
-                $qr = $xendit->getQr($accountOrder->gateway_invoice_id);
-
-                if ($qr && ! empty($qr['status'])) {
-                    $status = strtoupper($qr['status']);
-                    $paid = in_array($status, ['INACTIVE', 'COMPLETED'], true);
-                    $failed = in_array($status, ['FAILED', 'EXPIRED'], true) ? 'failed' : null;
-                }
-            } elseif ($type === 'va') {
-                $va = $xendit->getVirtualAccount($accountOrder->gateway_invoice_id);
-
-                if ($va && ! empty($va['status'])) {
-                    $status = strtoupper($va['status']);
-                    $paid = $status === 'INACTIVE';
-                    $failed = in_array($status, ['FAILED', 'EXPIRED'], true) ? 'failed' : null;
-                }
-            } elseif ($type === 'retail') {
-                $retail = $xendit->getRetailOutlet($accountOrder->gateway_invoice_id);
-
-                if ($retail && ! empty($retail['status'])) {
-                    $status = strtoupper($retail['status']);
-                    $paid = $status === 'INACTIVE';
-                    $failed = in_array($status, ['FAILED', 'EXPIRED'], true) ? 'failed' : null;
-                }
-            } elseif ($type === 'ewallet') {
-                $charge = $xendit->getEwalletCharge($accountOrder->gateway_invoice_id);
-
-                if ($charge && ! empty($charge['status'])) {
-                    $status = strtoupper($charge['status']);
-                    $paid = in_array($status, ['SUCCEEDED', 'COMPLETED', 'CAPTURED'], true);
-                    $failed = in_array($status, ['FAILED', 'EXPIRED', 'CANCELLED'], true) ? 'failed' : null;
-                }
+            if ($type === 'doku_checkout') {
+                $extra = (array) $accountOrder->gateway_extra;
+                $invoiceNumber = (string) ($extra['invoice_number'] ?? $accountOrder->order_ref);
+                $data = app(DokuService::class)->checkStatus($invoiceNumber);
+                $status = strtoupper((string) data_get($data, 'transaction.status', ''));
+                $paid = $status === 'SUCCESS';
+                // FAILED bukan final untuk DOKU Checkout; user masih dapat
+                // mencoba kanal pembayaran lain pada URL yang sama.
+                $failed = $status === 'EXPIRED' ? 'failed' : null;
             } else {
-                $invoice = $xendit->getInvoice($accountOrder->gateway_invoice_id);
+                $xendit = app(XenditService::class);
 
-                if ($invoice && ! empty($invoice['status'])) {
-                    $status = strtoupper($invoice['status']);
-                    $paid = in_array($status, ['PAID', 'SETTLED'], true);
-                    $failed = $status === 'EXPIRED' ? 'failed' : null;
+                if ($type === 'qris' || ! empty($accountOrder->qr_string)) {
+                    $qr = $xendit->getQr($accountOrder->gateway_invoice_id);
+
+                    if ($qr && ! empty($qr['status'])) {
+                        $status = strtoupper($qr['status']);
+                        $paid = in_array($status, ['INACTIVE', 'COMPLETED'], true);
+                        $failed = in_array($status, ['FAILED', 'EXPIRED'], true) ? 'failed' : null;
+                    }
+                } elseif ($type === 'va') {
+                    $va = $xendit->getVirtualAccount($accountOrder->gateway_invoice_id);
+
+                    if ($va && ! empty($va['status'])) {
+                        $status = strtoupper($va['status']);
+                        $paid = $status === 'INACTIVE';
+                        $failed = in_array($status, ['FAILED', 'EXPIRED'], true) ? 'failed' : null;
+                    }
+                } elseif ($type === 'retail') {
+                    $retail = $xendit->getRetailOutlet($accountOrder->gateway_invoice_id);
+
+                    if ($retail && ! empty($retail['status'])) {
+                        $status = strtoupper($retail['status']);
+                        $paid = $status === 'INACTIVE';
+                        $failed = in_array($status, ['FAILED', 'EXPIRED'], true) ? 'failed' : null;
+                    }
+                } elseif ($type === 'ewallet') {
+                    $charge = $xendit->getEwalletCharge($accountOrder->gateway_invoice_id);
+
+                    if ($charge && ! empty($charge['status'])) {
+                        $status = strtoupper($charge['status']);
+                        $paid = in_array($status, ['SUCCEEDED', 'COMPLETED', 'CAPTURED'], true);
+                        $failed = in_array($status, ['FAILED', 'EXPIRED', 'CANCELLED'], true) ? 'failed' : null;
+                    }
+                } else {
+                    $invoice = $xendit->getInvoice($accountOrder->gateway_invoice_id);
+
+                    if ($invoice && ! empty($invoice['status'])) {
+                        $status = strtoupper($invoice['status']);
+                        $paid = in_array($status, ['PAID', 'SETTLED'], true);
+                        $failed = $status === 'EXPIRED' ? 'failed' : null;
+                    }
                 }
             }
 
@@ -812,13 +1011,15 @@ class HomeController extends Controller
             ->map(function (Review $r) {
                 $name = $r->user?->name
                     ?: ($r->email ? str($r->email)->before('@')->toString() : 'User '.($r->game ?: 'Johen'));
+                $serviceType = $r->service_type ?: 'topup';
+                $gamePrefix = $serviceType === 'jual-beli-akun' ? 'Jual Akun - ' : 'Top Up - ';
 
                 return [
                     'name' => $name,
-                    'game' => ($r->game ? 'Top Up - '.$r->game : 'Top Up'),
+                    'game' => $r->game ? $gamePrefix.$r->game : rtrim($gamePrefix, ' -'),
                     'avatar' => '🙂',
                     'rating' => (int) $r->rating,
-                    'layanan' => 'topup',
+                    'layanan' => $serviceType,
                     'quote' => $r->comment,
                     'date' => $r->created_at ? $r->created_at->format('d-m-Y H:i:s') : now()->format('d-m-Y H:i:s'),
                 ];

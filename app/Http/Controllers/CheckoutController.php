@@ -7,6 +7,7 @@ use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Services\CartService;
 use App\Services\CheckoutSettlementService;
+use App\Services\DokuService;
 use App\Services\PaymentGatewayService;
 use App\Services\TopupOrderBuilder;
 use App\Services\XenditService;
@@ -32,19 +33,22 @@ class CheckoutController extends Controller
     protected PaymentGatewayService $gateway;
     protected CheckoutSettlementService $checkoutSettlement;
     protected XenditService $xendit;
+    protected DokuService $doku;
 
     public function __construct(
         CartService $cart,
         TopupOrderBuilder $builder,
         PaymentGatewayService $gateway,
         CheckoutSettlementService $checkoutSettlement,
-        XenditService $xendit
+        XenditService $xendit,
+        DokuService $doku
     ) {
         $this->cart = $cart;
         $this->builder = $builder;
         $this->gateway = $gateway;
         $this->checkoutSettlement = $checkoutSettlement;
         $this->xendit = $xendit;
+        $this->doku = $doku;
     }
 
     /**
@@ -234,7 +238,7 @@ class CheckoutController extends Controller
                 $this->builder->consumeVoucher($voucher, $orders);
 
                 // Satu charge untuk total gabungan, bukan satu per item.
-                if (! config('services.payment.simulation') && $this->xendit->isConfigured()) {
+                if (! config('services.payment.simulation') && $this->gateway->isConfigured()) {
                     $charged = $this->gateway->chargeCheckout($checkout, $method, [
                         'customer_name' => $user->name,
                     ]);
@@ -263,13 +267,14 @@ class CheckoutController extends Controller
         $this->ensureOwned($checkout);
 
         $isSimulation = (bool) config('services.payment.simulation');
-        $isDemo = $isSimulation || ! $this->xendit->isConfigured() || empty($checkout->gateway_invoice_id);
+        $isDemo = $isSimulation || ! $this->gateway->isConfigured() || empty($checkout->gateway_invoice_id);
 
         return view('checkout.payment', [
             'checkout' => $checkout,
             'orders' => $checkout->orders()->orderBy('id')->get(),
             'isDemo' => $isDemo,
             'isSimulation' => $isSimulation,
+            'gatewayName' => $this->gateway->providerLabel(),
         ]);
     }
 
@@ -333,6 +338,23 @@ class CheckoutController extends Controller
         $id = (string) $checkout->gateway_invoice_id;
 
         if ($id === '') {
+            return;
+        }
+
+        if ($checkout->gateway_type === 'doku_checkout') {
+            $extra = (array) $checkout->gateway_extra;
+            $invoiceNumber = (string) ($extra['invoice_number'] ?? $checkout->checkout_ref);
+            $data = $this->doku->checkStatus($invoiceNumber);
+            $status = strtoupper((string) data_get($data, 'transaction.status', ''));
+
+            if ($status === 'SUCCESS') {
+                $this->checkoutSettlement->markPaid($checkout);
+            } elseif ($status === 'EXPIRED') {
+                $this->checkoutSettlement->markFailed($checkout, 'Pembayaran kedaluwarsa di DOKU');
+            }
+
+            // Status FAILED pada DOKU Checkout bukan final: pelanggan masih
+            // dapat memilih metode lain pada halaman Checkout yang sama.
             return;
         }
 

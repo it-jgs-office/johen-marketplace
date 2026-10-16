@@ -29,6 +29,9 @@
     'indomaret' => 'Indomaret',
   ];
   $methodLabel = $methodLabels[strtolower((string) $paymentMethod)] ?? ($paidType ?: 'QRIS');
+  if ($gatewayType === 'doku_checkout') {
+    $methodLabel = 'DOKU Checkout';
+  }
   $codeAliases = [
     'bca' => 'bca_va', 'bni' => 'bni_va', 'bri' => 'bri_va',
     'mandiri' => 'mandiri_va', 'permata' => 'permata_va',
@@ -71,7 +74,7 @@
   @if($isDemo)
   <div class="pd-demo-banner">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><circle cx="12" cy="12" r="4"/></svg>
-    <span>@if($isSimulation)Mode Simulasi Aktif — pembayaran tidak nyata. Gunakan tombol "Simulasi Bayar" untuk menyelesaikan pesanan.@else Mode Demo — Xendit belum dikonfigurasi. Tampilan hanya untuk preview.@endif</span>
+    <span>@if($isSimulation)Mode Simulasi Aktif — pembayaran tidak nyata. Gunakan tombol "Simulasi Bayar" untuk menyelesaikan pesanan.@else Mode Demo — {{ $gatewayName }} belum dikonfigurasi. Tampilan hanya untuk preview.@endif</span>
   </div>
   @endif
 
@@ -543,6 +546,7 @@ const statusUrl = @json(route('payment.status', $order));
 const simulateUrl = @json(route('payment.simulate', $order));
 const reviewUrl = @json(route('reviews.store', $order));
 const hasReviewed = @json($hasReviewed);
+const canReview = @json($canReview);
 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
 
 /* ===== review popup (muncul otomatis saat pembayaran sukses) ===== */
@@ -560,7 +564,7 @@ function closeReviewModal() {
 }
 
 function maybeShowReviewPopup(type) {
-    if (type !== 'success' || hasReviewed || reviewPrompted) return;
+    if (type !== 'success' || !canReview || hasReviewed || reviewPrompted) return;
     reviewPrompted = true;
     sessionStorage.setItem(reviewShownKey, '1');
     setTimeout(() => openReviewModal(), 700);
@@ -884,7 +888,7 @@ if (isSimulation) {
         setTimeout(() => { renderRetail(paymentCode); }, 400);
     }
 } else if (gatewayType === 'ewallet' && checkoutUrl) {
-    const redirectKey = 'xendit_ewallet_' + orderId;
+    const redirectKey = 'payment_ewallet_' + orderId;
     if (!sessionStorage.getItem(redirectKey)) {
         sessionStorage.setItem(redirectKey, '1');
         const label = document.getElementById('pdStatusLabel');
@@ -892,7 +896,7 @@ if (isSimulation) {
         setTimeout(() => { window.location.href = checkoutUrl; }, 800);
     }
 } else if (!isDemo && invoiceUrl) {
-    const redirectKey = 'xendit_redirect_' + orderId;
+    const redirectKey = 'payment_redirect_' + orderId;
     if (!sessionStorage.getItem(redirectKey)) {
         sessionStorage.setItem(redirectKey, '1');
         const label = document.getElementById('pdStatusLabel');

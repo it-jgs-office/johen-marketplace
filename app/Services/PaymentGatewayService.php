@@ -5,23 +5,47 @@ namespace App\Services;
 use App\Models\AccountOrder;
 use App\Models\Checkout;
 use App\Models\Order;
+use App\Models\PaymentMethod;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Menangani pembuatan charge ke Xendit berdasarkan metode pembayaran yang dipilih
- * (QRIS / Virtual Account / E-wallet / Retail Outlet / Invoice).
+ * Menangani pembuatan charge ke payment gateway aktif. DOKU memakai hosted
+ * Checkout, sedangkan integrasi Xendit lama tetap tersedia sebagai fallback.
  *
- * Seluruh metode ditampilkan & diproses di halaman sendiri (self-hosted), kecuali
- * e-wallet charge yang oleh Xendit diwajibkan redirect ke URL checkout-nya.
+ * DOKU menampilkan seluruh kanal aktif di Checkout ter-host. Integrasi Xendit
+ * lama tetap mendukung QRIS, VA, e-wallet, retail, dan invoice per kanal.
  */
 class PaymentGatewayService
 {
     protected XenditService $xendit;
 
-    public function __construct(XenditService $xendit)
+    protected DokuService $doku;
+
+    public function __construct(XenditService $xendit, DokuService $doku)
     {
         $this->xendit = $xendit;
+        $this->doku = $doku;
+    }
+
+    public function provider(): string
+    {
+        return strtolower((string) config('services.payment.gateway', 'xendit'));
+    }
+
+    public function isDoku(): bool
+    {
+        return $this->provider() === 'doku';
+    }
+
+    public function isConfigured(): bool
+    {
+        return $this->isDoku() ? $this->doku->isConfigured() : $this->xendit->isConfigured();
+    }
+
+    public function providerLabel(): string
+    {
+        return $this->isDoku() ? 'DOKU' : 'Xendit';
     }
 
     /**
@@ -92,6 +116,18 @@ class PaymentGatewayService
      */
     public function filterAvailableMethods($methods)
     {
+        if ($this->isDoku()) {
+            $method = new PaymentMethod([
+                'code' => 'doku_checkout',
+                'name' => 'DOKU Checkout',
+                'category' => 'doku',
+                'icon' => '🔒',
+                'is_active' => true,
+            ]);
+
+            return collect([$method]);
+        }
+
         $available = $this->xendit->availableChannels();
 
         if ($available === null || empty($available)) {
@@ -114,7 +150,7 @@ class PaymentGatewayService
     public function charge(Order $order, string $method, array $gatewayMeta): bool
     {
         $resolved = $this->resolve($method);
-        $type = $resolved['gateway_type'];
+        $type = $this->isDoku() ? 'doku_checkout' : $resolved['gateway_type'];
 
         $ctx = [
             'amount' => (int) $order->price,
@@ -146,7 +182,7 @@ class PaymentGatewayService
     public function chargeAccount(AccountOrder $order, string $method, array $gatewayMeta = []): bool
     {
         $resolved = $this->resolve($method);
-        $type = $resolved['gateway_type'];
+        $type = $this->isDoku() ? 'doku_checkout' : $resolved['gateway_type'];
         $listing = $order->listing;
 
         $itemName = $listing?->product_name ?: ($gatewayMeta['item_name'] ?? 'Akun Game');
@@ -189,7 +225,7 @@ class PaymentGatewayService
     public function chargeCheckout(Checkout $checkout, string $method, array $gatewayMeta = []): bool
     {
         $resolved = $this->resolve($method);
-        $type = $resolved['gateway_type'];
+        $type = $this->isDoku() ? 'doku_checkout' : $resolved['gateway_type'];
         $total = (int) $checkout->total;
 
         $ctx = [
@@ -229,6 +265,10 @@ class PaymentGatewayService
      */
     protected function runCharge(object $order, string $type, array $resolved, array $ctx): bool
     {
+        if ($this->isDoku()) {
+            return $this->chargeDokuCheckout($order, $ctx);
+        }
+
         switch ($type) {
             case 'qris':
                 return $this->chargeQris($order, $ctx);
@@ -245,6 +285,72 @@ class PaymentGatewayService
             default:
                 return $this->chargeInvoice($order, $ctx);
         }
+    }
+
+    protected function chargeDokuCheckout(object $order, array $ctx): bool
+    {
+        $method = (string) ($order->payment_method ?? '');
+        $dokuMethod = $this->doku->paymentMethodType($method);
+        $itemName = trim((string) $ctx['item_name']) ?: 'Pesanan Johen Gaming';
+        $customerName = trim((string) $ctx['customer_name']) ?: 'Pelanggan Johen';
+        $phone = $this->normalizePhone((string) ($ctx['customer_phone'] ?: $ctx['customer_number']));
+
+        $payload = [
+            'order' => [
+                'amount' => (int) $ctx['amount'],
+                'invoice_number' => (string) $ctx['reference_id'],
+                'currency' => 'IDR',
+                'callback_url' => $ctx['redirect_url'],
+                'callback_url_result' => $ctx['redirect_url'],
+                'language' => 'ID',
+                'auto_redirect' => false,
+                'line_items' => [[
+                    'name' => mb_substr($itemName, 0, 255),
+                    'quantity' => 1,
+                    'price' => (int) $ctx['amount'],
+                ]],
+            ],
+            'payment' => [
+                'payment_due_date' => max(1, (int) config('doku.payment_due_minutes', 60)),
+            ],
+            'customer' => array_filter([
+                'name' => mb_substr($customerName, 0, 100),
+                'email' => filter_var($ctx['email'], FILTER_VALIDATE_EMAIL) ? $ctx['email'] : null,
+                'phone' => $phone !== '' ? $phone : null,
+            ], fn ($value) => $value !== null && $value !== ''),
+        ];
+
+        if ((bool) config('doku.restrict_payment_method', false) && $dokuMethod !== null) {
+            $payload['payment']['payment_method_types'] = [$dokuMethod];
+        }
+
+        $result = $this->doku->createCheckout($payload);
+
+        if (! ($result['success'] ?? false)) {
+            Log::warning('DOKU Checkout gagal dibuat', [
+                'order_id' => $ctx['reference_id'],
+                'message' => $result['message'] ?? 'Unknown error',
+                'request_id' => $result['request_id'] ?? null,
+            ]);
+
+            return false;
+        }
+
+        $order->update([
+            'gateway_invoice_id' => $result['token_id'],
+            'gateway_invoice_url' => $result['payment_url'],
+            'checkout_url' => $result['payment_url'],
+            'gateway_extra' => [
+                'provider' => 'doku',
+                'invoice_number' => (string) $ctx['reference_id'],
+                'request_id' => $result['request_id'],
+                'expired_date' => $result['expired_date'] ?? null,
+                'payment_method_type' => $dokuMethod,
+                'environment' => $this->doku->isSandbox() ? 'sandbox' : 'production',
+            ],
+        ]);
+
+        return true;
     }
 
     protected function chargeQris(object $order, array $ctx): bool

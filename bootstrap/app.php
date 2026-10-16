@@ -16,6 +16,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'live-chat-admin' => \App\Http\Middleware\LiveChatAdminMiddleware::class,
             'live-chat-cs' => \App\Http\Middleware\LiveChatCsMiddleware::class,
+            'jba-api-key' => \App\Http\Middleware\EnsureJbaApiKey::class,
         ]);
 
         // Halaman dinamis tidak boleh disimpan cache browser, supaya deploy
@@ -24,6 +25,7 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(except: [
             'payment/notification',
+            'payment/doku/notification',
             'digiflazz/callback',
             'service-worker.js',
             'pwa-version.json',
