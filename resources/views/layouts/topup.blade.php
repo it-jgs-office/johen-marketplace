@@ -98,7 +98,10 @@
             <svg class="auth-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
           <div class="auth-dropdown-menu">
-
+            <a href="{{ route('profile.edit') }}" class="auth-dropdown-item">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1.08-1.5 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.6h.08a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9v.08a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+              Pengaturan Akun
+            </a>
             <a href="{{ route('orders.my') }}" class="auth-dropdown-item">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
               Pesanan Saya
@@ -164,7 +167,7 @@
   <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}" @if(request()->routeIs('leaderboard')) aria-current="page" @endif>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 3h10v7a5 5 0 0 1-10 0zM7 5H4v3a4 4 0 0 0 4 4M17 5h3v3a4 4 0 0 1-4 4"/></svg><span>Ranking</span>
   </a>
-  <button type="button" id="hamburgerBtn" class="{{ request()->routeIs('cart.*') || request()->routeIs('checkout.*') || request()->routeIs('orders.*') || request()->routeIs('vouchers.*') || request()->routeIs('reviews.*') ? 'active' : '' }}" aria-label="Buka menu lainnya" aria-controls="mobileMenu" aria-expanded="false">
+  <button type="button" id="hamburgerBtn" class="{{ request()->routeIs('cart.*') || request()->routeIs('checkout.*') || request()->routeIs('orders.*') || request()->routeIs('vouchers.*') || request()->routeIs('reviews.*') || request()->routeIs('profile.*') ? 'active' : '' }}" aria-label="Buka menu lainnya" aria-controls="mobileMenu" aria-expanded="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menu</span>
   </button>
 </nav>
@@ -183,6 +186,7 @@
       <span>Install App</span>
     </button>
     @auth
+      <a href="{{ route('profile.edit') }}">Pengaturan Akun</a>
       <a href="{{ route('orders.my') }}">Pesanan Saya</a>
       <a href="{{ route('vouchers.index') }}">Voucher Saya</a>
       <a href="{{ route('reviews.my') }}">Ulasan Saya</a>

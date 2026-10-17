@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             AdminCsSeeder::class,
             PaymentMethodSeeder::class,
             BrandSeeder::class,
+            TopupPopularGameSeeder::class,
             SiteSettingSeeder::class,
             LiveChatChannelSeeder::class,
             GachaPrizeSeeder::class,

@@ -52,7 +52,8 @@ return [
     */
 
     'payment' => [
-        'simulation' => env('PAYMENT_SIMULATION', false),
+        'simulation' => env('APP_ENV', 'production') !== 'production'
+            && env('PAYMENT_SIMULATION', false),
         'gateway' => env('PAYMENT_GATEWAY', 'xendit'),
         /*
         |--------------------------------------------------------------------------
@@ -78,7 +79,7 @@ return [
     ],
 
     'jba_api' => [
-        'base_url' => rtrim((string) env('JBA_API_BASE_URL', 'http://localhost:8000/api'), '/'),
+        'base_url' => rtrim((string) env('JBA_API_BASE_URL', 'https://johengaming.id/api'), '/'),
         'clients' => [
             'johen' => [
                 'key' => env('JBA_API_KEY_JOHEN'),
