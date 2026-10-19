@@ -1,4 +1,7 @@
 *
 !private/
 !public/
+!keys/
+!keys/doku-private.key
+!keys/doku-public.pem
 !.gitignore
