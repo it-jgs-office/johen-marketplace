@@ -24,10 +24,15 @@ class BalanceTransaction extends Model
 
     /** Penyesuaian manual oleh admin. */
     public const TYPE_ADJUSTMENT = 'adjustment';
+    public const TYPE_POINT_USE = 'point_use';
+    public const TYPE_POINT_RESTORE = 'point_restore';
 
     protected $fillable = [
         'user_id',
         'order_id',
+        'account_order_id',
+        'checkout_id',
+        'admin_id',
         'type',
         'amount',
         'balance_after',
@@ -65,11 +70,13 @@ class BalanceTransaction extends Model
     {
         return match ($this->type) {
             self::TYPE_DEPOSIT => 'Pembayaran masuk',
-            self::TYPE_HOLD => 'Saldo dikunci untuk topup',
+            self::TYPE_HOLD => 'Johen Point dikunci untuk topup',
             self::TYPE_CONSUME => 'Dipakai untuk topup',
-            self::TYPE_RELEASE => 'Saldo dikembalikan',
+            self::TYPE_RELEASE => 'Refund ke Johen Point',
             self::TYPE_CORRECTION_DEBIT => 'Koreksi:topup terlambat sukses',
             self::TYPE_ADJUSTMENT => 'Penyesuaian admin',
+            self::TYPE_POINT_USE => 'Dipakai saat checkout',
+            self::TYPE_POINT_RESTORE => 'Point dikembalikan',
             default => $this->type,
         };
     }

@@ -13,6 +13,8 @@
         'linkaja' => 'LinkAja',
         'bca_va' => 'BCA Virtual Account', 'bca' => 'BCA Virtual Account',
         'bni_va' => 'BNI Virtual Account', 'bni' => 'BNI Virtual Account',
+        'bsi_va' => 'BSI Virtual Account', 'bsi' => 'BSI Virtual Account',
+        'cimb_va' => 'CIMB Virtual Account', 'cimb' => 'CIMB Virtual Account',
         'bri_va' => 'BRI Virtual Account', 'bri' => 'BRI Virtual Account',
         'mandiri_va' => 'Mandiri Virtual Account', 'mandiri' => 'Mandiri Virtual Account',
         'permata_va' => 'Permata Virtual Account', 'permata' => 'Permata Virtual Account',
@@ -110,6 +112,7 @@
 
     <div class="pd-grid">
         <div class="pd-left">
+            @include('partials.doku-payment-status', ['paymentOrder' => $checkout])
 
             {{-- Status pembayaran --}}
             <div class="pd-card pd-status-card">
@@ -262,9 +265,12 @@
                                 <span class="pd-green">- Rp {{ number_format($checkout->discount, 0, ',', '.') }}</span>
                             </div>
                         @endif
+                        @if($checkout->points_used > 0)
+                            <div class="pd-rincian-row"><span><x-johen-point-icon size="17" /> Johen Point</span><span class="pd-green">-{{ number_format($checkout->points_used, 0, ',', '.') }} JP</span></div>
+                        @endif
                         <div class="pd-rincian-total">
                             <span>Total Pembayaran</span>
-                            <span class="pd-total-price">Rp {{ number_format($checkout->total, 0, ',', '.') }}</span>
+                            <span class="pd-total-price">Rp {{ number_format($checkout->cash_amount, 0, ',', '.') }}</span>
                         </div>
                     </div>
 
@@ -363,6 +369,9 @@
     }
 
     function updateStatus(status, data) {
+        if (@json(data_get($checkout->gateway_extra, 'provider') === 'doku')) {
+            document.querySelector('.pd-method').hidden = status !== 'pending';
+        }
         var map = STATUS_MAP[status] || STATUS_MAP.pending;
         statusIcon.innerHTML = map.icon;
         statusLabel.textContent = map.label;
@@ -379,24 +388,23 @@
     }
 
     // Polling selama halaman terbuka: satu pembayaran, banyak item.
-    var attempts = 0;
     var pollingStarted = false;
     function startPolling() {
         if (pollingStarted) return;
         pollingStarted = true;
 
         (function check() {
-            fetch(statusUrl, { headers: { 'Accept': 'application/json' } })
-                .then(function (r) { return r.json(); })
+            fetch(statusUrl, { cache: 'no-store', headers: { 'Accept': 'application/json' } })
+                .then(function (r) { if (!r.ok) throw new Error('Status unavailable'); return r.json(); })
                 .then(function (data) {
                     updateStatus(data.status, data);
+                    document.dispatchEvent(new CustomEvent('payment:updated', {detail: data}));
                     if (data.status === 'success' || data.status === 'failed') return;
-                    attempts++;
-                    if (attempts < 400) setTimeout(check, 3000);
+                    setTimeout(check, document.hidden ? 15000 : 3000);
                 })
                 .catch(function () {
-                    attempts++;
-                    if (attempts < 400) setTimeout(check, 5000);
+                    document.dispatchEvent(new Event('payment:offline'));
+                    setTimeout(check, 5000);
                 });
         })();
     }
@@ -423,7 +431,6 @@
     if (ewalletBtn) {
         var ewalletUrl = @json($checkout->checkout_url);
         ewalletBtn.addEventListener('click', function () { window.location.href = ewalletUrl; });
-        setTimeout(function () { window.location.href = ewalletUrl; }, 1200);
     }
 
     var invoiceBtn = document.getElementById('ckpInvoiceBtn');

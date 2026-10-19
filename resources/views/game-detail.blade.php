@@ -3,6 +3,7 @@
 @php
   $pageType = $brand->service_type === 'joki' ? 'Joki' : 'Top Up';
   $brandName = mb_strtolower($brand->name);
+  $isValorant = str_starts_with($brandName, 'valorant');
   $categoryBackgrounds = [
     'mobile legends' => 'assets/backround/bg-ml.jpg',
     'pubg' => 'assets/backround/bg-pubg.png',
@@ -64,15 +65,21 @@
   $selectedRegion = $regions->isNotEmpty() ? 'ID' : null;
   $firstProduct = $products->first();
   $topupGameIcon = topup_game_icon_asset($brand->name);
+  $productDisplayName = static function (?string $name) use ($brand): string {
+      $originalName = trim((string) $name);
+      $brandPrefix = preg_quote(trim((string) $brand->name), '/');
+      $cleanName = preg_replace('/^' . $brandPrefix . '(?:\s*[-:|]\s*|\s+)/iu', '', $originalName, 1);
+
+      return trim((string) $cleanName) !== '' ? trim((string) $cleanName) : $originalName;
+  };
   // Mapping eksplisit channel code -> kategori. Tidak bergantung pada kolom
   // `category` di DB (jika data hosting kategori-nya kosong/salah, grouping
   // tetap benar). Pastikan channel code sesuai Xendit.
   $channelCategory = function (string $code): string {
       $code = strtolower($code);
-      if ($code === 'doku_checkout') return 'doku';
       if (in_array($code, ['qris'], true)) return 'qris';
       if (in_array($code, ['gopay', 'dana', 'ovo', 'shopeepay', 'linkaja', 'gcash'], true)) return 'ewallet';
-      if (in_array($code, ['bca', 'bca_va', 'bri', 'bri_va', 'bni', 'bni_va', 'mandiri', 'mandiri_va', 'permata', 'permata_va', 'sa', 'saham', 'other_bank'], true)) return 'va';
+      if (in_array($code, ['bca', 'bca_va', 'bri', 'bri_va', 'bni', 'bni_va', 'bsi', 'bsi_va', 'cimb', 'cimb_va', 'mandiri', 'mandiri_va', 'permata', 'permata_va', 'sa', 'saham', 'other_bank'], true)) return 'va';
       if (in_array($code, ['alfamart', 'indomaret'], true)) return 'convenience_store';
       return 'ewallet';
   };
@@ -97,7 +104,6 @@
       ];
   })->values();
   $categories = [
-      'doku' => 'Pembayaran Aman',
       'qris' => 'QRIS',
       'ewallet' => 'E-Wallet',
       'va' => 'Virtual Account / Bank',
@@ -170,25 +176,22 @@
         <div class="gd-card">
           <div class="gd-field-row">
             <div class="gd-field">
-              <label for="userId">User ID</label>
-              <input type="text" id="userId" placeholder="12345678" autocomplete="off" aria-describedby="accountLockNotice">
-              <div class="gd-field-ok" id="userIdOk"></div>
-              <div class="gd-field-error" id="userIdError">User ID wajib diisi.</div>
+              <label for="userId">{{ $isValorant ? 'Riot ID' : 'User ID' }}</label>
+              <input type="text" id="userId" placeholder="{{ $isValorant ? 'NamaPemain#TAG' : '12345678' }}" autocomplete="off" @if($isValorant) inputmode="text" autocapitalize="off" @endif aria-describedby="accountLockNotice">
+              <div class="gd-field-error" id="userIdError">{{ $isValorant ? 'Riot ID wajib diisi dengan format NamaPemain#TAG.' : 'User ID wajib diisi.' }}</div>
             </div>
             @if($brand->requires_zone_id || $isMobileLegends)
             <div class="gd-field">
-              <label for="zoneId">Zone ID</label>
-              <input type="text" id="zoneId" placeholder="(1234)" autocomplete="off" aria-describedby="accountLockNotice">
-              <div class="gd-field-error" id="zoneIdError">Zone ID wajib diisi.</div>
+              <label for="zoneId">{{ $isMobileLegends ? 'Server' : 'Zone ID' }}</label>
+              <input type="text" id="zoneId" placeholder="1234" autocomplete="off" aria-describedby="accountLockNotice">
+              <div class="gd-field-error" id="zoneIdError">{{ $isMobileLegends ? 'Server wajib diisi.' : 'Zone ID wajib diisi.' }}</div>
             </div>
             @endif
           </div>
+          <div class="gd-field-ok gd-account-result" id="userIdOk" role="status" aria-live="polite"></div>
           <p class="gd-account-lock-notice" id="accountLockNotice" role="alert" aria-live="assertive" hidden></p>
-          <p class="gd-field-hint">To find your User ID, tap on your avatar in the top-left corner of the main game screen.</p>
-          @if($isMobileLegends)
-            <button type="button" class="btn btn-solid" id="mlCheckAccountBtn" disabled style="margin-top:.75rem">Cek Username &amp; Region</button>
-            <p id="mlRegionNotice" role="status" aria-live="polite" hidden style="margin-top:.65rem;font-size:.84rem;color:var(--text-muted)"></p>
-            <p class="gd-field-hint">Produk Indonesia (-idn) ditampilkan sebagai pilihan awal. Cek akun untuk melanjutkan pembelian.</p>
+          @if($isValorant)
+            <p class="gd-field-hint">Masukkan Riot ID lengkap beserta tagline, contoh: JohenGaming#ID1.</p>
           @endif
         </div>
 
@@ -213,12 +216,13 @@
             <a href="{{ route('orders.create', $p->id) }}"
               class="gd-pkg-card{{ $deal ? ' gd-pkg-card-flash' : '' }}"
               data-id="{{ $p->id }}"
-              data-label="{{ $p->product_name }}"
+              data-label="{{ $productDisplayName($p->product_name) }}"
               data-price="{{ $deal ? $deal->flash_price : $p->selling_price }}"
               data-region="{{ $p->region ?: 'ALL' }}">
               @if($deal)
                 <span class="gd-pkg-flash"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg> FLASH -{{ rtrim(rtrim(number_format($deal->discount_percent, 0), '0'), ',') }}%</span>
               @endif
+              <span class="gd-pkg-main">
               @if($topupGameIcon)
                 <img class="gd-pkg-img" src="{{ $topupGameIcon }}" alt="{{ $brand->name }}">
               @elseif($p->photo_url)
@@ -234,18 +238,22 @@
                 </svg>
               @endif
               <span class="gd-pkg-info">
-                <span class="gd-pkg-amt">{{ $p->product_name }}</span>
+                <span class="gd-pkg-amt">{{ $productDisplayName($p->product_name) }}</span>
+                @if($deal)
+                  <span class="gd-pkg-stock"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg> Sisa {{ $deal->stock }}</span>
+                @endif
+              </span>
+              <span class="gd-pkg-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+              </span>
+              <span class="gd-pkg-footer">
                 <span class="gd-pkg-price">
                   @if($deal)
                     <span class="gd-pkg-price-old">Rp {{ number_format($p->selling_price, 0, ',', '.') }}</span>
                   @endif
                   Rp {{ number_format($deal ? $deal->flash_price : $p->selling_price, 0, ',', '.') }}
                 </span>
-                @if($deal)
-                  <span class="gd-pkg-stock"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg> Sisa {{ $deal->stock }}</span>
-                @endif
+                <span class="gd-pkg-delivery"><img src="{{ asset('assets/icon/pengiriman-cepat.png') }}" alt="Pengiriman cepat"></span>
               </span>
-              <span class="gd-pkg-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
             </a>
           @endforeach
         </div>
@@ -282,12 +290,13 @@
             <a href="{{ route('orders.create', $p->id) }}"
               class="gd-pkg-card{{ $deal ? ' gd-pkg-card-flash' : '' }}"
                 data-id="{{ $p->id }}"
-                data-label="{{ $p->product_name }}"
+                data-label="{{ $productDisplayName($p->product_name) }}"
               data-price="{{ $deal ? $deal->flash_price : $p->selling_price }}"
               @if($isInstant) data-region="{{ $p->region ?: 'ALL' }}"@endif>
               @if($deal)
                 <span class="gd-pkg-flash"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg> FLASH -{{ rtrim(rtrim(number_format($deal->discount_percent, 0), '0'), ',') }}%</span>
               @endif
+              <span class="gd-pkg-main">
               @if($topupGameIcon)
                 <img class="gd-pkg-img" src="{{ $topupGameIcon }}" alt="{{ $brand->name }}">
               @elseif($p->photo_url)
@@ -303,42 +312,68 @@
                 </svg>
               @endif
               <span class="gd-pkg-info">
-                <span class="gd-pkg-amt">{{ $p->product_name }}</span>
+                <span class="gd-pkg-amt">{{ $productDisplayName($p->product_name) }}</span>
+                @if($deal)
+                  <span class="gd-pkg-stock"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg> Sisa {{ $deal->stock }}</span>
+                @endif
+              </span>
+              <span class="gd-pkg-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+              </span>
+              <span class="gd-pkg-footer">
                 <span class="gd-pkg-price">
                   @if($deal)
                     <span class="gd-pkg-price-old">Rp {{ number_format($p->selling_price, 0, ',', '.') }}</span>
                   @endif
                   Rp {{ number_format($deal ? $deal->flash_price : $p->selling_price, 0, ',', '.') }}
                 </span>
-                @if($deal)
-                  <span class="gd-pkg-stock"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg> Sisa {{ $deal->stock }}</span>
-                @endif
+                <span class="gd-pkg-delivery"><img src="{{ asset('assets/icon/pengiriman-cepat.png') }}" alt="Pengiriman cepat"></span>
               </span>
-              <span class="gd-pkg-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
             </a>
           @endforeach
         </div>
       </div>
     @endforeach
   </div>
+  </div>
 
+  <div class="gd-step-pair">
   <!-- ===== STEP 3: Quantity ===== -->
-  <div class="gd-step">
+  <div class="gd-step" id="quantityStep">
     <div class="gd-step-head"><div class="gd-step-num">3</div><div class="gd-step-title">Masukan Jumlah Pembelian</div></div>
-    <div class="gd-qty-row">
+    <div class="gd-card gd-quantity-card">
+      <div class="gd-qty-row">
       <button class="gd-qty-btn" id="qtyMinus">–</button>
       <input type="text" id="qtyInput" value="1" inputmode="numeric">
       <button class="gd-qty-btn gd-qty-plus" id="qtyPlus">+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== STEP 4: Promo ===== -->
+  <div class="gd-step">
+    <div class="gd-step-head"><div class="gd-step-num">4</div><div class="gd-step-title">Kode Promo / Voucher</div></div>
+    <div class="gd-card">
+      <div class="gd-field">
+        <div class="gd-promo-row">
+          <input type="text" id="promoInput" placeholder="JHN-XXXX-XXXX">
+          <button class="btn btn-solid" id="promoBtn" type="button">Terapkan</button>
+        </div>
+      </div>
+      <p class="gd-promo-msg" id="promoMsg"></p>
     </div>
   </div>
   </div>
 
-  <!-- ===== STEP 4: Pembayaran ===== -->
-  <div class="gd-step">
-    <div class="gd-step-head"><div class="gd-step-num">4</div><div class="gd-step-title">Pilih Pembayaran</div></div>
+  <!-- ===== STEP 5: Pembayaran ===== -->
+  <div class="gd-step" id="paymentStep">
+    <div class="gd-step-head"><div class="gd-step-num">5</div><div class="gd-step-title">Pilih Pembayaran</div></div>
     <div class="gd-pay-group" id="payGroup">
+      @if($paymentMethods->isEmpty())
+        <p class="gd-summary-empty">Metode pembayaran belum tersedia. Silakan hubungi CS.</p>
+      @endif
       @foreach($categories as $catKey => $catLabel)
         @php $catMethods = $groupedPay->get($catKey, collect()); @endphp
+        @continue($catMethods->isEmpty())
         <div class="gd-pay-category{{ in_array($catKey, ['doku', 'qris'], true) && $catMethods->isNotEmpty() ? ' open' : '' }}" data-category="{{ $catKey }}">
           <button type="button" class="gd-pay-cat-head">
             <span class="gd-pay-cat-label">{{ $catLabel }}</span>
@@ -370,42 +405,31 @@
         </div>
       @endforeach
     </div>
-  </div>
-
-  <!-- ===== STEP 5: Promo ===== -->
-  <div class="gd-step">
-    <div class="gd-step-head"><div class="gd-step-num">5</div><div class="gd-step-title">Kode Promo</div></div>
-    <div class="gd-card">
-      <div class="gd-field">
-        <label for="promoInput">Masukan Kode Promo / Voucher</label>
-        <input type="text" id="promoInput" placeholder="JHN-XXXX-XXXX">
-        <p style="font-size:.72rem;color:var(--text-mute);margin-top:.35rem">
-          Punya kode dari Gacha Voucher? Tempel di sini.
-          <a href="{{ route('vouchers.index') }}" style="color:var(--purple-light)">Cek voucher saya</a>
-        </p>
-      </div>
-      <button class="btn btn-solid btn-full" id="promoBtn" style="margin-top:.7rem">Terapkan</button>
-      <p class="gd-promo-msg" id="promoMsg"></p>
-    </div>
+    @auth
+      <label class="gd-card" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:.8rem;border-color:rgba(250,204,21,.35);background:rgba(250,204,21,.08);cursor:pointer;">
+        <span><strong style="display:flex;align-items:center;gap:.45rem;color:#fde047;"><x-johen-point-icon size="22" /> Gunakan Johen Point</strong><small style="color:var(--text-dim);">Tersedia {{ number_format($pointBalance, 0, ',', '.') }} JP</small><input id="pointAmountInput" type="number" value="{{ (int) $pointBalance }}" min="1" max="{{ (int) $pointBalance }}" style="display:block;width:150px;margin-top:.55rem;padding:.5rem .65rem;border:1px solid rgba(250,204,21,.3);border-radius:8px;background:#0c1d47;color:#fff;" aria-label="Jumlah Johen Point" {{ $pointBalance < 1 ? 'disabled' : '' }}></span>
+        <input id="usePointsInput" type="checkbox" style="width:20px;height:20px;accent-color:#facc15;" {{ $pointBalance < 1 ? 'disabled' : '' }}>
+      </label>
+    @endauth
   </div>
 
   <!-- ===== STEP 6: Kontak ===== -->
-  <div class="gd-step">
+  <div class="gd-step" id="contactStep">
     <div class="gd-step-head"><div class="gd-step-num">6</div><div class="gd-step-title">Detail Kontak</div></div>
     <div class="gd-card">
       <div class="gd-contact-grid">
         <div class="gd-field">
-          <label for="emailInput">Email</label>
-          <input type="email" id="emailInput" placeholder="example@gmail.com">
+          <label for="emailInput">Email <span aria-hidden="true">*</span></label>
+          <input type="email" id="emailInput" placeholder="example@gmail.com" required aria-required="true">
           <div class="gd-field-error" id="emailError">Masukan email yang valid.</div>
         </div>
         <div class="gd-field">
-          <label for="waInput">WhatsApp Number</label>
+          <label for="waInput">WhatsApp Number <span class="gd-field-optional">(Opsional)</span></label>
           <div class="gd-wa-input">
             <span class="gd-wa-prefix">+62</span>
             <input type="tel" id="waInput" placeholder="812xxxxxxx">
           </div>
-          <div class="gd-field-error" id="waError">Nomor WhatsApp wajib diisi.</div>
+          <div class="gd-field-error" id="waError">Masukkan nomor WhatsApp yang valid.</div>
         </div>
       </div>
       <p class="gd-field-hint">*Nomor ini akan dihubungi jika terjadi masalah.</p>
@@ -527,10 +551,23 @@ const $ = (s, ctx) => (ctx||document).querySelector(s);
 const $$ = (s, ctx) => Array.from((ctx||document).querySelectorAll(s));
 
 const rupiah = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function scrollToOrderStep(stepId) {
+    const target = document.getElementById(stepId);
+    if (!target) return;
+    requestAnimationFrame(() => target.scrollIntoView({
+        behavior: reducedMotion ? 'auto' : 'smooth',
+        block: 'start'
+    }));
+}
 
 const brandName = @json($brand->name);
 const isMobileLegends = @json($isMobileLegends);
 const paymentMethods = @json($payData);
+const pointBalance = @json((int) $pointBalance);
+const usePointsInput = document.getElementById('usePointsInput');
+const pointAmountInput = document.getElementById('pointAmountInput');
 
 let selectedPkg = null;
 let selectedRegion = @json($selectedRegion);
@@ -550,7 +587,6 @@ let appliedPromo = null;
         if (card) {
             setTimeout(function(){
                 card.click();
-                card.scrollIntoView({behavior:'smooth', block:'center'});
             }, 300);
         }
     }
@@ -571,6 +607,7 @@ document.addEventListener('click', e => {
     card.classList.add('selected');
     selectedPkg = { id: Number(card.dataset.id), label: card.dataset.label, price: Number(card.dataset.price), region: card.dataset.region || null };
     updateSummary();
+    scrollToOrderStep('quantityStep');
 });
 
 /* ---------- region tabs ---------- */
@@ -676,7 +713,7 @@ function requireAccountDetails() {
 function accountLockMessage() {
     if (!isMobileLegends) return 'Isi Data Akun terlebih dahulu';
     if (detectedRegion && detectedRegion !== 'Indonesia') return 'Region ' + detectedRegion + ' belum tersedia saat ini.';
-    return 'Cek Username & Region terlebih dahulu';
+    return 'Tunggu pengecekan username dan region.';
 }
 
 function togglePayLock() {
@@ -713,8 +750,6 @@ togglePayLock();
 
 /* ---------- deteksi akun real-time (indikator hijau) ---------- */
 const userIdOk = $('#userIdOk');
-const mlCheckAccountBtn = $('#mlCheckAccountBtn');
-const mlRegionNotice = $('#mlRegionNotice');
 const accountCheckUrl = @json(route('api.account.check'));
 const MIN_UID_LEN = 5;
 let accountCheckTimer = null;
@@ -725,19 +760,18 @@ function clearAccountFeedback() {
     detectedRegion = null;
     userIdInput.classList.remove('valid', 'gd-input-attention');
     if (zoneIdInput) zoneIdInput.classList.remove('valid', 'gd-input-attention');
-    if (userIdOk) { userIdOk.className = 'gd-field-ok'; userIdOk.textContent = ''; }
+    if (userIdOk) { userIdOk.className = 'gd-field-ok gd-account-result'; userIdOk.textContent = ''; }
     if (accountLockNotice) {
         accountLockNotice.hidden = true;
         accountLockNotice.classList.remove('show');
         accountLockNotice.textContent = '';
     }
-    if (mlRegionNotice) { mlRegionNotice.hidden = true; mlRegionNotice.textContent = ''; }
     togglePayLock();
 }
 
 function showAccountLoading() {
     if (!userIdOk) return;
-    userIdOk.className = 'gd-field-ok show loading';
+    userIdOk.className = 'gd-field-ok gd-account-result show loading';
     userIdOk.textContent = '';
     const s = document.createElement('span');
     s.className = 'gd-spinner';
@@ -750,21 +784,31 @@ function showAccountValid(nickname, region) {
     userIdInput.classList.add('valid');
     if (zoneIdInput) zoneIdInput.classList.add('valid');
     if (userIdOk) {
-        userIdOk.className = 'gd-field-ok show';
+        userIdOk.className = 'gd-field-ok gd-account-result show';
         userIdOk.textContent = '';
-        userIdOk.append('✓ Akun ditemukan: ');
-        const b = document.createElement('strong');
-        b.textContent = detectedNickname || 'OK';
-        userIdOk.append(b);
-    }
-    if (mlRegionNotice) {
-        mlRegionNotice.hidden = false;
-        if (detectedRegion === 'Indonesia') {
-            mlRegionNotice.textContent = 'Region Indonesia terdeteksi. Produk -idn tersedia.';
-        } else if (detectedRegion) {
-            mlRegionNotice.textContent = 'Region ' + detectedRegion + ' belum tersedia saat ini.';
-        } else {
-            mlRegionNotice.textContent = 'Region akun belum dapat dipastikan saat ini. Silakan coba lagi nanti.';
+        userIdOk.append('Akun kamu adalah ');
+
+        const nicknameEl = document.createElement('strong');
+        nicknameEl.textContent = detectedNickname || 'Valid';
+
+        const checkEl = document.createElement('span');
+        checkEl.className = 'gd-account-result-check';
+        checkEl.textContent = '✓';
+
+        userIdOk.append(nicknameEl, checkEl);
+
+        if (detectedRegion) {
+            userIdOk.append(' dari ');
+            const regionEl = document.createElement('strong');
+            regionEl.textContent = detectedRegion;
+            userIdOk.append(regionEl);
+
+            if (detectedRegion === 'Indonesia') {
+                const flagEl = document.createElement('span');
+                flagEl.className = 'gd-account-result-flag';
+                flagEl.textContent = '🇮🇩';
+                userIdOk.append(flagEl);
+            }
         }
     }
     togglePayLock();
@@ -776,7 +820,7 @@ function showAccountNotFound() {
     userIdInput.classList.remove('valid');
     if (zoneIdInput) zoneIdInput.classList.remove('valid');
     if (userIdOk) {
-        userIdOk.className = 'gd-field-ok bad show';
+        userIdOk.className = 'gd-field-ok gd-account-result bad show';
         userIdOk.textContent = 'Akun tidak ditemukan atau profil privat.';
     }
     togglePayLock();
@@ -786,12 +830,8 @@ function showAccountCheckUnavailable() {
     clearAccountFeedback();
     const message = 'Pengecekan akun sedang tidak tersedia. Coba lagi beberapa saat.';
     if (userIdOk) {
-        userIdOk.className = 'gd-field-ok bad show';
+        userIdOk.className = 'gd-field-ok gd-account-result bad show';
         userIdOk.textContent = message;
-    }
-    if (mlRegionNotice) {
-        mlRegionNotice.hidden = false;
-        mlRegionNotice.textContent = message;
     }
 }
 
@@ -801,11 +841,6 @@ function scheduleAccountCheck() {
     clearAccountFeedback();
     const uid = userIdInput.value.trim();
     const zid = zoneIdInput ? zoneIdInput.value.trim() : '';
-
-    if (mlCheckAccountBtn) {
-        mlCheckAccountBtn.disabled = uid.length < MIN_UID_LEN || (zoneRequired && zid.length === 0);
-        return; // Transaksi cek Digiflazz hanya saat tombol ditekan.
-    }
 
     if (uid.length < MIN_UID_LEN || (zoneRequired && zid.length === 0)) {
         return;
@@ -820,7 +855,6 @@ async function runAccountCheck() {
     if (accountCheckAbort) accountCheckAbort.abort();
     const myAbort = accountCheckAbort = new AbortController();
     showAccountLoading();
-    if (mlCheckAccountBtn) mlCheckAccountBtn.disabled = true;
     try {
         const res = await fetch(accountCheckUrl, {
             method: 'POST',
@@ -845,17 +879,11 @@ async function runAccountCheck() {
         if (e.name !== 'AbortError' && myAbort === accountCheckAbort) {
             showAccountCheckUnavailable();
         }
-    } finally {
-        if (mlCheckAccountBtn && myAbort === accountCheckAbort) {
-            mlCheckAccountBtn.disabled = userIdInput.value.trim().length < MIN_UID_LEN
-                || (zoneRequired && zoneIdInput.value.trim().length === 0);
-        }
     }
 }
 
 userIdInput.addEventListener('input', scheduleAccountCheck);
 if (zoneIdInput) zoneIdInput.addEventListener('input', scheduleAccountCheck);
-if (mlCheckAccountBtn) mlCheckAccountBtn.addEventListener('click', runAccountCheck);
 
 /* category accordion toggle */
 $('#payGroup').addEventListener('click', e => {
@@ -876,7 +904,10 @@ $('#payGroup').addEventListener('click', e => {
         requireAccountDetails();
         return;
     }
-    if (row.classList.contains('selected')) return;
+    if (row.classList.contains('selected')) {
+        scrollToOrderStep('contactStep');
+        return;
+    }
     $$('.gd-pay-row').forEach(r => r.classList.remove('selected'));
     row.classList.add('selected');
     const method = paymentMethods.find(m => m.key === row.dataset.key);
@@ -885,12 +916,15 @@ $('#payGroup').addEventListener('click', e => {
         selectedPayFee = method.fee || 0;
         selectedPayLabel = method.title;
         updateSummary();
+        scrollToOrderStep('contactStep');
     }
 });
 
 /* ---------- summary ---------- */
 function computePayTotal() {
-    return selectedPkg ? Math.max(0, selectedPkg.price * qty - promoDiscount) : 0;
+    const total = selectedPkg ? Math.max(0, selectedPkg.price * qty - promoDiscount) : 0;
+    const requested = pointAmountInput ? parseInt(pointAmountInput.value || '0', 10) : pointBalance;
+    return usePointsInput && usePointsInput.checked ? Math.max(0, total - Math.min(total, pointBalance, Math.max(0, requested))) : total;
 }
 
 /* Sembunyikan metode yang nominalnya di bawah minimal channel (VA & minimarket min Rp 10.000,
@@ -948,7 +982,9 @@ function updateSummary() {
         return;
     }
     const subtotal = selectedPkg.price * qty;
-    const total = Math.max(0, subtotal + selectedPayFee - promoDiscount);
+    const beforePoints = Math.max(0, subtotal + selectedPayFee - promoDiscount);
+    const requestedPoints = pointAmountInput ? parseInt(pointAmountInput.value || '0', 10) : pointBalance;
+    const total = usePointsInput && usePointsInput.checked ? Math.max(0, beforePoints - Math.min(beforePoints, pointBalance, Math.max(0, requestedPoints))) : beforePoints;
     // mobile accordion
     $('#sumPkgName').textContent = selectedPkg.label;
     $('#sumHarga').textContent = rupiah(selectedPkg.price);
@@ -969,6 +1005,8 @@ function updateMobileTotal(v) {
     if (el) el.textContent = rupiah(v);
 }
 updateSummary();
+if (usePointsInput) usePointsInput.addEventListener('change', updateSummary);
+if (pointAmountInput) pointAmountInput.addEventListener('input', updateSummary);
 
 /* ---------- mobile accordion toggle ---------- */
 $('#mobileToggle').addEventListener('click', function() {
@@ -994,7 +1032,7 @@ async function handleOrder(btn) {
     const okUserId = validateField(userIdInput, $('#userIdError'), v => v.length > 0);
     const okZone = !zoneRequired || validateField(zoneIdInput, $('#zoneIdError'), v => v.length > 0);
     const okEmail = validateField(emailInput, $('#emailError'), v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
-    const okWa = validateField(waInput, $('#waError'), v => v.length >= 8);
+    const okWa = validateField(waInput, $('#waError'), v => v.length === 0 || v.length >= 8);
     if (!okUserId || !okZone || (isMobileLegends && detectedRegion !== 'Indonesia')) {
       requireAccountDetails();
       return;
@@ -1015,6 +1053,8 @@ async function handleOrder(btn) {
     fd.append('email', emailInput.value.trim());
     fd.append('phone', waInput.value.trim());
     if (selectedPayKey) fd.append('payment_method', selectedPayKey);
+    if (usePointsInput && usePointsInput.checked) fd.append('use_points', '1');
+    if (pointAmountInput) fd.append('points_amount', pointAmountInput.value || '0');
     try {
       const res = await fetch('{{ route('orders.store') }}', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json'}, body:fd});
       if (res.status === 401) { window.location.href = @json(route('login')); return; }

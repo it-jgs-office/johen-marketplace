@@ -19,6 +19,9 @@ class Checkout extends Model
         'subtotal',
         'discount',
         'total',
+        'points_used',
+        'cash_amount',
+        'points_status',
         'voucher_id',
         'payment_method',
         'gateway_invoice_id',
@@ -38,6 +41,8 @@ class Checkout extends Model
         'subtotal' => 'integer',
         'discount' => 'integer',
         'total' => 'integer',
+        'points_used' => 'integer',
+        'cash_amount' => 'integer',
         'item_count' => 'integer',
     ];
 
@@ -78,7 +83,7 @@ class Checkout extends Model
 
     public function getPriceAttribute(): float
     {
-        return (float) $this->total;
+        return (float) $this->cash_amount;
     }
 
     public function isPaid(): bool

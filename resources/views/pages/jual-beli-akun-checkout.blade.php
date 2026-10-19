@@ -59,7 +59,6 @@
 
           @php
               $categories = [
-                  'doku' => 'Pembayaran Aman',
                   'qris' => 'QRIS',
                   'ewallet' => 'E-Wallet',
                   'va' => 'Virtual Account',
@@ -75,7 +74,7 @@
               <div class="jco-payment-grid">
                 @foreach($catMethods as $pm)
                 <label class="jco-pay-opt">
-                  <input type="radio" name="payment_method" value="{{ $pm->code }}" {{ old('payment_method') === $pm->code ? 'checked' : ($loop->first && $loop->parent->first ? 'checked' : '') }} required>
+                  <input type="radio" name="payment_method" value="{{ $pm->code }}" {{ old('payment_method', $paymentMethods->first()?->code) === $pm->code ? 'checked' : '' }} required>
                   <div class="jco-pay-card">
                     @if(payment_logo_asset($pm->code))
                       <img src="{{ payment_logo_asset($pm->code) }}" alt="{{ $pm->name }}" class="jco-pay-img">
@@ -95,10 +94,16 @@
             </div>
             @endif
           @endforeach
-          @if(empty($paymentMethods))
+          @if($paymentMethods->isEmpty())
             <div class="jco-pay-empty">Metode pembayaran tidak tersedia</div>
           @endif
           @error('payment_method')<span class="jco-error">{{ $message }}</span>@enderror
+          @auth
+          <label class="jco-point-option">
+            <span><strong style="display:flex;align-items:center;gap:.45rem"><x-johen-point-icon size="22" /> Gunakan Johen Point</strong><small>Tersedia {{ number_format($pointBalance, 0, ',', '.') }} JP · 1 JP = Rp1</small><input class="jco-point-amount" type="number" name="points_amount" value="{{ old('points_amount', (int) min($pointBalance, $listing->price)) }}" min="1" max="{{ (int) $pointBalance }}" aria-label="Jumlah Johen Point" {{ $pointBalance < 1 ? 'disabled' : '' }}></span>
+            <input type="checkbox" name="use_points" value="1" {{ old('use_points') ? 'checked' : '' }} {{ $pointBalance < 1 ? 'disabled' : '' }}>
+          </label>
+          @endauth
         </div>
 
         <div class="jco-section">
@@ -169,7 +174,7 @@
 
         <div class="jco-summary-total">
           <span>Total Pembayaran</span>
-          <span class="jco-summary-price">Rp {{ number_format($listing->price, 0, ',', '.') }}</span>
+          <span class="jco-summary-price" id="jcoFinalTotal">Rp {{ number_format($listing->price, 0, ',', '.') }}</span>
         </div>
       </div>
 
@@ -324,6 +329,7 @@
 .jco-pay-group {
   margin-bottom: 1rem;
 }
+.jco-point-option{display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:1rem;padding:1rem;border:1px solid rgba(250,204,21,.35);background:rgba(250,204,21,.08);border-radius:12px;cursor:pointer}.jco-point-option strong,.jco-point-option small{display:block}.jco-point-option strong{color:#fde047}.jco-point-option small{margin-top:.2rem;color:var(--text-dim,#999)}.jco-point-option>input{width:20px;height:20px;accent-color:#facc15}.jco-point-option .jco-point-amount{display:block;width:150px;margin-top:.55rem;padding:.5rem .65rem;border:1px solid rgba(250,204,21,.3);border-radius:8px;background:var(--bg-soft,#101b38);color:var(--text,#fff)}
 .jco-pay-group:last-child {
   margin-bottom: 0;
 }
@@ -614,6 +620,21 @@
   document.addEventListener('themeChanged', function() {
     setTimeout(applyThemeToPaymentImgs, 50);
   });
+  const pointToggle = document.querySelector('input[name="use_points"]');
+  const finalTotal = document.getElementById('jcoFinalTotal');
+  const pointAmount = document.querySelector('input[name="points_amount"]');
+  if (pointToggle && finalTotal) {
+    const total = @json((int) $listing->price);
+    const balance = @json((int) $pointBalance);
+    const updatePointTotal = () => {
+      const requested = pointAmount ? parseInt(pointAmount.value || '0', 10) : balance;
+      const cash = pointToggle.checked ? Math.max(0, total - Math.min(total, balance, Math.max(0, requested))) : total;
+      finalTotal.textContent = 'Rp ' + cash.toLocaleString('id-ID');
+    };
+    pointToggle.addEventListener('change', updatePointTotal);
+    if (pointAmount) pointAmount.addEventListener('input', updatePointTotal);
+    updatePointTotal();
+  }
 })();
 </script>
 @endpush

@@ -6,6 +6,7 @@
 $paymentLabels = [
     'qris' => 'QRIS', 'gopay' => 'GoPay', 'dana' => 'DANA', 'ovo' => 'OVO', 'shopeepay' => 'ShopeePay', 'linkaja' => 'LinkAja',
     'bca_va' => 'BCA Virtual Account', 'bni_va' => 'BNI Virtual Account', 'bri_va' => 'BRI Virtual Account',
+    'bsi_va' => 'BSI Virtual Account', 'cimb_va' => 'CIMB Virtual Account',
     'mandiri_va' => 'Mandiri Virtual Account', 'permata_va' => 'Permata Virtual Account',
     'alfamart' => 'Alfamart', 'indomaret' => 'Indomaret',
 ];

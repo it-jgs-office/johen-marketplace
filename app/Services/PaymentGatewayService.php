@@ -10,17 +10,16 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 
 /**
- * Menangani pembuatan charge ke payment gateway aktif. DOKU memakai hosted
- * Checkout, sedangkan integrasi Xendit lama tetap tersedia sebagai fallback.
- *
- * DOKU menampilkan seluruh kanal aktif di Checkout ter-host. Integrasi Xendit
- * lama tetap mendukung QRIS, VA, e-wallet, retail, dan invoice per kanal.
+ * DOKU Direct API menampilkan QRIS, VA dan kode gerai di halaman Johen.
+ * Integrasi Xendit dipakai hanya ketika dipilih sebagai provider.
  */
 class PaymentGatewayService
 {
     protected XenditService $xendit;
 
     protected DokuService $doku;
+
+    protected ?string $lastChargeError = null;
 
     public function __construct(XenditService $xendit, DokuService $doku)
     {
@@ -48,6 +47,11 @@ class PaymentGatewayService
         return $this->isDoku() ? 'DOKU' : 'Xendit';
     }
 
+    public function lastChargeError(): ?string
+    {
+        return $this->lastChargeError;
+    }
+
     /**
      * Mapping code metode pembayaran -> info gateway.
      */
@@ -59,6 +63,8 @@ class PaymentGatewayService
             'bca_va', 'bca' => ['gateway_type' => 'va', 'bank_code' => 'BCA', 'label' => 'BCA Virtual Account'],
             'bri_va', 'bri' => ['gateway_type' => 'va', 'bank_code' => 'BRI', 'label' => 'BRI Virtual Account'],
             'bni_va', 'bni' => ['gateway_type' => 'va', 'bank_code' => 'BNI', 'label' => 'BNI Virtual Account'],
+            'bsi_va', 'bsi' => ['gateway_type' => 'va', 'bank_code' => 'BSI', 'label' => 'BSI Virtual Account'],
+            'cimb_va', 'cimb' => ['gateway_type' => 'va', 'bank_code' => 'CIMB', 'label' => 'CIMB Virtual Account'],
             'mandiri_va', 'mandiri' => ['gateway_type' => 'va', 'bank_code' => 'MANDIRI', 'label' => 'Mandiri Virtual Account'],
             'permata_va', 'permata' => ['gateway_type' => 'va', 'bank_code' => 'PERMATA', 'label' => 'Permata Virtual Account'],
             'alfamart' => ['gateway_type' => 'retail', 'retail_outlet_name' => 'ALFAMART', 'label' => 'Alfamart'],
@@ -104,28 +110,40 @@ class PaymentGatewayService
     public function normalizeMethodCode(string $method): string
     {
         return match ($method) {
-            'bca', 'bni', 'bri', 'mandiri', 'permata' => $method.'_va',
+            'bca', 'bni', 'bri', 'bsi', 'cimb', 'mandiri', 'permata' => $method.'_va',
             default => $method,
         };
     }
 
+    public function assertAvailableMethod(string $method): void
+    {
+        if (! $this->isDoku()) {
+            return;
+        }
+        $code = $this->normalizeMethodCode($method);
+        if (! app(DokuDirectService::class)->available($code)
+            || ! PaymentMethod::where('code', $code)->where('is_active', true)->exists()) {
+            throw \Illuminate\Validation\ValidationException::withMessages([
+                'payment_method' => 'Metode pembayaran belum tersedia. Pilih metode aktif atau hubungi CS.',
+            ]);
+        }
+    }
+
     /**
-     * Saring koleksi PaymentMethod (Collection) hanya ke channel yang benar-benar
-     * tersedia & diaktifkan di akun Xendit. Bila Xendit tidak dikonfigurasi atau
-     * query channel gagal, kembalikan koleksi apa adanya (fallback ke is_active DB).
+     * DOKU requires a configured Direct API channel and an active database row.
+     * Xendit retains its existing channel discovery.
      */
     public function filterAvailableMethods($methods)
     {
         if ($this->isDoku()) {
-            $method = new PaymentMethod([
-                'code' => 'doku_checkout',
-                'name' => 'DOKU Checkout',
-                'category' => 'doku',
-                'icon' => '🔒',
-                'is_active' => true,
-            ]);
+            return collect($methods)->filter(fn ($method) => (bool) $method->is_active
+                && app(DokuDirectService::class)->available($this->normalizeMethodCode($method->code)))
+                ->map(function ($method) {
+                    $type = $this->resolve($method->code)['gateway_type'];
+                    $method->category = $type === 'retail' ? 'convenience_store' : $type;
 
-            return collect([$method]);
+                    return $method;
+                })->values();
         }
 
         $available = $this->xendit->availableChannels();
@@ -149,19 +167,21 @@ class PaymentGatewayService
      */
     public function charge(Order $order, string $method, array $gatewayMeta): bool
     {
+        $this->lastChargeError = null;
+        $this->assertAvailableMethod($method);
         $resolved = $this->resolve($method);
-        $type = $this->isDoku() ? 'doku_checkout' : $resolved['gateway_type'];
+        $type = $resolved['gateway_type'];
 
         $ctx = [
-            'amount' => (int) $order->price,
+            'amount' => (int) $order->cash_amount,
             'reference_id' => $order->order_id,
-            'item_name' => $gatewayMeta['item_name'] ?? $order->product_name,
-            'unit_price' => (int) ($gatewayMeta['unit_price'] ?? $order->price),
+            'item_name' => ($gatewayMeta['item_name'] ?? $order->product_name).(((int) ($order->quantity ?? 1) > 1) ? ' x'.(int) $order->quantity : ''),
+            'unit_price' => (int) $order->cash_amount,
             'customer_number' => (string) $order->customer_number,
             'customer_name' => Auth::check() ? (string) Auth::user()->name : (string) ($order->customer_name ?: $order->customer_number),
             'customer_phone' => (string) ($order->customer_phone ?: $order->customer_number),
             'email' => Auth::check() ? (string) Auth::user()->email : (string) ($order->email ?: 'guest@johengaming.id'),
-            'quantity' => (int) ($order->quantity ?? 1),
+            'quantity' => 1,
             'category' => $order->category,
             'redirect_url' => route('payment.detail', $order),
         ];
@@ -181,17 +201,19 @@ class PaymentGatewayService
      */
     public function chargeAccount(AccountOrder $order, string $method, array $gatewayMeta = []): bool
     {
+        $this->lastChargeError = null;
+        $this->assertAvailableMethod($method);
         $resolved = $this->resolve($method);
-        $type = $this->isDoku() ? 'doku_checkout' : $resolved['gateway_type'];
+        $type = $resolved['gateway_type'];
         $listing = $order->listing;
 
         $itemName = $listing?->product_name ?: ($gatewayMeta['item_name'] ?? 'Akun Game');
 
         $ctx = [
-            'amount' => (int) round((float) $order->total_price),
+            'amount' => (int) round((float) $order->cash_amount),
             'reference_id' => (string) $order->order_ref,
             'item_name' => $itemName,
-            'unit_price' => (int) round((float) $order->total_price),
+            'unit_price' => (int) round((float) $order->cash_amount),
             'customer_number' => (string) ($order->customer_phone ?: $order->customer_email),
             'customer_name' => (string) ($order->customer_name ?: 'JOHEM'),
             'customer_phone' => (string) ($order->customer_phone ?: ''),
@@ -224,9 +246,11 @@ class PaymentGatewayService
      */
     public function chargeCheckout(Checkout $checkout, string $method, array $gatewayMeta = []): bool
     {
+        $this->lastChargeError = null;
+        $this->assertAvailableMethod($method);
         $resolved = $this->resolve($method);
-        $type = $this->isDoku() ? 'doku_checkout' : $resolved['gateway_type'];
-        $total = (int) $checkout->total;
+        $type = $resolved['gateway_type'];
+        $total = (int) $checkout->cash_amount;
 
         $ctx = [
             'amount' => $total,
@@ -266,7 +290,17 @@ class PaymentGatewayService
     protected function runCharge(object $order, string $type, array $resolved, array $ctx): bool
     {
         if ($this->isDoku()) {
-            return $this->chargeDokuCheckout($order, $ctx);
+            $result = app(DokuDirectService::class)->create((string) $order->payment_method, $ctx);
+            if (! ($result['success'] ?? false)) {
+                $this->lastChargeError = $result['message'] ?? null;
+
+                return false;
+            }
+            $order->update(array_merge($result['attributes'], [
+                'gateway_invoice_url' => null, 'checkout_url' => null,
+            ]));
+
+            return true;
         }
 
         switch ($type) {
@@ -285,72 +319,6 @@ class PaymentGatewayService
             default:
                 return $this->chargeInvoice($order, $ctx);
         }
-    }
-
-    protected function chargeDokuCheckout(object $order, array $ctx): bool
-    {
-        $method = (string) ($order->payment_method ?? '');
-        $dokuMethod = $this->doku->paymentMethodType($method);
-        $itemName = trim((string) $ctx['item_name']) ?: 'Pesanan Johen Gaming';
-        $customerName = trim((string) $ctx['customer_name']) ?: 'Pelanggan Johen';
-        $phone = $this->normalizePhone((string) ($ctx['customer_phone'] ?: $ctx['customer_number']));
-
-        $payload = [
-            'order' => [
-                'amount' => (int) $ctx['amount'],
-                'invoice_number' => (string) $ctx['reference_id'],
-                'currency' => 'IDR',
-                'callback_url' => $ctx['redirect_url'],
-                'callback_url_result' => $ctx['redirect_url'],
-                'language' => 'ID',
-                'auto_redirect' => false,
-                'line_items' => [[
-                    'name' => mb_substr($itemName, 0, 255),
-                    'quantity' => 1,
-                    'price' => (int) $ctx['amount'],
-                ]],
-            ],
-            'payment' => [
-                'payment_due_date' => max(1, (int) config('doku.payment_due_minutes', 60)),
-            ],
-            'customer' => array_filter([
-                'name' => mb_substr($customerName, 0, 100),
-                'email' => filter_var($ctx['email'], FILTER_VALIDATE_EMAIL) ? $ctx['email'] : null,
-                'phone' => $phone !== '' ? $phone : null,
-            ], fn ($value) => $value !== null && $value !== ''),
-        ];
-
-        if ((bool) config('doku.restrict_payment_method', false) && $dokuMethod !== null) {
-            $payload['payment']['payment_method_types'] = [$dokuMethod];
-        }
-
-        $result = $this->doku->createCheckout($payload);
-
-        if (! ($result['success'] ?? false)) {
-            Log::warning('DOKU Checkout gagal dibuat', [
-                'order_id' => $ctx['reference_id'],
-                'message' => $result['message'] ?? 'Unknown error',
-                'request_id' => $result['request_id'] ?? null,
-            ]);
-
-            return false;
-        }
-
-        $order->update([
-            'gateway_invoice_id' => $result['token_id'],
-            'gateway_invoice_url' => $result['payment_url'],
-            'checkout_url' => $result['payment_url'],
-            'gateway_extra' => [
-                'provider' => 'doku',
-                'invoice_number' => (string) $ctx['reference_id'],
-                'request_id' => $result['request_id'],
-                'expired_date' => $result['expired_date'] ?? null,
-                'payment_method_type' => $dokuMethod,
-                'environment' => $this->doku->isSandbox() ? 'sandbox' : 'production',
-            ],
-        ]);
-
-        return true;
     }
 
     protected function chargeQris(object $order, array $ctx): bool

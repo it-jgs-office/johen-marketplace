@@ -29,6 +29,7 @@ class ReconcileDigiflazzOrders extends Command
     public function handle(TopupSettlementService $settlement): int
     {
         $grace = (int) config('digiflazz.reconcile.grace_minutes', 30);
+        $providerErrorGrace = (int) config('digiflazz.reconcile.provider_error_grace_minutes', 10);
         $maxPolls = (int) config('digiflazz.reconcile.max_polls', 12);
         $limit = (int) ($this->option('limit') ?: config('digiflazz.reconcile.chunk', 50));
         $refundOnly = (bool) $this->option('refund-only');
@@ -36,9 +37,17 @@ class ReconcileDigiflazzOrders extends Command
         $orders = Order::query()
             ->where('status', 'processing')
             ->where('saldo_status', 'held')
-            ->when($refundOnly, fn ($q) => $q->where(function ($q) use ($grace, $maxPolls) {
-                $q->where('digiflazz_started_at', '<=', now()->subMinutes(max(1, $grace)))
-                    ->orWhere('digiflazz_poll_count', '>=', $maxPolls);
+            ->when($refundOnly, fn ($q) => $q->where(function ($q) use ($grace, $providerErrorGrace, $maxPolls) {
+                $q->where(function ($providerError) use ($providerErrorGrace) {
+                    $providerError->where('reconcile_status', 'provider_error')
+                        ->where('provider_error_at', '<=', now()->subMinutes(max(1, $providerErrorGrace)));
+                })->orWhere(function ($pending) use ($grace, $maxPolls) {
+                    $pending->where('reconcile_status', '!=', 'provider_error')
+                        ->where(function ($expired) use ($grace, $maxPolls) {
+                            $expired->where('digiflazz_started_at', '<=', now()->subMinutes(max(1, $grace)))
+                                ->orWhere('digiflazz_poll_count', '>=', $maxPolls);
+                        });
+                });
             }))
             ->orderBy('digiflazz_started_at')
             ->limit($limit)
@@ -63,6 +72,25 @@ class ReconcileDigiflazzOrders extends Command
         $polled = 0;
 
         foreach ($orders as $order) {
+            // Error provider diberi waktu khusus untuk diperbaiki dan di-retry
+            // admin. Selama masa tunggu ini jangan polling otomatis karena
+            // respons gagal berulang tidak boleh menggeser tenggat refund.
+            if ($settlement->isWaitingForProviderErrorRetry($order)) {
+                if (! $settlement->hasExceededProviderErrorGracePeriod($order)) {
+                    $stillPending++;
+                    continue;
+                }
+
+                $settlement->settleFailure($order, $settlement->providerErrorRefundReason($order));
+                $refunded++;
+                $this->line(sprintf(
+                    '  <comment>%s</comment> -> error provider lewat %d menit, refund ke Johen Point',
+                    $order->order_id,
+                    $providerErrorGrace
+                ));
+                continue;
+            }
+
             // 1. Tanya Digiflazz dulu. Selalu lebih baik memastikan topup
             //    benar-benar gagal daripada buru-buru mengembalikan saldo.
             if (! $refundOnly) {
@@ -70,13 +98,20 @@ class ReconcileDigiflazzOrders extends Command
                 $final = $settlement->poll($order);
 
                 if ($final !== null) {
+                    if ($final === 'provider_error') {
+                        $stillPending++;
+                        $this->line(sprintf(
+                            '  <comment>%s</comment> -> error provider, menunggu retry admin atau refund otomatis',
+                            $order->order_id
+                        ));
+                        continue;
+                    }
+
                     $settled++;
                     $this->line(sprintf(
                         '  <info>%s</info> -> %s',
                         $order->order_id,
-                        $final === 'sukses'
-                            ? 'topup berhasil, saldo terpakai'
-                            : 'gagal, saldo dikembalikan'
+                        'topup berhasil, saldo terpakai'
                     ));
 
                     continue;

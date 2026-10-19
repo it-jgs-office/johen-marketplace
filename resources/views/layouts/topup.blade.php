@@ -7,6 +7,15 @@
     $splashName = \App\Models\SiteSetting::get('site_name') ?: 'Johen Gaming';
     $splashTagline = \App\Models\SiteSetting::get('site_tagline') ?: 'Top Up & Joki Game Termurah';
     $biz = business_info();
+    $isAccountHubPage = request()->routeIs(
+        'profile.*',
+        'orders.my',
+        'points.*',
+        'jual-beli-akun.orders',
+        'vouchers.*',
+        'reviews.my',
+        'my-inquiries'
+    );
 @endphp
 <!DOCTYPE html>
 <html lang="id" data-theme="dark" data-event-theme="{{ $themeEventSlug }}">
@@ -29,8 +38,11 @@
 @endif
 @include('partials.splash-head')
 @stack('styles')
+@if($isAccountHubPage)
+<link rel="stylesheet" href="{{ pwa_asset('css/account-hub.css') }}&f={{ filemtime(public_path('css/account-hub.css')) }}">
+@endif
 </head>
-<body>
+<body class="{{ $isAccountHubPage ? 'account-hub-layout' : '' }} {{ request()->routeIs('profile.*') ? 'profile-page-layout' : '' }}">
 <script>
   if ('scrollRestoration' in history) {
     history.scrollRestoration = 'manual';
@@ -43,11 +55,13 @@
 </script>
 @include('partials.splash')
 @include('partials.floating-decoration')
+@unless($isAccountHubPage)
 <div class="dark-meteor-field" aria-hidden="true">
   @for($meteor = 0; $meteor < 40; $meteor++)
     <span style="--meteor-x:{{ (($meteor * 37 + 11) % 100) }}vw;--meteor-y:{{ (($meteor * 53 + 7) % 100) }}%;--meteor-delay:{{ -fmod($meteor * 1.73, 14) }}s;--meteor-duration:{{ 7 + fmod($meteor * 1.19, 8) }}s;--meteor-size:{{ 0.7 + ($meteor % 3) * 0.3 }}px;--meteor-drift:{{ 70 + ($meteor % 7) * 18 }}px;--meteor-opacity:{{ 0.16 + ($meteor % 5) * 0.08 }};"></span>
   @endfor
 </div>
+@endunless
 
 <!-- ===== HEADER ===== -->
 <header class="site-header" id="siteHeader">
@@ -71,10 +85,22 @@
     </div>
 
     <nav class="main-nav" id="mainNav">
-      <a href="{{ route('home') }}" class="{{ request()->routeIs('home') || request()->routeIs('games.show') ? 'active' : '' }}">Top Up</a>
-      <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}">Jual Beli Akun</a>
-      <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">Cek Transaksi</a>
-      <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}">Leaderboard</a>
+      <a href="{{ route('home') }}" class="{{ request()->routeIs('home') || request()->routeIs('games.show') ? 'active' : '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h11L22 9l-10 12L2 9l4.5-6Z"/><path d="M2 9h20M9 3 7 9l5 12 5-12-2-6"/></svg>
+        <span>Top Up</span>
+      </a>
+      <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="10" r="2.2"/><path d="M5.5 17c.45-2 1.75-3 3-3s2.55 1 3 3M14 9h4.5M14 13h4.5M14 17h3"/></svg>
+        <span>Jual Beli Akun</span>
+      </a>
+      <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z"/><path d="m8 11 2 2 5-5M8 16h8"/></svg>
+        <span>Cek Transaksi</span>
+      </a>
+      <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 3h10v7a5 5 0 0 1-10 0V3Z"/><path d="M7 5H4v3a4 4 0 0 0 4 4M17 5h3v3a4 4 0 0 1-4 4"/></svg>
+        <span>Leaderboard</span>
+      </a>
     </nav>
 
     @php
@@ -99,31 +125,9 @@
           </button>
           <div class="auth-dropdown-menu">
             <a href="{{ route('profile.edit') }}" class="auth-dropdown-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 01-2.83 2.83l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09a1.65 1.65 0 00-1.08-1.5 1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.6 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.6h.08a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9v.08a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-              Pengaturan Akun
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>
+              Profil Saya
             </a>
-            <a href="{{ route('orders.my') }}" class="auth-dropdown-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-              Pesanan Saya
-            </a>
-            <a href="{{ route('vouchers.index') }}" class="auth-dropdown-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h14a2 2 0 002-2v-6z"/><path d="M16 6a4 4 0 00-8 0"/><path d="M12 9v3"/></svg>
-              Voucher Saya
-            </a>
-            <a href="{{ route('reviews.my') }}" class="auth-dropdown-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="12" y1="7" x2="12" y2="13"/></svg>
-              Ulasan Saya
-            </a>
-            <a href="{{ route('my-inquiries') }}" class="auth-dropdown-item">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
-              Riwayat Pesan
-            </a>
-            @if(Auth::user()->isAdmin())
-              <a href="{{ route('admin.dashboard') }}" class="auth-dropdown-item">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                Admin Panel
-              </a>
-            @endif
             <form method="POST" action="{{ route('logout') }}" style="margin:0;">
               @csrf
               <button type="submit" class="auth-dropdown-item logout" style="width:100%;text-align:left;background:none;border:none;cursor:pointer;font-family:inherit;font-size:.82rem;padding:.55rem .7rem;border-radius:8px;display:flex;align-items:center;gap:.5rem;color:#f87171;">
@@ -156,13 +160,13 @@
 
 <nav class="mobile-bottom-nav" aria-label="Navigasi utama mobile">
   <a href="{{ route('home') }}" class="{{ request()->routeIs('home') || request()->routeIs('games.show') ? 'active' : '' }}" @if(request()->routeIs('home') || request()->routeIs('games.show')) aria-current="page" @endif>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/><path d="M9 21v-7h6v7"/></svg><span>Top Up</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h11L22 9l-10 12L2 9l4.5-6Z"/><path d="M2 9h20M9 3 7 9l5 12 5-12-2-6"/></svg><span>Top Up</span>
   </a>
   <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}" @if(request()->routeIs('jual-beli-akun*')) aria-current="page" @endif>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="10" r="2"/><path d="M5 17c.5-2 2-3 3-3s2.5 1 3 3M14 9h5M14 13h5M14 17h4"/></svg><span>Jual Akun</span>
   </a>
   <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}" @if(request()->routeIs('check.transaction')) aria-current="page" @endif>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2z"/><path d="M8 8h8M8 12h8M8 16h4"/></svg><span>Cek Transaksi</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z"/><path d="m8 11 2 2 5-5M8 16h8"/></svg><span>Cek Transaksi</span>
   </a>
   <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}" @if(request()->routeIs('leaderboard')) aria-current="page" @endif>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 3h10v7a5 5 0 0 1-10 0zM7 5H4v3a4 4 0 0 0 4 4M17 5h3v3a4 4 0 0 1-4 4"/></svg><span>Ranking</span>
@@ -186,14 +190,7 @@
       <span>Install App</span>
     </button>
     @auth
-      <a href="{{ route('profile.edit') }}">Pengaturan Akun</a>
-      <a href="{{ route('orders.my') }}">Pesanan Saya</a>
-      <a href="{{ route('vouchers.index') }}">Voucher Saya</a>
-      <a href="{{ route('reviews.my') }}">Ulasan Saya</a>
-      <a href="{{ route('my-inquiries') }}">Riwayat Pesan</a>
-      @if(Auth::user()->isAdmin())
-        <a href="{{ route('admin.dashboard') }}">Admin Panel</a>
-      @endif
+      <a href="{{ route('profile.edit') }}">Profil Saya</a>
       <div class="mobile-auth">
         <form method="POST" action="{{ route('logout') }}" style="width:100%;">
           @csrf

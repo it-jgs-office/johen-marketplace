@@ -307,7 +307,11 @@ class HomeController extends Controller
 
         $paymentMethods = app(PaymentGatewayService::class)->filterAvailableMethods($paymentMethods);
 
-        return view('game-detail', compact('brand', 'products', 'paymentMethods', 'flashDeals', 'isMobileLegends'));
+        $pointBalance = Auth::guard('web')->check()
+            ? app(\App\Services\BalanceService::class)->balanceFor(Auth::guard('web')->id())
+            : 0;
+
+        return view('game-detail', compact('brand', 'products', 'paymentMethods', 'flashDeals', 'isMobileLegends', 'pointBalance'));
     }
 
     public function searchBrands(Request $request)
@@ -362,7 +366,9 @@ class HomeController extends Controller
 
     public function getPaymentMethods()
     {
-        $methods = PaymentMethod::where('is_active', true)->get(['name', 'code', 'icon', 'photo', 'photo_light']);
+        $methods = PaymentMethod::where('is_active', true)->get(['name', 'code', 'icon', 'photo', 'photo_light', 'is_active']);
+        $methods = app(PaymentGatewayService::class)->filterAvailableMethods($methods)
+            ->map(fn ($method) => collect($method)->except('is_active')->all());
 
         return response()->json($methods);
     }
@@ -734,7 +740,9 @@ class HomeController extends Controller
 
         $paymentMethods = app(PaymentGatewayService::class)->filterAvailableMethods($paymentMethods);
 
-        return view('pages.jual-beli-akun-checkout', compact('listing', 'paymentMethods'));
+        $pointBalance = auth()->check() ? app(\App\Services\BalanceService::class)->balanceFor(auth()->id()) : 0;
+
+        return view('pages.jual-beli-akun-checkout', compact('listing', 'paymentMethods', 'pointBalance'));
     }
 
     public function jualBeliAkunCheckoutStore(Request $request, int $listing)
@@ -747,23 +755,25 @@ class HomeController extends Controller
                 ->with('error', 'Produk ini sudah tidak tersedia.');
         }
 
-        $availableCodes = PaymentMethod::where('is_active', true)->pluck('code')->all();
-        if (app(PaymentGatewayService::class)->isDoku()) {
-            $availableCodes[] = 'doku_checkout';
-        }
+        $availableCodes = app(PaymentGatewayService::class)
+            ->filterAvailableMethods(PaymentMethod::where('is_active', true)->get())->pluck('code')->all();
 
         $validated = $request->validate([
             'customer_name' => 'required|string|max:255',
             'customer_email' => 'required|email|max:255',
             'customer_phone' => 'required|string|max:20',
-            'payment_method' => 'required|string|in:'.implode(',', array_unique(array_merge($availableCodes, ['qris']))),
+            'payment_method' => ['required', 'string', \Illuminate\Validation\Rule::in($availableCodes)],
             'notes' => 'nullable|string|max:1000',
+            'use_points' => 'nullable|boolean',
+            'points_amount' => 'exclude_unless:use_points,1|required|integer|min:1',
         ]);
 
         $totalPrice = (float) $listing->price;
+        $points = $request->boolean('use_points') && auth()->check()
+            ? min($totalPrice, app(\App\Services\BalanceService::class)->balanceFor(auth()->id()), (float) ($request->points_amount ?: PHP_INT_MAX))
+            : 0;
         $isSimulation = (bool) config('services.payment.simulation');
         $method = strtolower(trim((string) $validated['payment_method']));
-
         $orderListing = $this->storeJbaApiOrderSnapshot($listing);
 
         $order = AccountOrder::create([
@@ -777,20 +787,30 @@ class HomeController extends Controller
             'status' => 'pending',
             // Nominal dihitung otomatis dari harga listing; user tidak input manual.
             'total_price' => $totalPrice,
+            'cash_amount' => max(0, $totalPrice - $points),
+            'saldo_amount' => max(0, $totalPrice - $points),
             'notes' => $validated['notes'] ?? null,
         ]);
+
+        if ($points > 0) {
+            $points = app(\App\Services\BalanceService::class)->reservePoints($order, $points);
+            $order->update([
+                'cash_amount' => max(0, $totalPrice - $points),
+                'saldo_amount' => max(0, $totalPrice - $points),
+            ]);
+        }
 
         // Buat charge pada payment gateway aktif untuk metode yang dipilih.
         // Referensi webhook = order_ref; nominal = total_price.
         $gateway = app(PaymentGatewayService::class);
-        if (! $isSimulation && $gateway->isConfigured()) {
+        if ((float) $order->cash_amount > 0 && ! $isSimulation && $gateway->isConfigured()) {
             $charged = $gateway->chargeAccount($order, $method, [
                 'item_name' => $listing->product_name,
             ]);
 
             if (! $charged) {
                 // QRIS: fallback ke QR statis (gambar QR milik toko).
-                if ($method === 'qris') {
+                if ($method === 'qris' && ! $gateway->isDoku()) {
                     Log::warning('QRIS dynamic account order gagal, fallback statis', [
                         'order_ref' => $order->order_ref,
                     ]);
@@ -802,6 +822,7 @@ class HomeController extends Controller
                     $message = "Metode $label gagal dibuat untuk nominal ini (minimal $minAmount)."
                         .' Silakan pilih QRIS atau metode lain.';
 
+                    app(\App\Services\BalanceService::class)->restorePoints($order, 'Pembuatan pembayaran gagal; Johen Point dikembalikan');
                     $order->delete();
 
                     return redirect()->route('jual-beli-akun.checkout', $listing)
@@ -809,6 +830,11 @@ class HomeController extends Controller
                         ->withInput();
                 }
             }
+        }
+
+
+        if ((float) $order->cash_amount <= 0) {
+            static::settleAccountOrder($order);
         }
 
         return redirect()->route('jual-beli-akun.payment', $order)
@@ -891,6 +917,16 @@ class HomeController extends Controller
      */
     public function jualBeliAkunPaymentStatus(AccountOrder $accountOrder)
     {
+        if (data_get($accountOrder->gateway_extra, 'integration') === 'direct'
+            && data_get($accountOrder->gateway_extra, 'provider') === 'doku') {
+            app(\App\Services\DokuPaymentSyncService::class)->sync($accountOrder);
+
+            return response()->json([
+                'status' => $accountOrder->status,
+                'payment_status' => data_get($accountOrder->gateway_extra, 'payment_status', 'PENDING'),
+            ])->header('Cache-Control', 'no-store, private');
+        }
+
         if ($accountOrder->status === 'pending'
             && ! empty($accountOrder->gateway_invoice_id)
             && app(PaymentGatewayService::class)->isConfigured()) {
@@ -957,6 +993,7 @@ class HomeController extends Controller
                 static::settleAccountOrder($accountOrder);
             } elseif ($failed) {
                 $accountOrder->update(['status' => $failed]);
+                app(\App\Services\BalanceService::class)->restorePoints($accountOrder, 'Pembayaran gagal; Johen Point dikembalikan');
             }
         }
 
@@ -972,8 +1009,11 @@ class HomeController extends Controller
             return;
         }
 
+        $balance = app(\App\Services\BalanceService::class);
+        $balance->markAccountPaid($accountOrder);
         $accountOrder->update(['status' => 'success']);
         $accountOrder->listing?->update(['is_sold' => true]);
+        $balance->markAccountDelivered($accountOrder->fresh());
         Log::info('Account order lunas', ['order_ref' => $accountOrder->order_ref]);
     }
 

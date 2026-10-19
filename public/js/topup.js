@@ -993,6 +993,8 @@ function initStockShowcase() {
   const slides = Array.from(section.querySelectorAll('[data-stock-slide]'));
   const frame = section.querySelector('.stock-showcase-frame');
   const categoryLink = section.querySelector('[data-stock-category]');
+  const categoryAllLink = section.querySelector('[data-stock-all]');
+  const categoryHeadingLink = section.querySelector('[data-stock-heading]');
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
   if (!slides.length || !categoryLink || !frame) return;
 
@@ -1056,6 +1058,8 @@ function initStockShowcase() {
     next.classList.add('is-entering');
     categoryLink.textContent = next.dataset.stockGame;
     categoryLink.href = next.dataset.stockHref;
+    if (categoryAllLink) categoryAllLink.href = next.dataset.stockHref;
+    if (categoryHeadingLink) categoryHeadingLink.href = next.dataset.stockHref;
     updateBrandColor(next);
     if (!reducedMotion.matches) {
       categoryLink.animate?.([

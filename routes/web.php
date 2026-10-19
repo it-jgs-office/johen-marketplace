@@ -25,6 +25,7 @@ use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PwaController;
 use App\Http\Controllers\ReviewController;
+use App\Http\Controllers\JohenPointController;
 use App\Http\Controllers\VoucherController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -98,6 +99,7 @@ Route::middleware('auth:web,admin')->group(function () {
     Route::get('/dashboard', fn () => redirect()->route('orders.my'))->name('dashboard');
 
     Route::get('/orders', [OrderController::class, 'myOrders'])->name('orders.my');
+    Route::get('/johen-point', [JohenPointController::class, 'index'])->name('points.index')->middleware('auth:web');
     Route::get('/ulasan-saya', [ReviewController::class, 'index'])->name('reviews.my')->middleware('auth:web');
     Route::get('/pesan-saya', [HomeController::class, 'myInquiries'])->name('my-inquiries');
 
@@ -238,8 +240,15 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::delete('/event-themes/{theme}', [App\Http\Controllers\Admin\EventThemeController::class, 'destroy'])->name('event-themes.destroy');
 
     Route::get('/orders', [AdminController::class, 'orders'])->name('orders');
+    Route::get('/email-preview/order-status/{status}/{order?}', [AdminController::class, 'orderEmailPreview'])
+        ->whereIn('status', ['success', 'failed'])
+        ->whereNumber('order')
+        ->name('email-preview.order-status');
     Route::get('/orders/{order}', [AdminController::class, 'ordersShow'])->name('orders.show');
-    Route::patch('/orders/{order}/status', [AdminController::class, 'ordersUpdateStatus'])->name('orders.status');
+    Route::post('/orders/{order}/retry', [AdminController::class, 'ordersRetry'])->name('orders.retry');
+    Route::post('/orders/{order}/check-provider', [AdminController::class, 'ordersCheckProvider'])->name('orders.check-provider');
+    Route::post('/orders/{order}/manual-success', [AdminController::class, 'ordersManualSuccess'])->name('orders.manual-success');
+    Route::post('/orders/{order}/refund', [AdminController::class, 'ordersRefund'])->name('orders.refund');
 
     Route::get('/account-orders', [AdminController::class, 'accountOrders'])->name('account-orders');
     Route::get('/account-orders/{accountOrder}', [AdminController::class, 'accountOrdersShow'])->name('account-orders.show');

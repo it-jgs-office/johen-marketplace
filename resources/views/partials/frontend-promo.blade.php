@@ -5,13 +5,9 @@
     'ovo' => payment_logo_asset('ovo'),
     'linkaja' => payment_logo_asset('linkaja'),
     'bca' => payment_logo_asset('bca'),
-    'bca_va' => payment_logo_asset('bca_va'),
     'bni' => payment_logo_asset('bni'),
-    'bni_va' => payment_logo_asset('bni_va'),
     'mandiri' => payment_logo_asset('mandiri'),
-    'mandiri_va' => payment_logo_asset('mandiri_va'),
     'permata' => payment_logo_asset('permata'),
-    'permata_va' => payment_logo_asset('permata_va'),
     'alfamart' => payment_logo_asset('alfamart'),
     'indomaret' => payment_logo_asset('indomaret'),
   ];
@@ -36,7 +32,7 @@
     </div>
   </section>
 
-  <section class="payment-marquee-section" aria-label="Metode pembayaran" hidden>
+  <section class="payment-marquee-section" aria-label="Metode pembayaran">
     <div class="payment-track-wrap">
       <div class="payment-track" id="paymentTrack"></div>
     </div>

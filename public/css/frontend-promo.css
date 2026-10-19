@@ -12,8 +12,8 @@
   background-position:center;background-size:cover;
   -webkit-mask-image:url('/assets/card/cta-wave-mask.svg'),linear-gradient(#000,#000);
   mask-image:url('/assets/card/cta-wave-mask.svg'),linear-gradient(#000,#000);
-  -webkit-mask-size:100% 78px,100% calc(100% - 78px);
-  mask-size:100% 78px,100% calc(100% - 78px);
+  -webkit-mask-size:100% 78px,100% calc(100% - 76px);
+  mask-size:100% 78px,100% calc(100% - 76px);
   -webkit-mask-position:top left,bottom left;
   mask-position:top left,bottom left;
   -webkit-mask-repeat:no-repeat;

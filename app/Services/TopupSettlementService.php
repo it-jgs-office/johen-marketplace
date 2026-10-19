@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\OrderProviderAttempt;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -47,6 +48,7 @@ class TopupSettlementService
         );
 
         Log::info('Digiflazz topUp response', ['order_id' => $order->order_id, 'response' => $result]);
+        $this->recordAttempt($order, 'initial_submit', $result);
 
         $this->applyResult($order->fresh(), $result);
     }
@@ -65,17 +67,22 @@ class TopupSettlementService
 
         if ($status === 'sukses') {
             $this->settleSuccess($order, $data, $result);
+        } elseif ($order->saldo_status !== 'held') {
+            return;
         } elseif ($status === 'pending') {
             $order->update([
                 'status' => 'processing',
                 'note' => null,
                 'last_status_check_at' => now(),
+                'provider_error_at' => null,
+                'provider_error_reason' => null,
+                'reconcile_status' => 'none',
             ]);
             $order->transaction?->update(['status' => 'processing', 'raw_response' => $result]);
         } else {
-            $this->settleFailure(
+            $this->holdProviderFailure(
                 $order,
-                $data['message'] ?? ($data['status'] ?: 'Gagal diproses Digiflazz'),
+                $data['message'] ?? ($result['message'] ?? ($data['status'] ?: 'Gagal diproses Digiflazz')),
                 $result,
             );
         }
@@ -87,38 +94,65 @@ class TopupSettlementService
             'status' => 'success',
             'note' => $data['sn'] ?? null,
             'reconcile_status' => 'none',
+            'provider_error_at' => null,
+            'provider_error_reason' => null,
         ]);
         $order->transaction?->update(['status' => 'success', 'raw_response' => $result]);
 
         // Kalau saldonya sempat dikembalikan (sukses terlambat), tarik ulang.
         if ($order->saldo_status === 'refunded') {
             $this->balance->markLateSuccess($order);
+            $this->balance->debitRestoredPoints($order);
         } else {
             $this->balance->markDelivered($order);
         }
+        $this->balance->consumePoints($order);
 
         $product = Product::where('buyer_sku_code', $order->buyer_sku_code)->first();
         $product?->consumeStock((int) ($order->quantity ?? 1));
     }
 
-    /**
-     * Gagal: kembalikan saldo ke user dan lepaskan diskon.
-     */
+    /** Simpan error provider tanpa langsung mengembalikan dana. */
+    public function holdProviderFailure(Order $order, string $reason, ?array $result = null): void
+    {
+        $reason = trim($reason) ?: 'Provider gagal memproses topup.';
+
+        $order->forceFill([
+            'status' => 'processing',
+            'note' => $reason,
+            'provider_error_at' => $order->provider_error_at ?: now(),
+            'provider_error_reason' => $reason,
+            'reconcile_status' => 'provider_error',
+        ])->save();
+        $order->transaction?->update(['status' => 'provider_error', 'raw_response' => $result]);
+    }
+
+    /** Gagal final: kembalikan dana ke Johen Point dan lepaskan diskon. */
     public function settleFailure(Order $order, string $reason, ?array $result = null): void
     {
+        if ($order->saldo_status !== 'held') {
+            return;
+        }
+
         $order->update([
             'status' => 'failed',
             'note' => $reason,
+            'reconcile_status' => 'settled',
         ]);
-        $order->transaction?->update(['status' => 'failed', 'raw_response' => $result]);
+        $transactionUpdate = ['status' => 'failed'];
+        if ($result !== null) {
+            $transactionUpdate['raw_response'] = $result;
+        }
+        $order->transaction?->update($transactionUpdate);
 
         $this->balance->markRefunded($order, $reason);
+        $this->balance->restorePoints($order, 'Refund Johen Point: '.$reason);
         $order->releaseDiscounts();
     }
 
     /**
      * Tanya status satu order ke Digiflazz. Mengembalikan status final
-     * ('sukses'/'gagal'), atau null kalau masih pending / gagal ditanya.
+     * ('sukses'/'provider_error'), atau null kalau masih pending / gagal ditanya.
      */
     public function poll(Order $order): ?string
     {
@@ -141,11 +175,12 @@ class TopupSettlementService
         ]);
 
         $status = strtolower(trim((string) ($result['data']['status'] ?? '')));
+        $this->recordAttempt($order, 'status_check', $result);
 
         if (in_array($status, ['sukses', 'gagal'], true)) {
             $this->applyResult($order, $result);
 
-            return $status;
+            return $status === 'gagal' ? 'provider_error' : 'sukses';
         }
 
         return null;
@@ -175,8 +210,64 @@ class TopupSettlementService
         return $maxPolls > 0 && (int) $order->digiflazz_poll_count >= $maxPolls;
     }
 
+    public function isWaitingForProviderErrorRetry(Order $order): bool
+    {
+        return $order->reconcile_status === 'provider_error'
+            && $order->saldo_status === 'held'
+            && $order->provider_error_at !== null;
+    }
+
+    public function hasExceededProviderErrorGracePeriod(Order $order): bool
+    {
+        if (! $this->isWaitingForProviderErrorRetry($order)) {
+            return false;
+        }
+
+        $minutes = max(1, (int) config('digiflazz.reconcile.provider_error_grace_minutes', 10));
+
+        return now()->greaterThanOrEqualTo($order->provider_error_at->copy()->addMinutes($minutes));
+    }
+
+    public function providerErrorRefundReason(Order $order): string
+    {
+        $minutes = max(1, (int) config('digiflazz.reconcile.provider_error_grace_minutes', 10));
+        $providerReason = trim((string) ($order->provider_error_reason ?: $order->note));
+
+        return 'Refund otomatis setelah error provider tidak terselesaikan selama '.$minutes.' menit'
+            .($providerReason !== '' ? ': '.$providerReason : '.');
+    }
+
     public function balance(): BalanceService
     {
         return $this->balance;
+    }
+
+    public function retry(Order $order, ?int $adminId = null): array
+    {
+        $order->forceFill([
+            'provider_error_at' => null,
+            'provider_error_reason' => null,
+            'reconcile_status' => 'none',
+            'note' => null,
+        ])->save();
+
+        $result = $this->digiflazz->topUp($order->buyer_sku_code, $order->customer_number, $order->order_id, $order->effective_zone_id);
+        $this->recordAttempt($order, 'admin_retry', $result, $adminId);
+        $this->applyResult($order->fresh(), $result);
+        return $result;
+    }
+
+    private function recordAttempt(Order $order, string $action, array $result, ?int $adminId = null): void
+    {
+        $data = (array) ($result['data'] ?? []);
+        OrderProviderAttempt::create([
+            'order_id' => $order->id,
+            'admin_id' => $adminId,
+            'action' => $action,
+            'provider_ref' => $data['ref_id'] ?? $data['trx_id'] ?? null,
+            'status' => $data['status'] ?? null,
+            'message' => $data['message'] ?? null,
+            'response' => $result,
+        ]);
     }
 }

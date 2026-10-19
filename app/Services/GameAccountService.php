@@ -104,7 +104,15 @@ class GameAccountService
 
     protected function formatValid(string $userId, string $brand, string $zoneId): bool
     {
-        if ($userId === '' || strlen($userId) < 5 || strlen($userId) > 32 || preg_match('/\s/', $userId)) {
+        if ($userId === '' || strlen($userId) < 5 || strlen($userId) > 32) {
+            return false;
+        }
+
+        if (str_starts_with(mb_strtolower($brand), 'valorant')) {
+            if (preg_match('/^[\p{L}\p{N}._ -]{3,16}#[A-Za-z0-9]{3,5}$/u', $userId) !== 1) {
+                return false;
+            }
+        } elseif (preg_match('/\s/', $userId)) {
             return false;
         }
 

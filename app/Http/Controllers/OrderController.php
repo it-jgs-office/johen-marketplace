@@ -42,7 +42,9 @@ class OrderController extends Controller
         $requiresZoneId = str_starts_with(mb_strtolower($product->brand), 'mobile legends')
             || (bool) Brand::where('name', $product->brand)->value('requires_zone_id');
 
-        return view('orders.create', compact('product', 'paymentMethods', 'requiresZoneId'));
+        $pointBalance = Auth::check() ? $this->balance->balanceFor(Auth::id()) : 0;
+
+        return view('orders.create', compact('product', 'paymentMethods', 'requiresZoneId', 'pointBalance'));
     }
 
     public function store(Request $request, GameAccountService $gameAccount)
@@ -53,10 +55,12 @@ class OrderController extends Controller
             'zone_id' => 'nullable|string|max:20|regex:/^[A-Za-z0-9]+$/',
             'customer_name' => 'nullable|string|max:100',
             'phone' => 'nullable|string|max:30',
-            'email' => 'nullable|email',
+            'email' => 'required|email',
             'quantity' => 'nullable|integer|min:1|max:99',
             'promo_code' => 'nullable|string|max:32',
             'payment_method' => 'nullable|string|max:50',
+            'use_points' => 'nullable|boolean',
+            'points_amount' => 'exclude_unless:use_points,1|required|integer|min:1',
         ], [
             'zone_id.regex' => 'Zone ID hanya boleh berisi huruf dan angka.',
         ]);
@@ -105,6 +109,8 @@ class OrderController extends Controller
                 'quantity' => $quantity,
                 'promo_code' => $request->promo_code,
                 'payment_method' => $request->payment_method,
+                'use_points' => $request->boolean('use_points'),
+                'points_amount' => $request->points_amount,
             ]);
         } catch (\RuntimeException $e) {
             if ($request->wantsJson()) {
@@ -215,7 +221,23 @@ class OrderController extends Controller
                 $voucher->markUsed($order);
             }
 
-            if (! config('services.payment.simulation') && $this->gateway->isConfigured()) {
+            $points = ! empty($input['use_points']) && Auth::check()
+                ? min((float) $order->price, $this->balance->balanceFor(Auth::id()), (float) ($input['points_amount'] ?: PHP_INT_MAX))
+                : 0;
+            $order->update([
+                'cash_amount' => max(0, (float) $order->price - $points),
+                'saldo_amount' => max(0, (float) $order->price - $points),
+            ]);
+            if ($points > 0) {
+                $points = $this->balance->reservePoints($order, $points);
+                $order->update([
+                    'cash_amount' => max(0, (float) $order->price - $points),
+                    'saldo_amount' => max(0, (float) $order->price - $points),
+                ]);
+            }
+            $order->transaction?->update(['gross_amount' => $order->cash_amount]);
+
+            if ((float) $order->cash_amount > 0 && ! config('services.payment.simulation') && $this->gateway->isConfigured()) {
                 $method = !empty($input['payment_method']) ? $input['payment_method'] : config('services.payment.channel', 'qris');
 
                 $charged = $this->gateway->charge($order, $method, [
@@ -225,11 +247,18 @@ class OrderController extends Controller
 
                 if (!$charged) {
                     $label = \App\Models\PaymentMethod::where('code', $method)->value('name') ?: $method;
-                    $minAmount = in_array($order->gateway_type, ['va', 'retail'], true) ? 'Rp 10.000' : 'Rp 1.000';
-                    $message = "Metode $label gagal dibuat untuk nominal ini (minimal $minAmount)."
-                        ." Silakan pilih QRIS atau metode lain. (order: {$order->order_id})";
+                    $minimum = in_array($order->gateway_type, ['va', 'retail'], true) ? 10000 : 1000;
+                    $message = (int) $order->cash_amount < $minimum
+                        ? "Nominal untuk $label minimal Rp ".number_format($minimum, 0, ',', '.').'.'
+                        : ($this->gateway->lastChargeError()
+                            ?: "Metode $label belum dapat dibuat. Silakan coba lagi atau pilih metode lain.");
+                    $message .= " (order: {$order->order_id})";
                     throw new \RuntimeException($message);
                 }
+            }
+
+            if ((float) $order->cash_amount <= 0) {
+                app(\App\Services\TopupSettlementService::class)->markPaid($order);
             }
 
             return $order;

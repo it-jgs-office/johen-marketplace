@@ -93,27 +93,15 @@ html[data-splash="on"] body { overflow: hidden; }
     position: relative;
     width: 84px;
     height: 84px;
-    border-radius: 22px;
-    overflow: hidden;
     display: grid;
     place-items: center;
-    background: linear-gradient(145deg, rgba(255, 255, 255, .10), rgba(255, 255, 255, .02));
-    box-shadow: 0 14px 34px -12px rgba(0, 0, 0, .75), inset 0 0 0 1px rgba(255, 255, 255, .10);
 }
 
-.jhm-logo { width: 100%; height: 100%; object-fit: contain; padding: 10px; animation: jhm-pop 1.4s ease-in-out infinite; }
+.jhm-logo { width: 100%; height: 100%; object-fit: contain; animation: jhm-pop 1.4s ease-in-out infinite; }
 
 /* Kilau melintas sekali per siklus, lalu diam sampai putaran berikutnya. */
 .jhm-logo-wrap::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    bottom: 0;
-    left: 0;
-    width: 42%;
-    background: linear-gradient(100deg, transparent, rgba(255, 255, 255, .55), transparent);
-    transform: translateX(-130%) skewX(-12deg);
-    animation: jhm-sweep 1.4s ease-in-out infinite;
+    content: none;
 }
 
 .jhm-copy { display: grid; justify-items: center; gap: 7px; text-align: center; }
@@ -190,11 +178,6 @@ html[data-splash="on"] body { overflow: hidden; }
         radial-gradient(120% 80% at 50% 0%, rgba(37, 99, 235, .16), transparent 62%),
         radial-gradient(90% 60% at 50% 100%, rgba(0, 212, 255, .16), transparent 62%),
         #eef2f7;
-}
-
-[data-theme="light"] .jhm-logo-wrap {
-    background: linear-gradient(145deg, #ffffff, #eff6ff);
-    box-shadow: 0 14px 30px -14px rgba(37, 99, 235, .40), inset 0 0 0 1px rgba(0, 212, 255, .14);
 }
 
 [data-theme="light"] .jhm-bar { background: rgba(37, 99, 235, .10); }

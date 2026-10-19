@@ -8,15 +8,13 @@
     // tampilan metode pembayaran tidak berbeda.
     $channelCategory = function (string $code): string {
         $code = strtolower($code);
-        if ($code === 'doku_checkout') return 'doku';
         if (in_array($code, ['qris'], true)) return 'qris';
         if (in_array($code, ['gopay', 'dana', 'ovo', 'shopeepay', 'linkaja', 'gcash'], true)) return 'ewallet';
-        if (in_array($code, ['bca', 'bca_va', 'bri', 'bri_va', 'bni', 'bni_va', 'mandiri', 'mandiri_va', 'permata', 'permata_va', 'sa', 'saham', 'other_bank'], true)) return 'va';
+        if (in_array($code, ['bca', 'bca_va', 'bri', 'bri_va', 'bni', 'bni_va', 'bsi', 'bsi_va', 'cimb', 'cimb_va', 'mandiri', 'mandiri_va', 'permata', 'permata_va', 'sa', 'saham', 'other_bank'], true)) return 'va';
         if (in_array($code, ['alfamart', 'indomaret'], true)) return 'convenience_store';
         return 'ewallet';
     };
     $categories = [
-        'doku' => 'Pembayaran Aman',
         'qris' => 'QRIS',
         'ewallet' => 'E-Wallet',
         'va' => 'Virtual Account / Bank',
@@ -114,6 +112,7 @@
                             $value = $accounts[$brandKey] ?? [];
                             $numErr = $errors->first('accounts.'.$brandKey.'.customer_number');
                             $zoneErr = $errors->first('accounts.'.$brandKey.'.zone_id');
+                            $isValorant = str_starts_with(mb_strtolower($group->name), 'valorant');
                         @endphp
 
                         <div class="ck-brand" style="padding:1rem 0;border-top:1px dashed var(--border);">
@@ -132,14 +131,17 @@
                             </div>
 
                             <div class="gd-field">
-                                <label for="cn_{{ $brandKey }}">User ID / Akun {{ $group->requires_zone_id ? '' : '' }}</label>
-                                <input type="text" inputmode="numeric" id="cn_{{ $brandKey }}"
+                                <label for="cn_{{ $brandKey }}">{{ $isValorant ? 'Riot ID' : 'User ID / Akun' }}</label>
+                                <input type="text" inputmode="{{ $isValorant ? 'text' : 'numeric' }}" id="cn_{{ $brandKey }}"
                                        name="accounts[{{ $brandKey }}][customer_number]"
                                        value="{{ $value['customer_number'] ?? '' }}"
-                                       placeholder="Masukkan {{ $group->name }} User ID"
+                                       placeholder="{{ $isValorant ? 'NamaPemain#TAG' : 'Masukkan '.$group->name.' User ID' }}"
                                        autocomplete="off" required
                                        class="{{ $numErr ? 'error' : '' }}">
                                 <div class="gd-field-error {{ $numErr ? 'show' : '' }}">{{ $numErr }}</div>
+                                @if($isValorant)
+                                    <div class="gd-field-hint">Masukkan Riot ID lengkap beserta tagline, contoh: JohenGaming#ID1.</div>
+                                @endif
                             </div>
 
                             @if($group->requires_zone_id)
@@ -193,6 +195,10 @@
                         <input type="text" id="promo" name="promo_code" value="{{ old('promo_code') }}" placeholder="Contoh: JOHENI10" autocomplete="off" style="text-transform:uppercase;">
                         <div class="gd-field-hint">Diskon voucher dihitung otomatis dari total gabungan semua item.</div>
                     </div>
+                    <label style="display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:1rem;padding:1rem;border:1px solid rgba(250,204,21,.35);border-radius:12px;background:rgba(250,204,21,.08);cursor:pointer;">
+                        <span><strong style="display:flex;align-items:center;gap:.45rem;color:#fde047;"><x-johen-point-icon size="22" /> Gunakan Johen Point</strong><small style="color:var(--text-dim);">Tersedia {{ number_format($pointBalance, 0, ',', '.') }} JP</small><input type="number" name="points_amount" value="{{ old('points_amount', (int) min($pointBalance, $subtotal)) }}" min="1" max="{{ (int) $pointBalance }}" style="display:block;width:160px;margin-top:.55rem;padding:.55rem .7rem;border-radius:9px;border:1px solid rgba(250,204,21,.3);background:#0c1d47;color:white;" aria-label="Jumlah Johen Point" {{ $pointBalance < 1 ? 'disabled' : '' }}></span>
+                        <input type="checkbox" name="use_points" value="1" {{ old('use_points') ? 'checked' : '' }} style="width:20px;height:20px;accent-color:#facc15;" {{ $pointBalance < 1 ? 'disabled' : '' }}>
+                    </label>
                 </div>
 
                 {{-- ===== Pembayaran ===== --}}
@@ -265,6 +271,12 @@
                         <span>Subtotal</span>
                         <span data-role="cart-subtotal">Rp {{ number_format($subtotal, 0, ',', '.') }}</span>
                     </div>
+                    <div class="gd-summary-total" id="pointPreview" style="margin-top:.5rem;display:none;color:#fde047;">
+                        <span><x-johen-point-icon size="17" /> Johen Point</span><span>-<span id="pointPreviewValue">0</span> JP</span>
+                    </div>
+                    <div class="gd-summary-total" style="margin-top:.5rem;font-size:1.05rem;">
+                        <span>Estimasi dibayar</span><strong id="cashPreview">Rp {{ number_format($subtotal, 0, ',', '.') }}</strong>
+                    </div>
 
                     <button type="submit" class="btn btn-solid btn-full btn-lg" style="margin-top:1.1rem;" id="submitBtn">
                         Bayar Sekarang
@@ -292,7 +304,24 @@
     var payHint = document.getElementById('payHint');
     var submitBtn = document.getElementById('submitBtn');
     var subtotal = @json((int) $subtotal);
+    var pointBalance = @json((int) $pointBalance);
+    var usePoints = form.querySelector('input[name="use_points"]');
+    var pointAmount = form.querySelector('input[name="points_amount"]');
     var submitting = false;
+
+    function updatePointPreview() {
+        var requested = pointAmount ? parseInt(pointAmount.value || '0', 10) : pointBalance;
+        var used = usePoints && usePoints.checked ? Math.min(subtotal, pointBalance, Math.max(0, requested)) : 0;
+        var pointRow = document.getElementById('pointPreview');
+        if (pointRow) pointRow.style.display = used > 0 ? 'flex' : 'none';
+        var pointValue = document.getElementById('pointPreviewValue');
+        if (pointValue) pointValue.textContent = used.toLocaleString('id-ID');
+        var cash = document.getElementById('cashPreview');
+        if (cash) cash.textContent = 'Rp ' + Math.max(0, subtotal - used).toLocaleString('id-ID');
+    }
+    if (usePoints) usePoints.addEventListener('change', updatePointPreview);
+    if (pointAmount) pointAmount.addEventListener('input', updatePointPreview);
+    updatePointPreview();
 
     // Buka kategori pertama supaya user tidak mencari-cari metode.
     document.querySelectorAll('.gd-pay-category').forEach(function (cat, i) {

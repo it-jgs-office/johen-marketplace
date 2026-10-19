@@ -10,10 +10,13 @@ use App\Models\LiveChatChannel;
 use App\Models\LiveChatOperator;
 use App\Models\LiveChatOperatorSchedule;
 use App\Models\Order;
+use App\Models\OrderAdminAction;
 use App\Models\Product;
 use App\Models\SiteSetting;
 use App\Models\User;
 use App\Services\DigiflazzService;
+use App\Services\BalanceService;
+use App\Services\TopupSettlementService;
 use App\Services\ImageOptimizer;
 use App\Services\MediaStore;
 use Illuminate\Http\Request;
@@ -146,7 +149,15 @@ class AdminController extends Controller
             $checks['xendit_callback_token'] = [
                 'label' => 'Verifikasi signature webhook DOKU',
                 'ok' => $doku->isConfigured(),
-                'detail' => 'Signature HMAC-SHA256 diverifikasi otomatis memakai Secret Key.',
+                'detail' => 'Signature HMAC-SHA256 (Non-SNAP) / HMAC-SHA512 (VA SNAP) diverifikasi otomatis.',
+            ];
+            $directMethods = $paymentGateway->filterAvailableMethods(\App\Models\PaymentMethod::where('is_active', true)->get());
+            $checks['doku_direct'] = [
+                'label' => 'Metode pembayaran langsung DOKU',
+                'ok' => $directMethods->isNotEmpty(),
+                'detail' => $directMethods->isNotEmpty()
+                    ? $directMethods->pluck('name')->implode(', ').'. Aktivasi merchant tetap harus dikonfirmasi di DOKU.'
+                    : 'Isi DOKU_DIRECT_METHODS sesuai kanal aktif. QRIS/VA memerlukan private key SNAP dan identitas kanal.',
             ];
             $checks['webhook_route']['detail'] = 'payment/doku/notification, payment/notification, dan digiflazz/callback sudah dikecualikan dari CSRF.';
         }
@@ -524,32 +535,98 @@ class AdminController extends Controller
 
     public function ordersShow(Order $order)
     {
-        $order->load('user', 'transaction');
+        $order->load(['user', 'transaction', 'providerAttempts.admin', 'adminActions.admin']);
         return view('admin.orders.show', compact('order'));
     }
 
-    public function ordersUpdateStatus(Request $request, Order $order)
+    public function orderEmailPreview(string $status, ?int $order = null)
     {
-        $request->validate([
-            'status' => 'required|in:pending,processing,success,failed,cancelled',
-        ]);
+        abort_unless(in_array($status, ['success', 'failed'], true), 404);
 
-        $previous = $order->status;
-        $order->update(['status' => $request->status]);
+        $previewOrder = $order
+            ? Order::with(['user', 'transaction'])->findOrFail($order)
+            : Order::with(['user', 'transaction'])->latest()->first();
 
-        if (in_array($request->status, ['failed', 'cancelled']) && !in_array($previous, ['failed', 'cancelled'])) {
-            $order->releaseDiscounts();
-        }
-
-        if ($request->ajax() || $request->wantsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Status berhasil diperbarui menjadi ' . $request->status,
-                'status' => $request->status,
+        if (! $previewOrder) {
+            $previewOrder = new Order([
+                'order_id' => 'JOHEN-PREVIEW-001',
+                'customer_number' => '123456789',
+                'zone_id' => '1234',
+                'product_name' => '86 Diamonds',
+                'brand' => 'Mobile Legends',
+                'payment_method' => 'QRIS',
+                'price' => 25000,
+                'status' => $status,
+                'note' => $status === 'failed' ? 'Produk sedang mengalami gangguan dari provider.' : 'PREVIEW-SN-001',
             ]);
+            $previewOrder->created_at = now();
+            $previewOrder->setRelation('user', new User(['name' => 'Pelanggan Johen']));
+            $previewOrder->setRelation('transaction', null);
+        } elseif ($status === 'failed' && ! $previewOrder->note) {
+            $previewOrder->note = 'Produk sedang mengalami gangguan dari provider.';
         }
 
-        return back()->with('success', 'Status pesanan berhasil diperbarui menjadi ' . $request->status);
+        return view('emails.order-status', [
+            'order' => $previewOrder,
+            'status' => $status,
+            'isPreview' => true,
+        ]);
+    }
+
+    public function ordersRetry(Order $order, TopupSettlementService $settlement)
+    {
+        if ($order->saldo_status !== 'held' || $order->status === 'success') return back()->with('error', 'Retry hanya dapat dilakukan saat dana masih ditahan dan topup belum sukses.');
+        $action = $this->beginOrderAction($order, 'retry');
+        if (! $action) return back()->with('error', 'Retry untuk transaksi ini sudah pernah dijalankan.');
+        $settlement->retry($order, Auth::guard('admin')->id());
+        return back()->with('success', 'Retry topup telah dikirim ke provider.');
+    }
+
+    public function ordersCheckProvider(Order $order, TopupSettlementService $settlement)
+    {
+        if ($order->saldo_status !== 'held' || $order->status === 'success') {
+            return back()->with('error', 'Cek provider hanya tersedia setelah topup pernah dikirim.');
+        }
+        $action = $this->beginOrderAction($order, 'check_provider');
+        if (! $action) return back()->with('error', 'Cek provider untuk transaksi ini sudah pernah dijalankan.');
+        $settlement->poll($order);
+        return back()->with('success', 'Status provider telah diperiksa.');
+    }
+
+    public function ordersManualSuccess(Request $request, Order $order, TopupSettlementService $settlement)
+    {
+        $data = $request->validate(['reason' => 'required|string|max:1000']);
+        if ($order->status === 'success') return back()->with('error', 'Transaksi ini sudah sukses.');
+        if ($order->saldo_status === 'refunded') return back()->with('error', 'Order yang sudah direfund tidak dapat ditandai sukses manual.');
+        if ($order->saldo_status !== 'held') return back()->with('error', 'Manual Success hanya tersedia setelah pembayaran diterima.');
+        $action = $this->beginOrderAction($order, 'manual_success', $data['reason']);
+        if (! $action) return back()->with('error', 'Sukses manual untuk transaksi ini sudah pernah dijalankan.');
+        $settlement->applyResult($order, ['data' => ['status' => 'Sukses', 'message' => $data['reason'], 'sn' => 'MANUAL-ADMIN']]);
+        return back()->with('success', 'Transaksi ditandai sukses manual.');
+    }
+
+    public function ordersRefund(Request $request, Order $order, BalanceService $balance)
+    {
+        $data = $request->validate(['reason' => 'required|string|max:1000']);
+        if ($order->saldo_status !== 'held') return back()->with('error', 'Refund hanya tersedia untuk pembayaran yang sudah diterima dan belum direfund.');
+        $action = $this->beginOrderAction($order, 'manual_refund', $data['reason'], (float) $order->price);
+        if (! $action) return back()->with('error', 'Refund manual untuk transaksi ini sudah pernah dijalankan.');
+        $balance->markRefunded($order, 'Refund manual: '.$data['reason']);
+        $balance->restorePoints($order, 'Refund manual Johen Point: '.$data['reason']);
+        $order->update(['status' => 'failed', 'note' => $data['reason']]);
+        $order->transaction?->update(['status' => 'refunded']);
+        $order->releaseDiscounts();
+        return back()->with('success', 'Dana transaksi telah direfund menjadi Johen Point.');
+    }
+
+    private function beginOrderAction(Order $order, string $action, ?string $reason = null, ?float $amount = null): ?OrderAdminAction
+    {
+        $key = 'order:'.$order->id.':admin:'.$action;
+        $record = OrderAdminAction::firstOrCreate(['idempotency_key' => $key], [
+            'order_id' => $order->id, 'admin_id' => Auth::guard('admin')->id(), 'action' => $action,
+            'reason' => $reason, 'amount' => $amount,
+        ]);
+        return $record->wasRecentlyCreated ? $record : null;
     }
 
     // ---- ACCOUNT ORDERS (Jual Beli Akun) ----
@@ -591,7 +668,33 @@ class AdminController extends Controller
 
         $newStatus = $request->status;
 
-        $accountOrder->update(['status' => $newStatus]);
+        if ($newStatus === 'success' && $accountOrder->status !== 'pending') {
+            return back()->with('error', 'Pesanan akun yang sudah final tidak dapat diubah menjadi sukses.');
+        }
+
+        $balance = app(BalanceService::class);
+
+        if ($newStatus === 'success' && $accountOrder->status === 'pending') {
+            HomeController::settleAccountOrder($accountOrder);
+        } elseif (in_array($newStatus, ['failed', 'cancelled'], true)) {
+            if ($accountOrder->saldo_status === 'held') {
+                $balance->markAccountRefunded($accountOrder, 'Refund transaksi akun oleh admin');
+            } elseif ($accountOrder->saldo_status === 'consumed' && $accountOrder->user) {
+                $balance->adjust(
+                    $accountOrder->user,
+                    (float) $accountOrder->total_price,
+                    'Refund transaksi akun '.$accountOrder->order_ref.' oleh admin',
+                    Auth::guard('admin')->id(),
+                    'account_order:'.$accountOrder->id.':admin_refund'
+                );
+                $accountOrder->update(['saldo_status' => 'refunded', 'points_status' => 'refunded', 'saldo_released_at' => now()]);
+            } else {
+                $balance->restorePoints($accountOrder, 'Pembayaran transaksi akun gagal; Johen Point dikembalikan');
+            }
+            $accountOrder->update(['status' => $newStatus]);
+        } else {
+            $accountOrder->update(['status' => $newStatus]);
+        }
 
         // Sinkronkan status penjualan listing.
         if ($newStatus === 'success') {

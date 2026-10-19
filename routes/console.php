@@ -18,7 +18,7 @@ Artisan::command('inspire', function () {
  * menggantung selamanya di status "processing" dan saldonya tidak pernah
  * dikembalikan ke user.
  */
-Schedule::command('digiflazz:reconcile')->everyFiveMinutes()->withoutOverlapping();
+Schedule::command('digiflazz:reconcile')->everyMinute()->withoutOverlapping();
 
 /*
  * Perbarui katalog, harga, stok, dan status produk game dari Digiflazz.
@@ -33,3 +33,6 @@ Schedule::command('digiflazz:sync --force')->everyTenMinutes()->withoutOverlappi
  * menggantung di status "pending" akan diantrikan ulang.
  */
 Schedule::command('checkout:retry')->everyTenMinutes()->withoutOverlapping();
+
+// Keep confirming DOKU payments even after the customer closes the payment page.
+Schedule::command('doku:reconcile')->everyMinute()->withoutOverlapping();

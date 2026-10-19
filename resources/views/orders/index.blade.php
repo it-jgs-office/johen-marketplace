@@ -4,10 +4,7 @@
 
 @push('styles')
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
-
-:root{--ord-primary:#854DEA;--ord-primary-light:#a575ff;--ord-primary-glow:rgba(133,77,234,.35);--ord-primary-subtle:rgba(133,77,234,.12)}
-.ord-page{width:100%;max-width:var(--layout-max);margin:0 auto;padding:2rem var(--layout-gutter) 4rem;font-family:'Poppins',sans-serif;animation:ordFadeIn .4s ease}
+.ord-page{--ord-primary:var(--purple);--ord-primary-light:var(--purple-light);--ord-primary-glow:var(--purple-glow);--ord-primary-subtle:color-mix(in srgb,var(--purple) 12%,transparent);width:100%;max-width:var(--layout-max);margin:0 auto;padding:2rem var(--layout-gutter) 4rem;font-family:var(--font-body);animation:ordFadeIn .4s ease}
 @keyframes ordFadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .ord-breadcrumb{font-size:.78rem;color:var(--text-mute);margin-bottom:.75rem;display:flex;align-items:center;gap:.35rem}
 .ord-breadcrumb a{color:var(--text-mute);text-decoration:none}
@@ -15,13 +12,13 @@
 .ord-breadcrumb .sep{opacity:.4}
 .ord-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.75rem;flex-wrap:wrap}
 .ord-header-left{min-width:0}
-.ord-title{font-family:'Poppins',sans-serif;font-size:1.75rem;font-weight:800;letter-spacing:-.02em}
+.ord-title{font-family:var(--font-display);font-size:clamp(1.4rem,2.5vw,1.8rem);font-weight:800;letter-spacing:-.03em}
 .ord-subtitle{font-size:.85rem;color:var(--text-mute);margin-top:.15rem}
-.ord-help-btn{display:inline-flex;align-items:center;gap:.45rem;padding:.55rem 1.1rem;border-radius:10px;background:var(--ord-primary-subtle);color:var(--text);font-size:.8rem;font-weight:700;border:1px solid transparent;transition:all .2s;text-decoration:none;white-space:nowrap;font-family:'Poppins',sans-serif}
-.ord-help-btn:hover{background:rgba(133,77,234,.18);border-color:var(--border-strong);transform:translateY(-2px);box-shadow:0 4px 14px -4px var(--ord-primary-glow)}
+.ord-help-btn{display:inline-flex;align-items:center;gap:.45rem;padding:.55rem 1.1rem;border-radius:10px;background:var(--ord-primary-subtle);color:var(--text);font-size:.8rem;font-weight:700;border:1px solid transparent;transition:all .2s;text-decoration:none;white-space:nowrap;font-family:var(--font-body)}
+.ord-help-btn:hover{background:color-mix(in srgb,var(--ord-primary) 18%,var(--surface));border-color:var(--border-strong);transform:translateY(-2px);box-shadow:0 4px 14px -4px var(--ord-primary-glow)}
 .ord-tabs{display:flex;gap:.5rem;margin-bottom:1.5rem;flex-wrap:wrap}
 .ord-balance{display:none;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.25rem 1.5rem;margin-bottom:1.5rem;position:relative;overflow:hidden}
-.ord-balance::after{content:'';position:absolute;inset:0 0 auto auto;width:220px;height:220px;margin-top:-90px;margin-right:-60px;border-radius:50%;background:radial-gradient(circle,rgba(133,77,234,.16),transparent 70%);pointer-events:none}
+.ord-balance::after{content:'';position:absolute;inset:0 0 auto auto;width:220px;height:220px;margin-top:-90px;margin-right:-60px;border-radius:50%;background:radial-gradient(circle,color-mix(in srgb,var(--ord-primary) 16%,transparent),transparent 70%);pointer-events:none}
 .ord-balance-main{position:relative;z-index:1}
 .ord-balance-label{font-size:.72rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--text-mute)}
 .ord-balance-value{font-size:1.75rem;font-weight:800;letter-spacing:-.02em;margin-top:.15rem;color:var(--text)}
@@ -40,7 +37,7 @@
 .ord-balance-item-amount.is-minus{color:#f87171}
 .ord-balance-item-amount.is-neutral{color:var(--text-mute);font-weight:500}
 .ord-refund-note{display:inline-flex;align-items:center;gap:.4rem;margin-top:.4rem;padding:.3rem .6rem;border-radius:8px;background:rgba(148,163,184,.15);color:#94a3b8;font-size:.7rem;font-weight:600}
-.ord-tab{padding:.5rem 1.2rem;border-radius:999px;font-size:.8rem;font-weight:600;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem;font-family:'Poppins',sans-serif}
+.ord-tab{padding:.5rem 1.2rem;border-radius:999px;font-size:.8rem;font-weight:600;background:var(--surface);border:1px solid var(--border);color:var(--text-dim);cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:.4rem;font-family:var(--font-body)}
 .ord-tab:hover{border-color:var(--ord-primary);color:var(--text)}
 .ord-tab.active{background:var(--ord-primary);color:#fff;border-color:var(--ord-primary);box-shadow:0 0 20px -4px var(--ord-primary-glow)}
 .ord-tab svg{width:16px;height:16px;flex-shrink:0}
@@ -49,18 +46,18 @@
 .ord-filter-group:first-child{margin-left:auto}
 .ord-filter-group:last-child{flex:1}
 .ord-filter-group label{font-size:.72rem;font-weight:600;color:var(--text-mute);white-space:nowrap}
-.ord-filter-select,.ord-filter-input{padding:.45rem .7rem;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);font-size:.78rem;font-family:'Poppins',sans-serif;transition:border-color .2s;width:100%;max-width:200px}
+.ord-filter-select,.ord-filter-input{padding:.45rem .7rem;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);font-size:.78rem;font-family:var(--font-body);transition:border-color .2s;width:100%;max-width:200px}
 .ord-filter-select:focus,.ord-filter-input:focus{outline:none;border-color:var(--ord-primary)}
 .ord-filter-input[type=date]{max-width:150px;color-scheme:light dark}
 .ord-search-wrap{position:relative;min-width:180px;max-width:260px;margin-right:auto}
 .ord-search-wrap svg{position:absolute;left:10px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:var(--text-mute);pointer-events:none}
-.ord-search-wrap input{width:100%;padding:.45rem .7rem .45rem 2rem;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);font-size:.78rem;font-family:'Poppins',sans-serif;transition:border-color .2s}
+.ord-search-wrap input{width:100%;padding:.45rem .7rem .45rem 2rem;border-radius:8px;background:var(--surface-2);border:1px solid var(--border);color:var(--text);font-size:.78rem;font-family:var(--font-body);transition:border-color .2s}
 .ord-search-wrap input:focus{outline:none;border-color:var(--ord-primary)}
-.ord-list{display:flex;flex-direction:column;gap:24px}
-.ord-card{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 32px;transition:all .25s ease;cursor:default;animation:ordFadeIn .35s ease both}
-.ord-card:hover{border-color:var(--ord-primary);transform:translateY(-4px);box-shadow:0 10px 35px rgba(133,77,234,.18)}
-.ord-card-left{display:flex;gap:28px;flex:0 0 52%;max-width:52%;align-items:flex-start}
-.ord-thumb{width:145px;min-width:145px;height:145px;border-radius:12px;background:var(--surface-2);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--text-mute);overflow:hidden}
+.ord-list{display:flex;flex-direction:column;gap:1rem}
+.ord-card{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.25rem 1.4rem;transition:all .25s ease;cursor:default;animation:ordFadeIn .35s ease both}
+.ord-card:hover{border-color:var(--ord-primary);transform:translateY(-4px);box-shadow:0 10px 35px color-mix(in srgb,var(--ord-primary) 18%,transparent)}
+.ord-card-left{display:flex;gap:1.1rem;flex:0 0 52%;max-width:52%;align-items:flex-start}
+.ord-thumb{width:108px;min-width:108px;height:108px;border-radius:12px;background:var(--surface-2);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--text-mute);overflow:hidden}
 .ord-thumb img{width:100%;height:100%;object-fit:cover}
 .ord-info{display:flex;flex-direction:column;gap:0;min-width:0;flex:1}
 .ord-info-top{display:flex;align-items:center;gap:0}
@@ -76,7 +73,7 @@
 .ord-meta-item svg{width:20px;height:20px;color:var(--text-dim);flex-shrink:0}
 .ord-meta-item strong{color:var(--text);font-weight:600;font-size:14px}
 .ord-meta-item span{font-size:14px}
-.ord-separator{width:1px;background:var(--border);flex-shrink:0;margin:0 28px;height:80%;align-self:center}
+.ord-separator{width:1px;background:var(--border);flex-shrink:0;margin:0 1.25rem;height:80%;align-self:center}
 .ord-card-right{flex:1;min-width:0;display:flex;flex-direction:column;padding:2px 0}
 .ord-right-order-id{font-size:18px;font-weight:700;color:var(--text);line-height:1.1;margin-bottom:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .ord-right-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:10px}
@@ -87,7 +84,7 @@
 .ord-right-total{font-size:18px;font-weight:700;color:var(--text);line-height:1;margin-bottom:24px}
 .ord-left-total{margin-bottom:0;margin-top:20px}
 .ord-date-value{font-size:12px}
-.ord-detail-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 18px;border-radius:8px;background:var(--ord-primary);color:#fff;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all .25s;text-decoration:none;font-family:'Poppins',sans-serif;width:fit-content;margin-top:10px}
+.ord-detail-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 18px;border-radius:8px;background:var(--ord-primary);color:#fff;font-size:13px;font-weight:600;border:none;cursor:pointer;transition:all .25s;text-decoration:none;font-family:var(--font-body);width:fit-content;margin-top:10px}
 .ord-detail-btn svg{width:16px;height:16px;transition:transform .25s}
 .ord-detail-btn:hover{background:var(--ord-primary-light);box-shadow:0 4px 18px -4px var(--ord-primary-glow)}
 .ord-detail-btn:hover svg{transform:translateX(4px)}
@@ -107,7 +104,7 @@
 .ord-help-title{font-size:.9rem;font-weight:700}
 .ord-help-desc{font-size:.78rem;color:var(--text-mute)}
 .ord-help-actions{display:flex;gap:.5rem;flex-wrap:wrap}
-.ord-help-btn-sm{display:inline-flex;align-items:center;gap:.35rem;padding:.45rem 1rem;border-radius:8px;font-size:.78rem;font-weight:700;text-decoration:none;transition:all .2s;font-family:'Poppins',sans-serif;height:36px}
+.ord-help-btn-sm{display:inline-flex;align-items:center;gap:.35rem;padding:.45rem 1rem;border-radius:8px;font-size:.78rem;font-weight:700;text-decoration:none;transition:all .2s;font-family:var(--font-body);height:36px}
 .ord-help-btn-sm.primary{background:var(--ord-primary);color:#fff;box-shadow:0 4px 14px -4px var(--ord-primary-glow)}
 .ord-help-btn-sm.primary:hover{background:var(--ord-primary-light);transform:translateY(-2px)}
 .ord-help-btn-sm.outline{border:1px solid var(--border);color:var(--text-dim);background:transparent}
@@ -159,7 +156,7 @@
 .ord-card-right{display:flex;flex-direction:column;gap:8px}
 .ord-right-order-id{font-size:11px;font-weight:700;color:var(--text);overflow-wrap:anywhere;word-break:break-word}
 .ord-right-grid{display:none}
-.ord-detail-btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;width:100%;height:28px;padding:0 10px;border-radius:6px;background:var(--ord-primary);color:#fff;font-size:10px;font-weight:600;border:none;cursor:pointer;text-decoration:none;font-family:'Poppins',sans-serif;box-sizing:border-box}
+.ord-detail-btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;width:100%;height:28px;padding:0 10px;border-radius:6px;background:var(--ord-primary);color:#fff;font-size:10px;font-weight:600;border:none;cursor:pointer;text-decoration:none;font-family:var(--font-body);box-sizing:border-box}
 .ord-detail-btn svg{width:12px;height:12px}
 .ord-tabs{gap:.35rem}
 .ord-tab{font-size:.72rem;padding:.4rem .8rem}
@@ -177,10 +174,12 @@
   $ordWaHref = $ordWaDigits ? 'https://wa.me/' . $ordWaDigits : route('kontak');
 @endphp
 <div class="ord-page">
+  @include('profile.partials.account-navigation')
+  <div class="account-hub-content">
   <div class="ord-header">
     <div class="ord-header-left">
       <h1 class="ord-title">PESANAN SAYA</h1>
-      <p class="ord-subtitle">Lihat seluruh riwayat transaksi Top Up, Joki, dan Marketplace.</p>
+      <p class="ord-subtitle">Pantau status top up dan lanjutkan pembayaran yang belum selesai.</p>
     </div>
     <a href="{{ $ordWaHref }}" class="ord-help-btn" target="_blank" rel="noopener">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg>
@@ -321,11 +320,11 @@
               @if($order->isRefunded())
                 <span class="ord-refund-note">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="12" height="12"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></svg>
-                  Saldo Rp{{ number_format((float) $order->saldo_amount, 0, ',', '.') }} sudah dikembalikan
+                  <x-johen-point-icon size="16" /> Refund {{ number_format((float) $order->price, 0, ',', '.') }} Johen Point
                 </span>
               @elseif($order->status === 'processing' && $order->saldo_status === 'held')
                 <span class="ord-refund-note" style="background:rgba(96,165,250,.15);color:#60a5fa">
-                  Saldo Rp{{ number_format((float) $order->saldo_amount, 0, ',', '.') }} sedang diproses topup
+                  Dana Rp{{ number_format((float) $order->saldo_amount, 0, ',', '.') }} sedang diproses topup
                 </span>
               @endif
               <div class="ord-meta">
@@ -506,6 +505,7 @@
       </a>
       <a href="{{ route('faq') }}" class="ord-help-btn-sm outline">FAQ</a>
     </div>
+  </div>
   </div>
 </div>
 

@@ -54,10 +54,10 @@
   <div class="stock-showcase-heading">
     <div>
       <span class="stock-showcase-eyebrow">JUAL BELI AKUN</span>
-      <h2 id="stockShowcaseTitle">STOCK AKUN TERBARU</h2>
+      <h2 id="stockShowcaseTitle"><a data-stock-heading href="{{ route('jual-beli-akun.game', $latestAccountStock->first()['slug']) }}">STOCK AKUN TERBARU</a></h2>
     </div>
-    <a class="stock-showcase-all" href="{{ route('jual-beli-akun') }}">
-      Lihat semua akun <span aria-hidden="true">&rarr;</span>
+    <a class="stock-showcase-all" data-stock-all href="{{ route('jual-beli-akun.game', $latestAccountStock->first()['slug']) }}">
+      Lihat kategori <span aria-hidden="true">&rarr;</span>
     </a>
   </div>
 
@@ -67,20 +67,21 @@
            data-stock-slide data-stock-slug="{{ $category['slug'] }}" data-stock-game="{{ $category['game'] }}"
            data-stock-href="{{ route('jual-beli-akun.game', $category['slug']) }}"
            @if($categoryIndex !== 0) aria-hidden="true" inert @endif>
-        <div class="stock-showcase-art" aria-hidden="true">
+        <a class="stock-showcase-art" href="{{ route('jual-beli-akun.game', $category['slug']) }}"
+           aria-label="Lihat semua akun {{ $category['game'] }}">
           <span class="stock-showcase-halo"></span>
           <img class="stock-showcase-art-base" src="{{ pwa_asset($category['artwork']) }}" alt="" loading="{{ $categoryIndex === 0 ? 'eager' : 'lazy' }}">
           <img class="stock-showcase-art-motion" src="{{ pwa_asset($category['artwork']) }}" alt="" aria-hidden="true" loading="{{ $categoryIndex === 0 ? 'eager' : 'lazy' }}">
-        </div>
+        </a>
 
         <div class="stock-showcase-window">
           <div class="stock-showcase-track" style="--stock-marquee-duration:{{ max(30, $category['listings']->count() * 7) }}s">
             @foreach([false, true] as $duplicate)
               <div class="stock-showcase-group" @if($duplicate) aria-hidden="true" @endif>
                 @foreach($category['listings'] as $listing)
-                  <a class="stock-showcase-card" href="{{ route('jual-beli-akun.detail', $listing) }}"
+                  <a class="stock-showcase-card" href="{{ route('jual-beli-akun.game', $category['slug']) }}"
                      @if($duplicate) tabindex="-1" @endif
-                     aria-label="{{ $listing->product_name }} - Rp {{ number_format((float) $listing->price, 0, ',', '.') }}">
+                     aria-label="Buka kategori {{ $category['game'] }} dari {{ $listing->product_name }} - Rp {{ number_format((float) $listing->price, 0, ',', '.') }}">
                     <span class="stock-showcase-card-image">
                       @if($listing->photo_url)
                         <img src="{{ $listing->photo_url }}" alt="" loading="lazy">

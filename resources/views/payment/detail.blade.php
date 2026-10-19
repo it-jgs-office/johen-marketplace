@@ -22,6 +22,8 @@
     'linkaja' => 'LinkAja',
     'bca_va' => 'BCA Virtual Account', 'bca' => 'BCA Virtual Account',
     'bni_va' => 'BNI Virtual Account', 'bni' => 'BNI Virtual Account',
+    'bsi_va' => 'BSI Virtual Account', 'bsi' => 'BSI Virtual Account',
+    'cimb_va' => 'CIMB Virtual Account', 'cimb' => 'CIMB Virtual Account',
     'bri_va' => 'BRI Virtual Account', 'bri' => 'BRI Virtual Account',
     'mandiri_va' => 'Mandiri Virtual Account', 'mandiri' => 'Mandiri Virtual Account',
     'permata_va' => 'Permata Virtual Account', 'permata' => 'Permata Virtual Account',
@@ -33,7 +35,7 @@
     $methodLabel = 'DOKU Checkout';
   }
   $codeAliases = [
-    'bca' => 'bca_va', 'bni' => 'bni_va', 'bri' => 'bri_va',
+    'bca' => 'bca_va', 'bni' => 'bni_va', 'bri' => 'bri_va', 'bsi' => 'bsi_va', 'cimb' => 'cimb_va',
     'mandiri' => 'mandiri_va', 'permata' => 'permata_va',
   ];
   $methodCode = strtolower((string) $paymentMethod);
@@ -80,6 +82,7 @@
 
   <div class="pd-grid">
     <div class="pd-left">
+      @include('partials.doku-payment-status', ['paymentOrder' => $order])
 
       {{-- STATUS PEMBAYARAN (live) --}}
       <div class="pd-card pd-status-card" id="pdStatusCard">
@@ -323,13 +326,16 @@
               <span>Subtotal</span>
               <span>Rp {{ number_format($order->price, 0, ',', '.') }}</span>
             </div>
+            @if($order->points_used > 0)
+            <div class="pd-rincian-row"><span><x-johen-point-icon size="17" /> Johen Point</span><span class="pd-green">-{{ number_format($order->points_used, 0, ',', '.') }} JP</span></div>
+            @endif
             <div class="pd-rincian-row">
               <span>Admin Fee</span>
               <span class="pd-green">Gratis</span>
             </div>
             <div class="pd-rincian-total">
               <span>Total Pembayaran</span>
-              <span class="pd-total-price">Rp {{ number_format($order->price, 0, ',', '.') }}</span>
+              <span class="pd-total-price">Rp {{ number_format($order->cash_amount, 0, ',', '.') }}</span>
             </div>
           </div>
         </div>
@@ -855,56 +861,17 @@ function setProgress(activeStep, withSn) {
     });
 }
 
+let pollingStarted = false;
 let resultNote = @json($order->note);
 
 if (payBtn) {
     payBtn.addEventListener('click', startPayment);
 }
 
-if (isSimulation) {
-    /* Menunggu klik tombol "Simulasi Bayar" */
-} else if (gatewayType === 'qris' && qrString) {
-    const qrShownKey = 'xendit_qr_shown_' + orderId;
-    if (!sessionStorage.getItem(qrShownKey)) {
-        sessionStorage.setItem(qrShownKey, '1');
-        const label = document.getElementById('pdStatusLabel');
-        if (label) label.textContent = 'Silakan scan QRIS untuk membayar.';
-        setTimeout(() => { renderQris(qrString); }, 400);
-    }
-} else if (gatewayType === 'va' && vaNumber) {
-    const vaShownKey = 'xendit_va_shown_' + orderId;
-    if (!sessionStorage.getItem(vaShownKey)) {
-        sessionStorage.setItem(vaShownKey, '1');
-        const label = document.getElementById('pdStatusLabel');
-        if (label) label.textContent = 'Lakukan transfer ke nomor Virtual Account.';
-        setTimeout(() => { renderVa(vaNumber); }, 400);
-    }
-} else if (gatewayType === 'retail' && paymentCode) {
-    const retailShownKey = 'xendit_retail_shown_' + orderId;
-    if (!sessionStorage.getItem(retailShownKey)) {
-        sessionStorage.setItem(retailShownKey, '1');
-        const label = document.getElementById('pdStatusLabel');
-        if (label) label.textContent = 'Bayar menggunakan kode pembayaran di gerai.';
-        setTimeout(() => { renderRetail(paymentCode); }, 400);
-    }
-} else if (gatewayType === 'ewallet' && checkoutUrl) {
-    const redirectKey = 'payment_ewallet_' + orderId;
-    if (!sessionStorage.getItem(redirectKey)) {
-        sessionStorage.setItem(redirectKey, '1');
-        const label = document.getElementById('pdStatusLabel');
-        if (label) label.textContent = 'Mengalihkan ke pembayaran...';
-        setTimeout(() => { window.location.href = checkoutUrl; }, 800);
-    }
-} else if (!isDemo && invoiceUrl) {
-    const redirectKey = 'payment_redirect_' + orderId;
-    if (!sessionStorage.getItem(redirectKey)) {
-        sessionStorage.setItem(redirectKey, '1');
-        const label = document.getElementById('pdStatusLabel');
-        if (label) label.textContent = 'Mengalihkan ke halaman pembayaran...';
-        setTimeout(() => { window.location.href = invoiceUrl; }, 800);
-    }
-} else if (isDemo) {
-    setTimeout(simulatePayment, 800);
+if (!isSimulation && @json($order->status) === 'pending') {
+    if (gatewayType === 'qris' && qrString) renderQris(qrString);
+    else if (gatewayType === 'va' && vaNumber) renderVa(vaNumber);
+    else if (gatewayType === 'retail' && paymentCode) renderRetail(paymentCode);
 }
 
 /* render status awal */
@@ -914,7 +881,8 @@ updateStatus(initialStatus, resultNote);
 /* ===== countdown ===== */
 (function() {
     const created = new Date(@json($order->created_at->toIso8601String()));
-    const expires = new Date(created.getTime() + 24 * 60 * 60 * 1000);
+    const gatewayExpiry = @json(data_get($order->gateway_extra, 'expired_date'));
+    const expires = gatewayExpiry ? new Date(gatewayExpiry) : new Date(created.getTime() + 24 * 60 * 60 * 1000);
 
     function tick() {
         const diff = Math.max(0, expires - new Date());
@@ -925,8 +893,8 @@ updateStatus(initialStatus, resultNote);
         document.getElementById('countMinutes').textContent = String(m).padStart(2, '0');
         document.getElementById('countSeconds').textContent = String(s).padStart(2, '0');
 
-        if (diff <= 0) {
-            updateStatus('failed');
+        if (diff <= 0 && document.getElementById('pdCountdown').style.display !== 'none') {
+            document.getElementById('pdStatusSub').textContent = 'Batas waktu tercapai. Menunggu konfirmasi status pembayaran.';
         }
     }
     tick();
@@ -934,25 +902,26 @@ updateStatus(initialStatus, resultNote);
 })();
 
 /* ===== polling status (aktif saat bukan demo murni, termasuk mode simulasi) ===== */
-let pollingStarted = false;
 function startPolling() {
     if (pollingStarted) return;
     pollingStarted = true;
-    let attempts = 0;
     (function check() {
-        fetch(statusUrl)
-            .then(r => r.json())
+        fetch(statusUrl, {cache: 'no-store', headers: {'Accept': 'application/json'}})
+            .then(r => { if (!r.ok) throw new Error('Status unavailable'); return r.json(); })
             .then(data => {
                 const s = data.status;
+                document.dispatchEvent(new CustomEvent('payment:updated', {detail: data}));
                 if (s === 'success' || s === 'processing' || s === 'failed') {
                     if (data.note && s === 'success') resultNote = data.note;
                     updateStatus(s);
-                    return;
+                    if (s !== 'processing') return;
                 }
-                attempts++;
-                if (attempts < 300) setTimeout(check, 3000);
+                setTimeout(check, document.hidden ? 15000 : 3000);
             })
-            .catch(() => { if (attempts < 300) setTimeout(check, 5000); });
+            .catch(() => {
+                document.dispatchEvent(new Event('payment:offline'));
+                setTimeout(check, 5000);
+            });
     })();
 }
 

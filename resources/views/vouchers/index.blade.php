@@ -4,15 +4,20 @@
 
 @section('content')
 <div class="vc-page">
+  @include('profile.partials.account-navigation')
+  <div class="account-hub-content">
   <div class="vc-hero">
-    <div class="vc-hero-icon">
-      <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 12a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h14a2 2 0 002-2v-6z"/>
-        <path d="M16 6a4 4 0 00-8 0"/>
-      </svg>
+    <div class="vc-hero-main">
+      <div class="vc-hero-icon">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M4 5h16v5a2 2 0 0 0 0 4v5H4v-5a2 2 0 0 0 0-4V5Z"/><path d="M12 5v14" stroke-dasharray="2 3"/>
+        </svg>
+      </div>
+      <div class="vc-hero-copy">
+        <h1>Voucher Saya</h1>
+        <p>Semua kode diskon dari Gacha Voucher, siap dipakai di halaman checkout.</p>
+      </div>
     </div>
-    <h1>Voucher Saya</h1>
-    <p>Semua kode diskon dari Gacha Voucher, siap dipakai di halaman checkout.</p>
     <div class="vc-stats">
       <div class="vc-stat">
         <strong id="vcTotalCount">{{ $vouchers->count() }}</strong>
@@ -87,17 +92,20 @@
       </div>
     @endforelse
   </div>
+  </div>
 </div>
 
 <style>
-.vc-page{width:100%;max-width:var(--layout-max);margin:0 auto;padding:3rem var(--layout-gutter) 4rem;min-height:calc(100vh - 140px);}
-.vc-hero{text-align:center;margin-bottom:2rem;}
-.vc-hero-icon{width:58px;height:58px;margin:0 auto .9rem;border-radius:18px;display:flex;align-items:center;justify-content:center;
-  background:linear-gradient(135deg,#fbbf24,#f97316);color:#431407;box-shadow:0 8px 24px -6px rgba(249,115,22,.5);}
-.vc-hero h1{font-size:1.8rem;font-weight:800;margin-bottom:.3rem;}
-.vc-hero>p{color:var(--text-dim);font-size:.95rem;max-width:520px;margin:0 auto;}
-.vc-stats{display:flex;justify-content:center;gap:1.5rem;margin-top:1.4rem;}
-.vc-stat{display:flex;flex-direction:column;align-items:center;}
+.vc-page{width:100%;max-width:var(--layout-max);margin:0 auto;padding:2rem var(--layout-gutter) 4rem;min-height:calc(100vh - 140px);}
+.vc-hero{display:flex;align-items:center;justify-content:space-between;gap:1rem 2rem;margin-bottom:1.5rem;}
+.vc-hero-main{display:flex;align-items:center;gap:1rem;min-width:0;}
+.vc-hero-icon{width:54px;height:54px;flex:0 0 54px;border-radius:15px;display:flex;align-items:center;justify-content:center;
+  background:color-mix(in srgb,var(--purple) 14%,var(--surface));border:1px solid color-mix(in srgb,var(--purple-light) 30%,var(--border));color:var(--purple-light);}
+.vc-hero-copy{min-width:0;}
+.vc-hero h1{font-size:clamp(1.4rem,2.5vw,1.8rem);font-weight:800;letter-spacing:-.03em;margin-bottom:.2rem;}
+.vc-hero-copy p{color:var(--text-dim);font-size:.85rem;}
+.vc-stats{display:flex;flex:0 0 auto;gap:1rem;}
+.vc-stat{display:flex;flex-direction:column;align-items:flex-start;min-width:100px;padding:.6rem .8rem;border:1px solid var(--border);border-radius:12px;background:var(--surface);}
 .vc-stat strong{font-family:var(--font-display);font-size:1.5rem;font-weight:800;color:var(--purple-light);}
 .vc-stat span{font-size:.75rem;color:var(--text-mute);}
 
@@ -142,9 +150,14 @@
 .vc-empty h3{font-size:1.05rem;font-weight:700;color:var(--text);margin:.8rem 0 .35rem;}
 .vc-empty p{font-size:.85rem;max-width:380px;margin:0 auto;}
 
+@media (max-width:760px){
+  .vc-hero{align-items:flex-start;flex-direction:column;}
+  .vc-stats{width:100%;}
+  .vc-stat{flex:1;min-width:0;}
+}
 @media (max-width:600px){
   .vc-card-side{align-items:flex-start;width:100%;}
-  .vc-stats{gap:1.1rem;}
+  .vc-stats{gap:.65rem;}
 }
 </style>
 

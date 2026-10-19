@@ -26,6 +26,9 @@ return [
      * yang menutup celah ini.
      */
     'reconcile' => [
+        // Error produk/provider ditahan agar admin punya kesempatan retry.
+        'provider_error_grace_minutes' => (int) env('DIGIFLAZZ_PROVIDER_ERROR_GRACE_MINUTES', 10),
+
         // Berapa menit topup dianggap masih wajar sebelum saldonya dikembalikan.
         // Topup Digiflazz yang sehat biasanya selesai di bawah 15 menit.
         'grace_minutes' => (int) env('DIGIFLAZZ_RECONCILE_GRACE_MINUTES', 30),

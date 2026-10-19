@@ -4,7 +4,7 @@
   max-width: var(--layout-max);
   margin: 0 auto;
   min-height: 70vh;
-  padding: clamp(2rem, 5vw, 4.5rem) var(--layout-gutter) 5rem;
+  padding: 2rem var(--layout-gutter) 5rem;
   overflow: hidden;
 }
 
@@ -88,12 +88,14 @@
   font-size: clamp(1.4rem, 3vw, 2rem);
   font-weight: 800;
   letter-spacing: -.03em;
+  overflow-wrap: anywhere;
 }
 
 .account-hero p {
   margin-top: .35rem;
   color: var(--text-dim);
   font-size: .86rem;
+  overflow-wrap: anywhere;
 }
 
 .account-status {
@@ -118,6 +120,66 @@
   background: #34d399;
   box-shadow: 0 0 0 4px rgba(52, 211, 153, .12);
 }
+
+.account-shortcuts { margin-bottom: 2rem; }
+.account-section-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: .75rem 1.5rem;
+  margin-bottom: 1rem;
+}
+.account-section-eyebrow {
+  display: block;
+  margin-bottom: .2rem;
+  color: var(--purple-light);
+  font-size: .66rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+}
+.account-section-heading h2 { font-size: clamp(1.05rem, 2vw, 1.3rem); font-weight: 800; }
+.account-section-heading p { color: var(--text-mute); font-size: .78rem; }
+.account-settings-heading { scroll-margin-top: 100px; }
+.account-shortcuts-grid { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .85rem; }
+.account-shortcut {
+  display: flex;
+  align-items: center;
+  gap: .9rem;
+  grid-column: span 2;
+  min-width: 0;
+  min-height: 94px;
+  padding: 1.05rem 1.1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  transition: border-color .2s ease, background .2s ease, transform .2s ease, box-shadow .2s ease;
+}
+.account-shortcut:nth-last-child(2):nth-child(4),
+.account-shortcut:last-child:nth-child(5) { grid-column: span 3; }
+.account-shortcut:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--purple-light) 60%, var(--border));
+  background: color-mix(in srgb, var(--purple) 9%, var(--surface));
+  box-shadow: 0 12px 28px -22px var(--purple-glow);
+}
+.account-shortcut:focus-visible { outline: 2px solid var(--purple-light); outline-offset: 3px; }
+.account-shortcut-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  border: 1px solid color-mix(in srgb, var(--purple-light) 25%, var(--border));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--purple) 12%, var(--surface));
+  color: var(--purple-light);
+}
+.account-shortcut-icon svg { width: 20px; height: 20px; }
+.account-shortcut-copy { display: flex; flex: 1; flex-direction: column; gap: .2rem; min-width: 0; }
+.account-shortcut-copy strong { color: var(--text); font-size: .86rem; line-height: 1.3; }
+.account-shortcut-copy small { color: var(--text-mute); font-size: .72rem; line-height: 1.4; }
+.account-shortcut-arrow { width: 17px; height: 17px; flex: 0 0 17px; color: var(--purple-light); transition: transform .2s ease; }
+.account-shortcut:hover .account-shortcut-arrow { transform: translateX(3px); }
 
 .account-layout {
   display: block;
@@ -168,11 +230,12 @@
 .account-sidebar svg { width: 17px; height: 17px; flex: 0 0 17px; }
 .account-content {
   display: grid;
-  grid-template-columns: minmax(0, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
   width: 100%;
   min-width: 0;
 }
+.account-content .account-panel--danger { grid-column: 1 / -1; }
 
 .account-panel {
   scroll-margin-top: 100px;
@@ -290,9 +353,19 @@
 .account-cancel-btn { padding: .65rem .9rem; border: 1px solid var(--border); border-radius: 9px; color: var(--text-dim); font-size: .76rem; font-weight: 700; }
 .account-confirm-btn { padding: .65rem .9rem; border-radius: 9px; background: #dc2626; color: #fff; font-size: .76rem; font-weight: 750; }
 
+@media (max-width: 1100px) {
+  .account-content { grid-template-columns: minmax(0, 1fr); }
+  .account-shortcuts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .account-shortcut,
+  .account-shortcut:nth-last-child(2):nth-child(4),
+  .account-shortcut:last-child:nth-child(5) { grid-column: auto; }
+  .account-shortcut:last-child:nth-child(odd) { grid-column: 1 / -1; }
+}
+
 @media (max-width: 760px) {
   .account-page { padding-top: 1.35rem; padding-bottom: 6rem; }
   .account-hero { align-items: flex-start; }
+  .account-section-heading { align-items: flex-start; flex-direction: column; gap: .2rem; }
   .account-status { display: none; }
   .account-avatar { width: 52px; height: 52px; flex-basis: 52px; border-radius: 15px; font-size: 1.25rem; }
   .account-layout { grid-template-columns: 1fr; }
@@ -304,4 +377,289 @@
   .account-panel-head, .account-panel-body { padding: 1rem; }
   .account-dialog-actions { flex-direction: column-reverse; }
   .account-dialog-actions button { width: 100%; }
+}
+
+@media (max-width: 560px) {
+  .account-shortcuts-grid { grid-template-columns: 1fr; gap: .65rem; }
+  .account-shortcut,
+  .account-shortcut:last-child:nth-child(odd) { grid-column: auto; }
+  .account-shortcut { min-height: 78px; padding: .85rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-shortcut, .account-shortcut-arrow { transition: none; }
+  .account-shortcut:hover, .account-shortcut:hover .account-shortcut-arrow { transform: none; }
+}
+
+/* Account dashboard: visual direction adapted from the supplied dashboard reference. */
+.account-page {
+  padding-top: 1.5rem;
+}
+
+.account-dashboard {
+  display: grid;
+  grid-template-columns: 238px minmax(0, 1fr);
+  align-items: start;
+  gap: 1.5rem;
+}
+
+.account-main { min-width: 0; }
+
+.account-sidebar {
+  position: sticky;
+  top: 84px;
+  display: block;
+  padding: .75rem;
+  border: 1px solid color-mix(in srgb, var(--border) 86%, transparent);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface) 92%, var(--bg));
+  box-shadow: 0 20px 42px -36px rgba(0, 0, 0, .9);
+}
+
+.account-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .45rem .5rem 1.1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.account-sidebar-brand-icon {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--purple-light) 34%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--purple) 16%, transparent);
+  color: var(--purple-light);
+}
+
+.account-sidebar-brand-icon svg { width: 18px; height: 18px; }
+.account-sidebar-brand small,
+.account-sidebar-brand strong { display: block; }
+.account-sidebar-brand small { color: var(--text-mute); font-size: .62rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+.account-sidebar-brand strong { margin-top: .08rem; color: var(--text); font-size: .83rem; font-weight: 800; }
+
+.account-page .account-hub-nav {
+  display: grid;
+  gap: .22rem;
+  margin: .85rem 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+}
+
+.account-page .account-hub-nav a {
+  justify-content: flex-start;
+  min-height: 42px;
+  padding: .66rem .72rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--text-dim);
+  font-size: .78rem;
+}
+
+.account-page .account-hub-nav a:hover,
+.account-page .account-hub-nav a.is-active {
+  border-color: color-mix(in srgb, var(--purple-light) 28%, transparent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--purple) 22%, transparent), color-mix(in srgb, var(--purple) 5%, transparent));
+  color: #fff;
+}
+
+.account-sidebar-logout {
+  margin-top: .75rem;
+  padding: .85rem .05rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.account-sidebar-logout button {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: .62rem;
+  padding: .65rem .72rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #f87171;
+  font: inherit;
+  font-size: .78rem;
+  font-weight: 700;
+  text-align: left;
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease;
+}
+
+.account-sidebar-logout button:hover { background: rgba(248, 113, 113, .1); color: #fca5a5; }
+.account-sidebar-logout svg { width: 17px; height: 17px; flex: 0 0 17px; }
+
+.account-security-banner {
+  position: relative;
+  display: flex;
+  min-height: 130px;
+  align-items: center;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  padding: 1.35rem 7.5rem 1.35rem 1.5rem;
+  border: 1px solid color-mix(in srgb, #38bdf8 48%, transparent);
+  border-radius: 18px;
+  background: linear-gradient(110deg, #1d5f8d 0%, #2563eb 54%, #0ea5e9 100%);
+  box-shadow: 0 18px 38px -26px color-mix(in srgb, #0ea5e9 68%, transparent);
+  color: #fff;
+}
+
+.account-security-banner::after {
+  position: absolute;
+  top: -94px;
+  right: -70px;
+  width: 260px;
+  height: 260px;
+  border: 1px solid rgba(255, 255, 255, .17);
+  border-radius: 50%;
+  content: "";
+}
+
+.account-security-banner > div { position: relative; z-index: 1; }
+.account-security-kicker { display: block; margin-bottom: .22rem; color: rgba(255,255,255,.72); font-size: .64rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.account-security-banner h1 { font-size: clamp(1.12rem, 2vw, 1.45rem); font-weight: 850; letter-spacing: -.025em; }
+.account-security-banner p { margin-top: .22rem; color: rgba(255,255,255,.86); font-size: .76rem; }
+.account-security-banner a { display: inline-flex; margin-top: .78rem; color: #fff; font-size: .74rem; font-weight: 800; text-decoration: underline; text-decoration-color: rgba(255,255,255,.5); text-underline-offset: 3px; }
+.account-security-banner a:hover { text-decoration-color: #fff; }
+
+.account-security-shield {
+  position: absolute;
+  z-index: 1;
+  top: 50%;
+  right: 1.9rem;
+  width: 61px;
+  height: 61px;
+  transform: translateY(-50%);
+  color: rgba(255, 255, 255, .57);
+}
+
+.account-summary-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.16fr) minmax(270px, .84fr);
+  gap: 1rem;
+  margin-bottom: 2.2rem;
+}
+
+.account-hero,
+.account-overview {
+  min-height: 180px;
+  margin: 0;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  box-shadow: 0 18px 42px -34px rgba(0, 0, 0, .85);
+}
+
+.account-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: space-between;
+  gap: 1.1rem;
+  padding: 1.35rem;
+}
+
+.account-hero-main { gap: .9rem; }
+.account-avatar { width: 56px; height: 56px; flex-basis: 56px; border-radius: 50%; font-size: 1.4rem; }
+.account-eyebrow { margin-bottom: .18rem; font-size: .63rem; }
+.account-identity h2 { color: var(--text); font-size: 1.05rem; font-weight: 800; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.account-role { display: inline-flex; margin-top: .42rem; padding: .24rem .48rem; border: 1px solid color-mix(in srgb, var(--purple-light) 35%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--purple) 12%, transparent); color: var(--purple-light); font-size: .62rem; font-weight: 800; }
+
+.account-contact-row {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  gap: .52rem;
+  padding-top: .95rem;
+  border-top: 1px solid var(--border);
+  color: var(--text-dim);
+  font-size: .76rem;
+}
+
+.account-contact-row svg { width: 16px; height: 16px; flex: 0 0 16px; color: var(--purple-light); }
+.account-contact-row span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+.account-overview { display: flex; flex-direction: column; justify-content: space-between; padding: 1.35rem; }
+.account-overview-head { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: .7rem; }
+.account-overview-icon { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 11px; background: color-mix(in srgb, #38bdf8 16%, transparent); color: #38bdf8; }
+.account-overview-icon svg { width: 20px; height: 20px; }
+.account-overview small,
+.account-overview strong { display: block; }
+.account-overview small { color: var(--text-mute); font-size: .64rem; font-weight: 700; }
+.account-overview strong { margin-top: .18rem; color: var(--text); font-size: .8rem; font-weight: 800; }
+.account-status { padding: .38rem .55rem; font-size: .65rem; }
+.account-overview-actions { display: flex; gap: .55rem; padding-top: 1rem; }
+.account-overview-actions a { display: inline-flex; flex: 1; justify-content: center; padding: .6rem .45rem; border: 1px solid color-mix(in srgb, var(--purple-light) 28%, var(--border)); border-radius: 9px; background: color-mix(in srgb, var(--purple) 9%, transparent); color: var(--purple-light); font-size: .68rem; font-weight: 800; text-align: center; transition: background .18s ease, color .18s ease, transform .18s ease; }
+.account-overview-actions a:hover { background: var(--purple); color: #fff; transform: translateY(-1px); }
+
+.account-shortcuts { margin-bottom: 2.2rem; }
+.account-section-heading { margin-bottom: .9rem; }
+.account-section-heading h2 { font-size: 1.12rem; }
+.account-shortcuts-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .8rem; }
+.account-shortcut,
+.account-shortcut:nth-last-child(2):nth-child(4),
+.account-shortcut:last-child:nth-child(5) { grid-column: auto; min-height: 112px; align-items: flex-start; flex-direction: column; gap: .75rem; padding: 1rem; border-radius: 15px; }
+.account-shortcut-copy { gap: .18rem; }
+.account-shortcut-copy strong { font-size: .8rem; }
+.account-shortcut-copy small { font-size: .68rem; }
+.account-shortcut-arrow { position: absolute; right: 1rem; bottom: 1rem; width: 15px; height: 15px; }
+.account-shortcut { position: relative; }
+.account-shortcut-icon { width: 36px; height: 36px; flex-basis: 36px; border-radius: 10px; }
+.account-shortcut-icon svg { width: 18px; height: 18px; }
+
+.account-settings-heading { margin-bottom: .9rem; }
+.account-content { gap: .9rem; }
+.account-panel { border-radius: 16px; }
+.account-panel-head { padding: 1.05rem 1.15rem; }
+.account-panel-body { padding: 1.15rem; }
+
+@media (max-width: 1080px) {
+  .account-dashboard { grid-template-columns: 210px minmax(0, 1fr); gap: 1rem; }
+  .account-shortcuts-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 860px) {
+  .account-dashboard { grid-template-columns: 1fr; }
+  .account-sidebar { position: static; display: block; }
+  .account-page .account-hub-nav { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .account-page .account-hub-nav a { justify-content: center; }
+  .account-sidebar-logout { margin-top: .4rem; }
+  .account-summary-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 620px) {
+  .account-page { padding-top: 1rem; }
+  .account-sidebar { padding: .65rem; border-radius: 14px; }
+  .account-sidebar-brand { padding-bottom: .75rem; }
+  .account-page .account-hub-nav { display: flex; grid-template-columns: none; margin: .7rem 0; overflow-x: auto; scrollbar-width: none; }
+  .account-page .account-hub-nav::-webkit-scrollbar { display: none; }
+  .account-page .account-hub-nav a { flex: 0 0 auto; justify-content: flex-start; min-height: 38px; padding: .52rem .62rem; font-size: .71rem; }
+  .account-sidebar-logout { padding-top: .65rem; }
+  .account-security-banner { min-height: 144px; padding: 1.15rem 4.7rem 1.15rem 1rem; border-radius: 14px; }
+  .account-security-banner h1 { font-size: 1.05rem; }
+  .account-security-banner p { font-size: .7rem; line-height: 1.45; }
+  .account-security-shield { right: .85rem; width: 46px; height: 46px; }
+  .account-hero, .account-overview { min-height: 0; border-radius: 14px; }
+  .account-hero, .account-overview { padding: 1rem; }
+  .account-shortcuts-grid { grid-template-columns: 1fr 1fr; gap: .65rem; }
+  .account-shortcut { min-height: 116px; padding: .85rem; }
+  .account-shortcut-copy small { display: none; }
+  .account-section-heading { margin-bottom: .75rem; }
+}
+
+@media (max-width: 390px) {
+  .account-shortcuts-grid { grid-template-columns: 1fr; }
+  .account-overview-head { grid-template-columns: 36px minmax(0, 1fr); }
+  .account-status { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-sidebar-logout button,
+  .account-overview-actions a { transition: none; }
+  .account-overview-actions a:hover { transform: none; }
 }

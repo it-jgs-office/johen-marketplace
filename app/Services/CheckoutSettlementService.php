@@ -45,6 +45,7 @@ class CheckoutSettlementService
         }
 
         $checkout->update(['status' => 'processing']);
+        app(BalanceService::class)->consumePoints($checkout);
 
         $this->dispatch($checkout);
     }
@@ -66,6 +67,9 @@ class CheckoutSettlementService
             $order->releaseDiscounts();
             $order->transaction?->update(['status' => 'failed']);
         }
+
+        app(BalanceService::class)->restorePoints($checkout, $reason ?: 'Pembayaran checkout gagal; Johen Point dikembalikan');
+        $checkout->orders()->where('points_status', 'reserved')->update(['points_status' => 'restored']);
 
         if ($checkout->status !== 'success') {
             $checkout->update(['status' => 'failed']);

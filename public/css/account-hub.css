@@ -1,0 +1,340 @@
+:root {
+  --account-sidebar-width: 228px;
+  --account-sidebar-gap: 1.5rem;
+}
+
+.account-hub-layout :is(.account-page, .ord-page, .aco-page, .vc-page, .my-review-page, .inq-page) {
+  width: 100%;
+  max-width: var(--layout-max);
+  min-height: 70vh;
+  margin-right: auto;
+  margin-left: auto;
+  padding-top: 2rem;
+  padding-right: var(--layout-gutter);
+  padding-bottom: 5rem;
+  padding-left: var(--layout-gutter);
+  box-sizing: border-box;
+}
+
+.account-hub-layout :is(.ord-page, .aco-page, .vc-page, .my-review-page, .inq-page),
+.account-hub-layout .account-dashboard {
+  display: grid;
+  grid-template-columns: var(--account-sidebar-width) minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--account-sidebar-gap);
+}
+
+.account-hub-layout :is(.ord-page, .aco-page, .vc-page, .my-review-page, .inq-page) > .account-hub-sidebar,
+.account-hub-layout .account-dashboard > .account-hub-sidebar {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.account-hub-layout :is(.ord-page, .aco-page, .vc-page, .my-review-page, .inq-page) > :not(.account-hub-sidebar) {
+  grid-column: 2;
+}
+
+.account-hub-layout .account-dashboard > .account-main {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.account-hub-layout .account-main {
+  width: 100%;
+  min-width: 0;
+}
+
+.account-hub-layout .account-hub-content {
+  width: 100%;
+  min-width: 0;
+}
+
+.account-hub-sidebar {
+  position: sticky;
+  z-index: 100;
+  top: 88px;
+  display: flex;
+  width: 100%;
+  max-height: calc(100dvh - 108px);
+  flex-direction: column;
+  padding: .75rem;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface) 94%, var(--bg));
+  box-shadow: 0 22px 50px -38px rgba(0, 0, 0, .92);
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
+.account-hub-brand {
+  display: flex;
+  align-items: center;
+  gap: .7rem;
+  padding: .4rem .45rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.account-hub-brand-icon {
+  display: grid;
+  width: 36px;
+  height: 36px;
+  flex: 0 0 36px;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, var(--purple-light) 36%, transparent);
+  border-radius: 11px;
+  background: color-mix(in srgb, var(--purple) 15%, transparent);
+  color: var(--purple-light);
+}
+
+.account-hub-brand-icon svg {
+  width: 18px;
+  height: 18px;
+}
+
+.account-hub-brand-copy {
+  min-width: 0;
+}
+
+.account-hub-brand-copy small,
+.account-hub-brand-copy strong {
+  display: block;
+}
+
+.account-hub-brand-copy small {
+  color: var(--text-mute);
+  font-size: .61rem;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.account-hub-brand-copy strong {
+  margin-top: .1rem;
+  overflow: hidden;
+  color: var(--text);
+  font-size: .82rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.account-hub-layout .account-hub-nav {
+  display: grid;
+  flex: 1 1 auto;
+  gap: .22rem;
+  margin: .8rem 0;
+  padding: 0;
+  overflow: visible;
+  border: 0;
+}
+
+.account-hub-layout .account-hub-nav a {
+  display: flex;
+  min-height: 41px;
+  align-items: center;
+  justify-content: flex-start;
+  gap: .62rem;
+  padding: .62rem .7rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--text-dim);
+  font-family: var(--font-body);
+  font-size: .75rem;
+  font-weight: 700;
+  line-height: 1.2;
+  white-space: nowrap;
+  transition: border-color .18s ease, background .18s ease, color .18s ease, transform .18s ease;
+}
+
+.account-hub-layout .account-hub-nav a svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+}
+
+.account-hub-layout .account-hub-nav a:hover {
+  border-color: color-mix(in srgb, var(--purple-light) 20%, transparent);
+  background: color-mix(in srgb, var(--purple) 8%, transparent);
+  color: var(--text);
+  transform: translateX(2px);
+}
+
+.account-hub-layout .account-hub-nav a.is-active {
+  border-color: color-mix(in srgb, var(--purple-light) 30%, transparent);
+  background: linear-gradient(90deg, color-mix(in srgb, var(--purple) 26%, transparent), color-mix(in srgb, var(--purple) 6%, transparent));
+  color: #fff;
+  box-shadow: inset 3px 0 0 var(--purple-light);
+}
+
+.account-hub-layout .account-hub-nav a:focus-visible,
+.account-hub-logout button:focus-visible {
+  outline: 2px solid var(--purple-light);
+  outline-offset: 2px;
+}
+
+.account-hub-logout {
+  flex: 0 0 auto;
+  padding-top: .75rem;
+  border-top: 1px solid var(--border);
+}
+
+.account-hub-logout button {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: .62rem;
+  padding: .64rem .7rem;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: #f87171;
+  font: inherit;
+  font-size: .75rem;
+  font-weight: 750;
+  text-align: left;
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease;
+}
+
+.account-hub-logout button:hover {
+  background: rgba(248, 113, 113, .1);
+  color: #fca5a5;
+}
+
+.account-hub-logout svg {
+  width: 17px;
+  height: 17px;
+  flex: 0 0 17px;
+}
+
+.account-hub-layout :is(.ord-header, .aco-header, .inq-header, .my-review-header) {
+  margin-bottom: 1.5rem;
+}
+
+.account-hub-layout :is(.ord-title, .aco-title, .inq-title, .my-review-header h1, .vc-hero-copy h1) {
+  color: var(--text);
+  font-family: var(--font-display);
+  font-size: clamp(1.35rem, 2.5vw, 1.75rem);
+  font-weight: 800;
+  letter-spacing: -.035em;
+  text-transform: none;
+}
+
+.account-hub-layout :is(.ord-subtitle, .aco-subtitle, .inq-subtitle, .my-review-header p, .vc-hero-copy p) {
+  margin-top: .22rem;
+  color: var(--text-mute);
+  font-size: .8rem;
+  line-height: 1.55;
+}
+
+.account-hub-layout :is(.ord-card, .aco-card, .vc-card, .my-review-card, .inq-card, .ord-filter-card, .ord-help-footer, .inq-help-footer) {
+  border-color: var(--border);
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  box-shadow: 0 18px 44px -38px rgba(0, 0, 0, .9);
+}
+
+.account-hub-layout :is(.ord-card, .aco-card, .vc-card, .my-review-card, .inq-card):hover {
+  border-color: color-mix(in srgb, var(--purple-light) 42%, var(--border));
+}
+
+.account-hub-layout .vc-hero {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--surface) 96%, transparent), color-mix(in srgb, var(--purple) 12%, var(--surface)));
+  box-shadow: 0 18px 44px -38px rgba(0, 0, 0, .9);
+}
+
+.profile-page-layout .dark-meteor-field {
+  display: none !important;
+}
+
+@media (max-width: 980px) {
+  .account-hub-layout :is(.account-page, .ord-page, .aco-page, .vc-page, .my-review-page, .inq-page) {
+    display: block;
+    padding-top: 1.25rem;
+    padding-right: var(--layout-gutter);
+    padding-left: var(--layout-gutter);
+  }
+
+  .account-hub-layout .account-dashboard {
+    display: block;
+  }
+
+  .account-hub-sidebar {
+    position: static;
+    display: block;
+    width: 100%;
+    max-height: none;
+    margin-bottom: 1.35rem;
+    padding: .65rem;
+    overflow: hidden;
+    border-radius: 14px;
+  }
+
+  .account-hub-brand {
+    padding: .35rem .35rem .7rem;
+  }
+
+  .account-hub-layout .account-hub-nav {
+    display: flex;
+    gap: .25rem;
+    margin: .65rem 0;
+    padding-bottom: .1rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .account-hub-layout .account-hub-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .account-hub-layout .account-hub-nav a {
+    min-height: 38px;
+    flex: 0 0 auto;
+    padding: .52rem .65rem;
+    font-size: .7rem;
+  }
+
+  .account-hub-layout .account-hub-nav a:hover {
+    transform: none;
+  }
+
+  .account-hub-layout .account-hub-nav a.is-active {
+    box-shadow: inset 0 -2px 0 var(--purple-light);
+  }
+
+  .account-hub-logout {
+    padding-top: .6rem;
+  }
+
+  .account-hub-logout button {
+    width: auto;
+  }
+}
+
+@media (max-width: 600px) {
+  .account-hub-layout :is(.account-page, .ord-page, .aco-page, .vc-page, .my-review-page, .inq-page) {
+    padding-bottom: 6rem;
+  }
+
+  .account-hub-brand-icon {
+    width: 32px;
+    height: 32px;
+    flex-basis: 32px;
+  }
+
+  .account-hub-layout :is(.ord-card, .aco-card, .vc-card, .my-review-card, .inq-card, .ord-filter-card, .ord-help-footer, .inq-help-footer) {
+    border-radius: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .account-hub-layout .account-hub-nav a,
+  .account-hub-logout button {
+    transition: none;
+  }
+}
+/* Johen Point */
+.point-page{min-width:0}.account-hub-heading{margin-bottom:20px}.account-hub-eyebrow{color:#60a5fa;font-size:.7rem;font-weight:800;letter-spacing:.12em}.account-hub-heading h1{margin:.3rem 0;color:#fff;font-size:clamp(1.6rem,3vw,2.2rem)}.account-hub-heading p{color:#91a5ca}.point-hero{display:flex;align-items:end;justify-content:space-between;gap:24px;padding:28px;border:1px solid rgba(250,204,21,.3);border-radius:20px;background:radial-gradient(circle at 90% 10%,rgba(250,204,21,.18),transparent 36%),linear-gradient(135deg,#10255a,#0b1b43);box-shadow:0 18px 45px rgba(2,8,23,.2)}.point-hero span,.point-hero p{color:#9fb1d5}.point-hero strong{display:block;margin:8px 0;font-size:clamp(2rem,5vw,3.4rem);color:#fff}.point-hero strong small{font-size:.35em;color:#facc15}.point-cta{padding:12px 18px;border-radius:12px;background:#facc15;color:#172554;font-weight:800;white-space:nowrap}.point-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:18px 0}.point-stats article,.point-history{padding:20px;border:1px solid rgba(96,165,250,.22);border-radius:16px;background:#0d2253}.point-stats span{display:block;color:#93a9d2;font-size:.8rem}.point-stats strong{display:block;margin-top:8px;color:#fff;font-size:1.35rem}.point-history-head{margin-bottom:10px}.point-history h2{margin:0;color:#fff}.point-history p{margin:4px 0;color:#91a5ca}.point-row{display:grid;grid-template-columns:42px minmax(0,1fr) auto;gap:14px;align-items:center;padding:16px 0;border-top:1px solid rgba(148,163,184,.14)}.point-row-icon{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;font-weight:900}.point-row-icon.in{background:rgba(34,197,94,.14);color:#4ade80}.point-row-icon.out{background:rgba(248,113,113,.14);color:#fb7185}.point-row strong{color:#fff}.point-row small{color:#7f94ba}.point-row-value{text-align:right;font-weight:800}.point-row-value small{display:block;margin-top:4px;font-weight:500}.point-row-value.in{color:#4ade80}.point-row-value.out{color:#fb7185}.point-empty{padding:36px;text-align:center;color:#93a9d2}@media(max-width:760px){.point-hero{align-items:stretch;flex-direction:column}.point-stats{grid-template-columns:1fr}.point-row{grid-template-columns:36px minmax(0,1fr)}.point-row-value{grid-column:2;text-align:left}}

@@ -6,6 +6,7 @@
 $paymentLabels = [
     'qris' => 'QRIS', 'gopay' => 'GoPay', 'dana' => 'DANA', 'ovo' => 'OVO', 'shopeepay' => 'ShopeePay', 'linkaja' => 'LinkAja',
     'bca_va' => 'BCA Virtual Account', 'bni_va' => 'BNI Virtual Account', 'bri_va' => 'BRI Virtual Account',
+    'bsi_va' => 'BSI Virtual Account', 'cimb_va' => 'CIMB Virtual Account',
     'mandiri_va' => 'Mandiri Virtual Account', 'permata_va' => 'Permata Virtual Account',
     'alfamart' => 'Alfamart', 'indomaret' => 'Indomaret',
 ];
@@ -13,10 +14,7 @@ $paymentLabels = [
 
 @push('styles')
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap');
-
-:root{--aco-primary:#854DEA;--aco-primary-light:#a575ff;--aco-primary-glow:rgba(133,77,234,.35);--aco-primary-subtle:rgba(133,77,234,.12)}
-.aco-page{width:100%;max-width:var(--layout-max);margin:0 auto;padding:2rem var(--layout-gutter) 4rem;font-family:'Poppins',sans-serif;animation:acoFadeIn .4s ease}
+.aco-page{--aco-primary:var(--purple);--aco-primary-light:var(--purple-light);--aco-primary-glow:var(--purple-glow);--aco-primary-subtle:color-mix(in srgb,var(--purple) 12%,transparent);width:100%;max-width:var(--layout-max);margin:0 auto;padding:2rem var(--layout-gutter) 4rem;font-family:var(--font-body);animation:acoFadeIn .4s ease}
 @keyframes acoFadeIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
 .aco-breadcrumb{font-size:.78rem;color:var(--text-mute);margin-bottom:.75rem;display:flex;align-items:center;gap:.35rem}
 .aco-breadcrumb a{color:var(--text-mute);text-decoration:none}
@@ -24,16 +22,16 @@ $paymentLabels = [
 .aco-breadcrumb .sep{opacity:.4}
 .aco-header{display:flex;align-items:flex-start;justify-content:space-between;gap:1rem;margin-bottom:1.75rem;flex-wrap:wrap}
 .aco-header-left{min-width:0}
-.aco-title{font-family:'Poppins',sans-serif;font-size:1.75rem;font-weight:800;letter-spacing:-.02em}
+.aco-title{font-family:var(--font-display);font-size:clamp(1.4rem,2.5vw,1.8rem);font-weight:800;letter-spacing:-.03em}
 .aco-subtitle{font-size:.85rem;color:var(--text-mute);margin-top:.15rem}
-.aco-shop-btn{display:inline-flex;align-items:center;gap:.45rem;padding:.55rem 1.1rem;border-radius:10px;background:var(--aco-primary-subtle);color:var(--text);font-size:.8rem;font-weight:700;border:1px solid transparent;transition:all .2s;text-decoration:none;white-space:nowrap;font-family:'Poppins',sans-serif}
-.aco-shop-btn:hover{background:rgba(133,77,234,.18);border-color:var(--border-strong);transform:translateY(-2px);box-shadow:0 4px 14px -4px var(--aco-primary-glow)}
+.aco-shop-btn{display:inline-flex;align-items:center;gap:.45rem;padding:.55rem 1.1rem;border-radius:10px;background:var(--aco-primary-subtle);color:var(--text);font-size:.8rem;font-weight:700;border:1px solid transparent;transition:all .2s;text-decoration:none;white-space:nowrap;font-family:var(--font-body)}
+.aco-shop-btn:hover{background:color-mix(in srgb,var(--aco-primary) 18%,var(--surface));border-color:var(--border-strong);transform:translateY(-2px);box-shadow:0 4px 14px -4px var(--aco-primary-glow)}
 
-.aco-list{display:flex;flex-direction:column;gap:24px}
-.aco-card{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:28px 32px;transition:all .25s ease;animation:acoFadeIn .35s ease both}
-.aco-card:hover{border-color:var(--aco-primary);transform:translateY(-4px);box-shadow:0 10px 35px rgba(133,77,234,.18)}
-.aco-card-left{display:flex;gap:28px;flex:0 0 52%;max-width:52%;align-items:flex-start}
-.aco-thumb{width:145px;min-width:145px;height:145px;border-radius:12px;background:var(--surface-2);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--text-mute);overflow:hidden}
+.aco-list{display:flex;flex-direction:column;gap:1rem}
+.aco-card{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:1.25rem 1.4rem;transition:all .25s ease;animation:acoFadeIn .35s ease both}
+.aco-card:hover{border-color:var(--aco-primary);transform:translateY(-4px);box-shadow:0 10px 35px color-mix(in srgb,var(--aco-primary) 18%,transparent)}
+.aco-card-left{display:flex;gap:1.1rem;flex:0 0 52%;max-width:52%;align-items:flex-start}
+.aco-thumb{width:108px;min-width:108px;height:108px;border-radius:12px;background:var(--surface-2);background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:var(--text-mute);overflow:hidden}
 .aco-thumb img{width:100%;height:100%;object-fit:cover}
 .aco-info{display:flex;flex-direction:column;min-width:0;flex:1}
 .aco-info-top{display:flex;align-items:center;gap:0}
@@ -47,7 +45,7 @@ $paymentLabels = [
 .aco-meta-item{font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:10px}
 .aco-meta-item svg{width:20px;height:20px;color:var(--text-dim);flex-shrink:0}
 .aco-meta-item strong{color:var(--text);font-weight:600;font-size:14px}
-.aco-separator{width:1px;background:var(--border);flex-shrink:0;margin:0 28px;height:80%;align-self:center}
+.aco-separator{width:1px;background:var(--border);flex-shrink:0;margin:0 1.25rem;height:80%;align-self:center}
 .aco-card-right{flex:1;min-width:0;display:flex;flex-direction:column;padding:2px 0}
 .aco-right-order-id{font-size:18px;font-weight:700;color:var(--text);line-height:1.1;margin-bottom:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .aco-right-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;margin-bottom:16px}
@@ -56,7 +54,7 @@ $paymentLabels = [
 .aco-right-total{font-size:20px;font-weight:800;color:var(--aco-primary);line-height:1;margin-bottom:12px}
 .aco-left-total{margin-bottom:0;margin-top:20px;color:var(--text)}
 .aco-actions{display:flex;gap:10px;margin-top:auto;flex-wrap:wrap}
-.aco-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;transition:all .25s;font-family:'Poppins',sans-serif}
+.aco-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:36px;padding:0 18px;border-radius:8px;font-size:13px;font-weight:600;text-decoration:none;transition:all .25s;font-family:var(--font-body)}
 .aco-btn svg{width:16px;height:16px}
 .aco-btn.primary{background:var(--aco-primary);color:#fff;box-shadow:0 4px 14px -4px var(--aco-primary-glow)}
 .aco-btn.primary:hover{background:var(--aco-primary-light);transform:translateY(-2px)}
@@ -102,14 +100,11 @@ $paymentLabels = [
   }
 @endphp
 <div class="aco-page">
-  <div class="aco-breadcrumb">
-    <a href="{{ route('jual-beli-akun') }}">Jual Beli Akun</a>
-    <span class="sep">›</span>
-    <span>Pesanan Saya</span>
-  </div>
+  @include('profile.partials.account-navigation')
+  <div class="account-hub-content">
   <div class="aco-header">
     <div class="aco-header-left">
-      <h1 class="aco-title">PESANAN SAYA AKUN</h1>
+      <h1 class="aco-title">PESANAN AKUN</h1>
       <p class="aco-subtitle">Pantau status pembelian akun & lanjutkan pembayaran yang belum selesai.</p>
     </div>
     <a href="{{ route('jual-beli-akun') }}" class="aco-shop-btn">
@@ -232,5 +227,6 @@ $paymentLabels = [
     </div>
     @endif
   @endif
+  </div>
 </div>
 @endsection

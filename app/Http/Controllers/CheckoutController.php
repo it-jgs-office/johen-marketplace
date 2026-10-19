@@ -6,6 +6,7 @@ use App\Models\Checkout;
 use App\Models\Order;
 use App\Models\PaymentMethod;
 use App\Services\CartService;
+use App\Services\BalanceService;
 use App\Services\CheckoutSettlementService;
 use App\Services\DokuService;
 use App\Services\PaymentGatewayService;
@@ -74,6 +75,7 @@ class CheckoutController extends Controller
             'paymentMethods' => $paymentMethods,
             'minAmounts' => self::MIN_AMOUNT,
             'accounts' => (array) old('accounts', []),
+            'pointBalance' => app(BalanceService::class)->balanceFor(Auth::id()),
         ]);
     }
 
@@ -91,10 +93,12 @@ class CheckoutController extends Controller
             'accounts' => ['required', 'array'],
             'accounts.*.customer_number' => ['required', 'string', 'max:100'],
             'accounts.*.zone_id' => ['nullable', 'string', 'max:20', 'regex:/^[A-Za-z0-9]+$/'],
-            'email' => ['nullable', 'email', 'max:100'],
+            'email' => ['required', 'email', 'max:100'],
             'phone' => ['nullable', 'string', 'max:30'],
             'payment_method' => ['nullable', 'string', 'max:50'],
             'promo_code' => ['nullable', 'string', 'max:32'],
+            'use_points' => ['nullable', 'boolean'],
+            'points_amount' => ['exclude_unless:use_points,1', 'required', 'integer', 'min:1'],
         ], [
             'accounts.*.customer_number.required' => 'User ID wajib diisi untuk semua game di keranjang.',
             'accounts.*.zone_id.regex' => 'Zone ID hanya boleh berisi huruf dan angka.',
@@ -183,11 +187,15 @@ class CheckoutController extends Controller
                 }
 
                 $total = max(0, $subtotal - $discount);
+                $pointsRequested = $request->boolean('use_points')
+                    ? min($total, app(BalanceService::class)->balanceFor($user->id), (float) ($request->points_amount ?: PHP_INT_MAX))
+                    : 0;
+                $cashAmount = max(0, $total - $pointsRequested);
 
                 // Peringatan dini untuk nominal yang di bawah minimum channel.
                 $min = $this->minAmountFor($method);
 
-                if ($total < $min) {
+                if ($cashAmount > 0 && $cashAmount < $min) {
                     throw new \RuntimeException(
                         'Total Rp'.number_format($total, 0, ',', '.').' di bawah minimal '
                         .'Rp'.number_format($min, 0, ',', '.').' untuk metode ini. Pilih QRIS atau e-wallet.'
@@ -202,10 +210,24 @@ class CheckoutController extends Controller
                     'subtotal' => $subtotal,
                     'discount' => $discount,
                     'total' => $total,
+                    'points_used' => 0,
+                    'cash_amount' => $cashAmount,
                     'voucher_id' => $voucher?->id,
                     'item_count' => (int) $summary['total_qty'],
                     'status' => 'pending',
                 ]);
+
+                if ($pointsRequested > 0) {
+                    $pointsRequested = app(BalanceService::class)->reservePoints($checkout, $pointsRequested);
+                    $cashAmount = max(0, $total - $pointsRequested);
+                    $checkout->update(['cash_amount' => $cashAmount]);
+                }
+
+                if ($cashAmount > 0 && $cashAmount < $min) {
+                    throw new \RuntimeException(
+                        'Sisa pembayaran Rp'.number_format($cashAmount, 0, ',', '.').' di bawah minimal channel. Kurangi penggunaan point atau pilih metode lain.'
+                    );
+                }
 
                 // Tahap 2: satu order anak per item.
                 $orders = [];
@@ -235,10 +257,25 @@ class CheckoutController extends Controller
                     $this->builder->allocateDiscount($orders, $lineTotals, $discount);
                 }
 
+                $remainingPoints = $pointsRequested;
+                foreach ($orders as $index => $child) {
+                    $childPoints = $index === array_key_last($orders)
+                        ? $remainingPoints
+                        : min($remainingPoints, (int) floor($pointsRequested * ((float) $child->price / max(1, $total))));
+                    $child->update([
+                        'points_used' => $childPoints,
+                        'points_status' => $childPoints > 0 ? 'reserved' : 'none',
+                        'cash_amount' => max(0, (float) $child->price - $childPoints),
+                        'saldo_amount' => max(0, (float) $child->price - $childPoints),
+                    ]);
+                    $child->transaction?->update(['gross_amount' => $child->cash_amount]);
+                    $remainingPoints -= $childPoints;
+                }
+
                 $this->builder->consumeVoucher($voucher, $orders);
 
                 // Satu charge untuk total gabungan, bukan satu per item.
-                if (! config('services.payment.simulation') && $this->gateway->isConfigured()) {
+                if ($cashAmount > 0 && ! config('services.payment.simulation') && $this->gateway->isConfigured()) {
                     $charged = $this->gateway->chargeCheckout($checkout, $method, [
                         'customer_name' => $user->name,
                     ]);
@@ -258,6 +295,10 @@ class CheckoutController extends Controller
         }
 
         $this->cart->clear($user->id);
+
+        if ((float) $checkout->cash_amount <= 0) {
+            $this->checkoutSettlement->markPaid($checkout);
+        }
 
         return redirect()->route('checkout.payment', $checkout);
     }
@@ -301,6 +342,7 @@ class CheckoutController extends Controller
         return response()->json([
             'status' => $checkout->status,
             'total' => (int) $checkout->total,
+            'payment_status' => data_get($checkout->gateway_extra, 'payment_status', 'PENDING'),
             'success' => $orders->where('status', 'success')->count(),
             'failed' => $orders->where('status', 'failed')->count(),
             'count' => $orders->count(),
@@ -312,7 +354,7 @@ class CheckoutController extends Controller
                 'status' => $o->status,
                 'note' => $o->note,
             ])->values(),
-        ]);
+        ])->header('Cache-Control', 'no-store, private');
     }
 
     /**
@@ -335,6 +377,12 @@ class CheckoutController extends Controller
      */
     protected function syncFromGateway(Checkout $checkout): void
     {
+        if (data_get($checkout->gateway_extra, 'integration') === 'direct'
+            && data_get($checkout->gateway_extra, 'provider') === 'doku') {
+            app(\App\Services\DokuPaymentSyncService::class)->sync($checkout);
+            return;
+        }
+
         $id = (string) $checkout->gateway_invoice_id;
 
         if ($id === '') {

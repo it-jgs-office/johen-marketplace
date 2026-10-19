@@ -37,11 +37,18 @@ class Order extends Model
         'note',
         'saldo_amount',
         'saldo_status',
+        'points_used',
+        'points_status',
+        'cash_amount',
         'digiflazz_started_at',
         'digiflazz_poll_count',
         'last_status_check_at',
+        'provider_error_at',
+        'provider_error_reason',
         'saldo_released_at',
         'reconcile_status',
+        'success_email_sent_at',
+        'failed_email_sent_at',
     ];
 
     protected $appends = ['effective_zone_id'];
@@ -49,9 +56,14 @@ class Order extends Model
     protected $casts = [
         'gateway_extra' => 'array',
         'saldo_amount' => 'decimal:2',
+        'points_used' => 'decimal:2',
+        'cash_amount' => 'decimal:2',
         'digiflazz_started_at' => 'datetime',
         'last_status_check_at' => 'datetime',
+        'provider_error_at' => 'datetime',
         'saldo_released_at' => 'datetime',
+        'success_email_sent_at' => 'datetime',
+        'failed_email_sent_at' => 'datetime',
     ];
 
     public function user()
@@ -92,6 +104,9 @@ class Order extends Model
     {
         return $this->hasMany(BalanceTransaction::class);
     }
+
+    public function providerAttempts() { return $this->hasMany(OrderProviderAttempt::class); }
+    public function adminActions() { return $this->hasMany(OrderAdminAction::class); }
 
     /** Order sudah lunas tapi topup-nya masih berjalan. */
     public function isAwaitingTopup(): bool

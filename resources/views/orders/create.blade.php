@@ -1,6 +1,7 @@
 @extends('layouts.topup')
 
 @section('content')
+@php($isValorant = str_starts_with(mb_strtolower($product->brand), 'valorant'))
 <div class="max-w-lg mx-auto">
     <a href="{{ route('games.show', $product->brand) }}" class="text-purple-400 hover:text-purple-300">&larr; Kembali</a>
     <h1 class="text-2xl font-bold mt-2 mb-6">Beli {{ $product->product_name }}</h1>
@@ -20,10 +21,13 @@
         <input type="hidden" name="product_id" value="{{ $product->id }}">
 
         <div class="mb-4">
-            <label class="block text-sm font-medium mb-2">ID Game / Nomor HP</label>
-            <input type="text" name="customer_number" placeholder="Masukkan ID game atau nomor HP" required
+            <label class="block text-sm font-medium mb-2">{{ $isValorant ? 'Riot ID' : 'ID Game / Nomor HP' }}</label>
+            <input type="text" name="customer_number" inputmode="{{ $isValorant ? 'text' : 'numeric' }}" placeholder="{{ $isValorant ? 'NamaPemain#TAG' : 'Masukkan ID game atau nomor HP' }}" required
                    value="{{ old('customer_number', request('customer_number')) }}"
                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500">
+            @if($isValorant)
+                <p class="text-gray-400 text-xs mt-1">Contoh: JohenGaming#ID1</p>
+            @endif
             @error('customer_number')
                 <p class="text-red-400 text-sm mt-1">{{ $message }}</p>
             @enderror
@@ -59,6 +63,12 @@
         </div>
 
         <div class="mb-6">
+            @auth
+            <label class="flex items-center justify-between gap-3 p-4 mb-4 rounded-xl border border-amber-400/30 bg-amber-400/10 cursor-pointer">
+                <span><strong class="flex items-center gap-2 text-amber-300"><x-johen-point-icon size="22" /> Gunakan Johen Point</strong><small class="text-gray-300">Tersedia {{ number_format($pointBalance, 0, ',', '.') }} JP · maksimal sebesar total belanja</small><input type="number" name="points_amount" value="{{ old('points_amount', (int) $pointBalance) }}" min="1" max="{{ (int) $pointBalance }}" class="mt-2 w-40 bg-gray-800 border border-amber-400/30 rounded-lg px-3 py-2 text-white" aria-label="Jumlah Johen Point" {{ $pointBalance < 1 ? 'disabled' : '' }}></span>
+                <input type="checkbox" name="use_points" value="1" {{ old('use_points') ? 'checked' : '' }} class="accent-amber-400 h-5 w-5" {{ $pointBalance < 1 ? 'disabled' : '' }}>
+            </label>
+            @endauth
             <label class="block text-sm font-medium mb-2">Metode Pembayaran</label>
             @php
                 $categories = [

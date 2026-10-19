@@ -193,6 +193,7 @@ class PaymentController extends Controller
                 $order->update(['status' => 'failed']);
                 $orderTransaction?->update(['status' => 'failed']);
                 $order->releaseDiscounts();
+                app(\App\Services\BalanceService::class)->restorePoints($order, 'Pembayaran kedaluwarsa; Johen Point dikembalikan');
             }
 
             return response()->json(['status' => 'ok']);
@@ -286,6 +287,7 @@ class PaymentController extends Controller
                 $order->update(['status' => 'failed']);
                 $orderTransaction?->update(['status' => 'failed']);
                 $order->releaseDiscounts();
+                app(\App\Services\BalanceService::class)->restorePoints($order, 'Pembayaran gagal; Johen Point dikembalikan');
             }
 
             return response()->json(['status' => 'ok']);
@@ -297,12 +299,11 @@ class PaymentController extends Controller
         if ($accountOrder) {
             if ($accountOrder->status === 'pending'
                 && in_array($status, ['SUCCEEDED', 'COMPLETED', 'PAID', 'SETTLED'])) {
-                $accountOrder->update(['status' => 'success']);
-                $accountOrder->listing?->update(['is_sold' => true]);
+                $this->settleAccountOrder($accountOrder);
                 Log::info('Account order lunas via webhook QRIS', ['order_ref' => $accountOrder->order_ref]);
             } elseif ($accountOrder->status === 'pending'
                 && in_array($status, ['FAILED', 'EXPIRED'])) {
-                $accountOrder->update(['status' => 'failed']);
+                $this->failAccountOrder($accountOrder);
             }
 
             return response()->json(['status' => 'ok']);
@@ -471,8 +472,11 @@ class PaymentController extends Controller
             return;
         }
 
+        $balance = app(\App\Services\BalanceService::class);
+        $balance->markAccountPaid($accountOrder);
         $accountOrder->update(['status' => 'success']);
         $accountOrder->listing?->update(['is_sold' => true]);
+        $balance->markAccountDelivered($accountOrder->fresh());
         Log::info('Account order lunas', ['order_ref' => $accountOrder->order_ref]);
     }
 
@@ -483,6 +487,7 @@ class PaymentController extends Controller
         }
 
         $accountOrder->update(['status' => 'failed']);
+        app(\App\Services\BalanceService::class)->restorePoints($accountOrder, 'Pembayaran gagal; Johen Point dikembalikan');
     }
 
     /**
@@ -525,11 +530,18 @@ class PaymentController extends Controller
             'saldo_status' => $order->saldo_status,
             'saldo_amount' => (float) $order->saldo_amount,
             'saldo_refunded' => $order->isRefunded(),
-        ]);
+            'payment_status' => data_get($order->gateway_extra, 'payment_status', 'PENDING'),
+        ])->header('Cache-Control', 'no-store, private');
     }
 
     private function syncFromGateway(Order $order): void
     {
+        if (data_get($order->gateway_extra, 'integration') === 'direct'
+            && data_get($order->gateway_extra, 'provider') === 'doku') {
+            app(\App\Services\DokuPaymentSyncService::class)->sync($order);
+            return;
+        }
+
         if ($order->status !== 'pending' || empty($order->gateway_invoice_id)) {
             return;
         }
@@ -561,6 +573,7 @@ class PaymentController extends Controller
                 $order->update(['status' => 'failed']);
                 $order->transaction?->update(['status' => 'failed']);
                 $order->releaseDiscounts();
+                app(\App\Services\BalanceService::class)->restorePoints($order, 'Pembayaran kedaluwarsa; Johen Point dikembalikan');
             }
 
             // FAILED pada DOKU Checkout tidak final karena pengguna dapat
@@ -693,6 +706,7 @@ class PaymentController extends Controller
             $order->update(['status' => 'failed']);
             $order->transaction?->update(['status' => 'failed']);
             $order->releaseDiscounts();
+            app(\App\Services\BalanceService::class)->restorePoints($order, 'Pembayaran kedaluwarsa; Johen Point dikembalikan');
         }
     }
 

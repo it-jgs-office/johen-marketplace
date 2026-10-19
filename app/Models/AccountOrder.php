@@ -24,11 +24,21 @@ class AccountOrder extends Model
         'gateway_extra',
         'status',
         'total_price',
+        'points_used',
+        'points_status',
+        'cash_amount',
+        'saldo_amount',
+        'saldo_status',
+        'saldo_released_at',
         'notes',
     ];
 
     protected $casts = [
         'total_price' => 'decimal:2',
+        'points_used' => 'decimal:2',
+        'cash_amount' => 'decimal:2',
+        'saldo_amount' => 'decimal:2',
+        'saldo_released_at' => 'datetime',
         'gateway_extra' => 'array',
     ];
 

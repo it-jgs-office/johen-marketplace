@@ -37,12 +37,10 @@
     });
   }
 
-  fetch('/api/payment-methods', { headers: { Accept: 'application/json' } })
-    .then(response => response.ok ? response.json() : [])
-    .catch(() => [])
-    .then(methods => {
-      const available = Array.isArray(methods) && methods.length ? methods : fallback;
-      render(available);
-      document.addEventListener('themeChanged', () => render(available));
-    });
+  const staticMethods = Object.entries(logos)
+    .filter(([, logo]) => logo)
+    .map(([code, logo]) => ({ code, name: code, photo_url: logo }));
+
+  render(staticMethods.length ? staticMethods : fallback);
+  document.addEventListener('themeChanged', () => render(staticMethods.length ? staticMethods : fallback));
 })();

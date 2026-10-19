@@ -22,6 +22,10 @@ class DokuNotificationController extends Controller
 
     public function __invoke(Request $request): JsonResponse
     {
+        if ($request->hasHeader('X-SIGNATURE')) {
+            return $this->snapVirtualAccountNotification($request);
+        }
+
         $rawBody = $request->getContent();
         $requestTarget = '/'.ltrim($request->path(), '/');
 
@@ -55,8 +59,16 @@ class DokuNotificationController extends Controller
         }
 
         try {
+            $sync = app(\App\Services\DokuPaymentSyncService::class);
+            $directOrder = $sync->find($invoiceNumber);
+            if ($directOrder && data_get($directOrder->gateway_extra, 'integration') === 'direct') {
+                $accepted = $sync->apply($directOrder, $payload);
+
+                return response()->json(['status' => $accepted ? 'ok' : 'error'], $accepted ? 200 : 422);
+            }
+
             if ($checkout = Checkout::where('checkout_ref', $invoiceNumber)->first()) {
-                if (! $this->amountMatches((int) $checkout->total, $amount, $invoiceNumber)) {
+                if (! $this->amountMatches((int) $checkout->cash_amount, $amount, $invoiceNumber)) {
                     return response()->json(['status' => 'error', 'message' => 'Amount mismatch'], 422);
                 }
 
@@ -70,22 +82,22 @@ class DokuNotificationController extends Controller
             }
 
             if ($accountOrder = AccountOrder::where('order_ref', $invoiceNumber)->first()) {
-                if (! $this->amountMatches((int) round((float) $accountOrder->total_price), $amount, $invoiceNumber)) {
+                if (! $this->amountMatches((int) round((float) $accountOrder->cash_amount), $amount, $invoiceNumber)) {
                     return response()->json(['status' => 'error', 'message' => 'Amount mismatch'], 422);
                 }
 
                 if ($status === 'SUCCESS' && $accountOrder->status === 'pending') {
-                    $accountOrder->update(['status' => 'success']);
-                    $accountOrder->listing?->update(['is_sold' => true]);
+                    \App\Http\Controllers\HomeController::settleAccountOrder($accountOrder);
                 } elseif ($status === 'EXPIRED' && $accountOrder->status === 'pending') {
                     $accountOrder->update(['status' => 'failed']);
+                    app(\App\Services\BalanceService::class)->restorePoints($accountOrder, 'Pembayaran kedaluwarsa; Johen Point dikembalikan');
                 }
 
                 return response()->json(['status' => 'ok']);
             }
 
             if ($order = Order::where('order_id', $invoiceNumber)->first()) {
-                if (! $this->amountMatches((int) round((float) $order->price), $amount, $invoiceNumber)) {
+                if (! $this->amountMatches((int) round((float) $order->cash_amount), $amount, $invoiceNumber)) {
                     return response()->json(['status' => 'error', 'message' => 'Amount mismatch'], 422);
                 }
 
@@ -102,6 +114,7 @@ class DokuNotificationController extends Controller
                     $order->update(['status' => 'failed']);
                     $order->transaction?->update(['status' => 'failed']);
                     $order->releaseDiscounts();
+                    app(\App\Services\BalanceService::class)->restorePoints($order, 'Pembayaran kedaluwarsa; Johen Point dikembalikan');
                 }
 
                 return response()->json(['status' => 'ok']);
@@ -138,5 +151,55 @@ class DokuNotificationController extends Controller
         }
 
         return $matches;
+    }
+
+    private function snapVirtualAccountNotification(Request $request): JsonResponse
+    {
+        $payload = json_decode($request->getContent(), true);
+        $timestamp = (string) $request->header('X-TIMESTAMP', '');
+        $timestampValue = strtotime($timestamp);
+        if (! $this->doku->isConfigured() || ! is_array($payload) || ! $timestampValue
+            || abs(time() - $timestampValue) > 300 || ! $request->header('X-EXTERNAL-ID')) {
+            return response()->json(['responseCode' => '4012500', 'responseMessage' => 'Invalid notification'], 401);
+        }
+
+        $body = json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+        $expected = app(\App\Services\DokuDirectService::class)->snapSignature(
+            '/'.ltrim($request->path(), '/'), $body, (string) $request->bearerToken(), $timestamp
+        );
+        if (! hash_equals($expected, (string) $request->header('X-SIGNATURE', ''))) {
+            return response()->json(['responseCode' => '4012500', 'responseMessage' => 'Invalid signature'], 401);
+        }
+
+        $sync = app(\App\Services\DokuPaymentSyncService::class);
+        $reference = (string) ($payload['trxId'] ?? '');
+        $order = $sync->find($reference);
+        if (! $order || $order->gateway_type !== 'va'
+            || trim((string) ($payload['virtualAccountNo'] ?? '')) !== trim((string) $order->va_number)
+            || data_get($payload, 'paidAmount.currency') !== 'IDR') {
+            return response()->json(['responseCode' => '4042500', 'responseMessage' => 'Payment not found'], 404);
+        }
+
+        try {
+            $accepted = $sync->apply($order, [
+                'order' => ['invoice_number' => $reference, 'amount' => data_get($payload, 'paidAmount.value')],
+                'transaction' => ['status' => 'SUCCESS'],
+            ]);
+            if (! $accepted) {
+                return response()->json(['responseCode' => '4042513', 'responseMessage' => 'Invalid amount'], 422);
+            }
+
+            return response()->json([
+                'responseCode' => '2002500', 'responseMessage' => 'Success',
+                'virtualAccountData' => \Illuminate\Support\Arr::only($payload, [
+                    'partnerServiceId', 'customerNo', 'virtualAccountNo', 'virtualAccountName',
+                    'paymentRequestId', 'paidAmount', 'additionalInfo',
+                ]),
+            ]);
+        } catch (\Throwable $e) {
+            Log::error('DOKU SNAP notification failed', ['invoice_number' => $reference, 'exception' => $e::class]);
+
+            return response()->json(['responseCode' => '5002500', 'responseMessage' => 'Processing failed'], 500);
+        }
     }
 }

@@ -78,7 +78,7 @@ class DokuService
         }
 
         $invoiceNumber = trim($invoiceNumber);
-        $cacheKey = 'doku-status:'.sha1($invoiceNumber);
+        $cacheKey = 'doku-status:'.sha1($this->baseUrl().config('doku.client_id').$invoiceNumber);
 
         return Cache::remember($cacheKey, 30, function () use ($invoiceNumber) {
             $path = '/orders/v1/status/'.rawurlencode($invoiceNumber);
@@ -124,6 +124,8 @@ class DokuService
             'bca', 'bca_va' => 'VIRTUAL_ACCOUNT_BCA',
             'bri', 'bri_va' => 'VIRTUAL_ACCOUNT_BRI',
             'bni', 'bni_va' => 'VIRTUAL_ACCOUNT_BNI',
+            'bsi', 'bsi_va' => 'VIRTUAL_ACCOUNT_BSI',
+            'cimb', 'cimb_va' => 'VIRTUAL_ACCOUNT_CIMB',
             'mandiri', 'mandiri_va' => 'VIRTUAL_ACCOUNT_BANK_MANDIRI',
             'permata', 'permata_va' => 'VIRTUAL_ACCOUNT_BANK_PERMATA',
             'alfamart' => 'ONLINE_TO_OFFLINE_ALFA',

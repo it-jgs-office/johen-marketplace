@@ -16,6 +16,7 @@
 
   <div class="jpay-grid">
     <div class="jpay-left">
+      @include('partials.doku-payment-status', ['paymentOrder' => $accountOrder])
 
       <div class="jpay-card">
         <div class="jpay-card-head">
@@ -85,7 +86,7 @@
 
             <div class="jpay-money-box">
               <div class="jpay-nominal-label">Nominal Pembayaran</div>
-              <div class="jpay-nominal-value">Rp {{ number_format($accountOrder->total_price, 0, ',', '.') }}</div>
+              <div class="jpay-nominal-value">Rp {{ number_format($accountOrder->cash_amount, 0, ',', '.') }}</div>
               @if($isDynamic)
                 <p class="jpay-nominal-note" style="color:#34d399;font-weight:600">Nominal otomatis sudah terisi pada QRIS ketika kamu scan &mdash; tanpa perlu memasukkan angka secara manual.</p>
               @else
@@ -103,7 +104,7 @@
             </div>
             <div class="jpay-nominal-box">
               <div class="jpay-nominal-label">Total Pembayaran</div>
-              <div class="jpay-nominal-value">Rp {{ number_format($accountOrder->total_price, 0, ',', '.') }}</div>
+              <div class="jpay-nominal-value">Rp {{ number_format($accountOrder->cash_amount, 0, ',', '.') }}</div>
               <p class="jpay-nominal-note">Transfer tepat nominal ini ke nomor VA di atas (dibatasi jumlah).</p>
             </div>
             <p class="jpay-next-step">
@@ -119,7 +120,7 @@
             </div>
             <div class="jpay-nominal-box">
               <div class="jpay-nominal-label">Total Pembayaran</div>
-              <div class="jpay-nominal-value">Rp {{ number_format($accountOrder->total_price, 0, ',', '.') }}</div>
+              <div class="jpay-nominal-value">Rp {{ number_format($accountOrder->cash_amount, 0, ',', '.') }}</div>
               <p class="jpay-nominal-note">Tunjukkan kode ini ke kasir di gerai {{ $gatewayExtra['label'] ?? 'minimarket' }} terdekat.</p>
             </div>
             <p class="jpay-next-step">
@@ -129,7 +130,7 @@
             @elseif($gatewayType === 'ewallet')
             <div class="jpay-money-box">
               <div class="jpay-money-label">Total Pembayaran</div>
-              <div class="jpay-nominal-value">Rp {{ number_format($accountOrder->total_price, 0, ',', '.') }}</div>
+              <div class="jpay-nominal-value">Rp {{ number_format($accountOrder->cash_amount, 0, ',', '.') }}</div>
             </div>
             @if($checkoutUrl)
               <a href="{{ $checkoutUrl }}" class="jpay-pay-btn" id="jpayPayBtn">
@@ -144,7 +145,7 @@
             @else
             <div class="jpay-money-box">
               <div class="jpay-money-label">Total Pembayaran</div>
-              <div class="jpay-nominal-value">Rp {{ number_format($accountOrder->total_price, 0, ',', '.') }}</div>
+              <div class="jpay-nominal-value">Rp {{ number_format($accountOrder->cash_amount, 0, ',', '.') }}</div>
             </div>
             @if($invoiceUrl)
               <a href="{{ $invoiceUrl }}" class="jpay-pay-btn" id="jpayPayBtn">
@@ -242,9 +243,12 @@
               <span>Biaya Layanan</span>
               <span class="jpay-green">Gratis</span>
             </div>
+            @if($accountOrder->points_used > 0)
+            <div class="jpay-rincian-row"><span><x-johen-point-icon size="17" /> Johen Point</span><span class="jpay-green">-{{ number_format($accountOrder->points_used, 0, ',', '.') }} JP</span></div>
+            @endif
             <div class="jpay-rincian-total">
               <span>Total Pembayaran</span>
-              <span class="jpay-total-price">Rp {{ number_format($accountOrder->total_price, 0, ',', '.') }}</span>
+              <span class="jpay-total-price">Rp {{ number_format($accountOrder->cash_amount, 0, ',', '.') }}</span>
             </div>
           </div>
         </div>
@@ -500,17 +504,6 @@
   applyThemeToMethodLogos();
   document.addEventListener('themeChanged', function() { setTimeout(applyThemeToMethodLogos, 50); });
 
-  // e-wallet / invoice: alihkan ke halaman pembayaran (sekali saja per pesanan).
-  if (initialStatus === 'pending' && (gatewayType === 'ewallet' || gatewayType === 'invoice' || gatewayType === 'doku_checkout') && (checkoutUrl || invoiceUrl)) {
-    const target = checkoutUrl || invoiceUrl;
-    const shownKey = 'jpay_redirect_' + @json($accountOrder->order_ref);
-    if (!sessionStorage.getItem(shownKey)) {
-      sessionStorage.setItem(shownKey, '1');
-      const sub = document.getElementById('jpayStatusSub');
-      if (sub) sub.textContent = 'Mengalihkan ke halaman pembayaran...';
-      setTimeout(function() { window.location.href = target; }, 1200);
-    }
-  }
 
   function setSummaryStatus(type) {
     const dot = document.getElementById('jpaySummaryDot');
@@ -575,19 +568,21 @@
   }
 
   // polling -> perbarui UI saat admin konfirmasi
-  let attempts = 0;
   (function check() {
-    fetch(statusUrl)
-      .then(r => r.json())
+    fetch(statusUrl, {cache: 'no-store', headers: {'Accept': 'application/json'}})
+      .then(r => { if (!r.ok) throw new Error('Status unavailable'); return r.json(); })
       .then(data => {
+        document.dispatchEvent(new CustomEvent('payment:updated', {detail: data}));
         if (data.status !== 'pending') {
           updateStatus(data.status);
-          return;
+          if (data.status !== 'processing') return;
         }
-        attempts++;
-        if (attempts < 600) setTimeout(check, 5000);
+        setTimeout(check, document.hidden ? 15000 : 3000);
       })
-      .catch(() => { if (attempts < 600) setTimeout(check, 10000); });
+      .catch(() => {
+        document.dispatchEvent(new Event('payment:offline'));
+        setTimeout(check, 5000);
+      });
   })();
 
   // copy button
