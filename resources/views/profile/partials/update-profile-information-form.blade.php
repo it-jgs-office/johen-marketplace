@@ -14,9 +14,32 @@
             @csrf
         </form>
 
-        <form method="post" action="{{ route('profile.update') }}" class="account-form">
+        <form method="post" action="{{ route('profile.update') }}" class="account-form" enctype="multipart/form-data">
             @csrf
             @method('patch')
+
+            <div class="account-photo-editor">
+                <div class="account-photo-preview" aria-hidden="true">
+                    <img id="profilePhotoPreview" src="{{ $profileAvatarUrl ?: '' }}" data-original-src="{{ $profileAvatarUrl ?: '' }}" alt="" @if(!$profileAvatarUrl) hidden @endif>
+                    <span id="profilePhotoFallback" @if($profileAvatarUrl) hidden @endif>{{ strtoupper(substr($user->name, 0, 1)) }}</span>
+                </div>
+                <div class="account-photo-copy">
+                    <strong>Foto profil</strong>
+                    <p>Gunakan JPG, PNG, atau WebP maksimal 5 MB.</p>
+                    <div class="account-photo-actions">
+                        <label for="avatar" class="account-photo-button">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 16V4m0 0L7 9m5-5 5 5"/><path d="M5 14v5h14v-5"/></svg>
+                            Pilih Foto
+                        </label>
+                        <input id="avatar" name="avatar" class="account-photo-input" type="file" accept="image/jpeg,image/png,image/webp">
+                        <input id="remove_avatar" name="remove_avatar" type="hidden" value="0">
+                        @if($profileAvatarUrl)
+                            <button id="removeProfilePhoto" class="account-photo-remove" type="button">Hapus</button>
+                        @endif
+                    </div>
+                    <x-input-error class="account-error" :messages="$errors->get('avatar')" />
+                </div>
+            </div>
 
             <div class="account-form-grid">
                 <div class="account-field">

@@ -279,8 +279,9 @@ main,.site-footer{position:relative;z-index:2;}
   width:32px;height:32px;border-radius:50%;
   background:linear-gradient(135deg,var(--purple-light),var(--purple-dark));
   display:flex;align-items:center;justify-content:center;font-size:.85rem;color:#fff;
-  box-shadow:0 4px 12px -4px var(--purple-glow);
+  box-shadow:0 4px 12px -4px var(--purple-glow);overflow:hidden;
 }
+.auth-avatar img{width:100%;height:100%;display:block;object-fit:cover;}
 .auth-name{font-size:.85rem;font-weight:600;color:var(--text);}
 .auth-dropdown-toggle{display:flex;align-items:center;gap:.5rem;background:color-mix(in srgb,var(--surface) 78%,transparent);border:1px solid var(--border);cursor:pointer;color:inherit;padding:.32rem .6rem .32rem .35rem;border-radius:12px;transition:border-color .2s,background .2s,box-shadow .2s;}
 .auth-dropdown-toggle:hover{background:var(--surface-2);border-color:var(--border-strong);}

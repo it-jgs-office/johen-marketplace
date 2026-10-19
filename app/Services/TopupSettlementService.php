@@ -154,7 +154,7 @@ class TopupSettlementService
      * Tanya status satu order ke Digiflazz. Mengembalikan status final
      * ('sukses'/'provider_error'), atau null kalau masih pending / gagal ditanya.
      */
-    public function poll(Order $order): ?string
+    public function poll(Order $order, ?int $adminId = null): ?string
     {
         try {
             $result = $this->digiflazz->checkStatus(
@@ -175,12 +175,20 @@ class TopupSettlementService
         ]);
 
         $status = strtolower(trim((string) ($result['data']['status'] ?? '')));
-        $this->recordAttempt($order, 'status_check', $result);
+        $this->recordAttempt($order, 'status_check', $result, $adminId);
 
-        if (in_array($status, ['sukses', 'gagal'], true)) {
-            $this->applyResult($order, $result);
+        // Respons terbaru selalu disimpan agar halaman detail benar-benar
+        // menampilkan hasil refresh terakhir, termasuk saat masih pending.
+        $order->transaction?->update(['raw_response' => $result]);
 
-            return $status === 'gagal' ? 'provider_error' : 'sukses';
+        if (in_array($status, ['sukses', 'gagal', 'pending'], true)) {
+            $this->applyResult($order->fresh(), $result);
+
+            if ($status === 'gagal') {
+                return 'provider_error';
+            }
+
+            return $status === 'sukses' ? 'sukses' : null;
         }
 
         return null;

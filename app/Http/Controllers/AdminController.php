@@ -584,13 +584,21 @@ class AdminController extends Controller
 
     public function ordersCheckProvider(Order $order, TopupSettlementService $settlement)
     {
-        if ($order->saldo_status !== 'held' || $order->status === 'success') {
-            return back()->with('error', 'Cek provider hanya tersedia setelah topup pernah dikirim.');
-        }
-        $action = $this->beginOrderAction($order, 'check_provider');
-        if (! $action) return back()->with('error', 'Cek provider untuk transaksi ini sudah pernah dijalankan.');
-        $settlement->poll($order);
-        return back()->with('success', 'Status provider telah diperiksa.');
+        $adminId = Auth::guard('admin')->id();
+        $settlement->poll($order, $adminId);
+
+        $order->refresh();
+        OrderAdminAction::create([
+            'order_id' => $order->id,
+            'admin_id' => $adminId,
+            'action' => 'check_provider',
+            'reason' => 'Refresh status provider: '.($order->transaction?->status ?: $order->status),
+            'idempotency_key' => 'order:'.$order->id.':admin:check_provider:'.bin2hex(random_bytes(12)),
+        ]);
+
+        return redirect()
+            ->route('admin.orders.show', $order)
+            ->with('success', 'Status terbaru berhasil diminta dari provider dan detail transaksi telah diperbarui.');
     }
 
     public function ordersManualSuccess(Request $request, Order $order, TopupSettlementService $settlement)

@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\ProfileUpdateRequest;
+use App\Services\ImageOptimizer;
+use App\Services\MediaStore;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -27,13 +29,32 @@ class ProfileController extends Controller
      */
     public function update(ProfileUpdateRequest $request): RedirectResponse
     {
-        $request->user()->fill($request->validated());
+        $user = $request->user();
+        $oldAvatar = $user->avatar;
 
-        if ($request->user()->isDirty('email')) {
-            $request->user()->email_verified_at = null;
+        $user->fill($request->safe()->only(['name', 'email']));
+
+        if ($request->hasFile('avatar')) {
+            $user->avatar = ImageOptimizer::storeOptimized(
+                $request->file('avatar'),
+                'avatars',
+                512,
+                512,
+                256 * 1024,
+            );
+        } elseif ($request->boolean('remove_avatar')) {
+            $user->avatar = null;
         }
 
-        $request->user()->save();
+        if ($user->isDirty('email')) {
+            $user->email_verified_at = null;
+        }
+
+        $user->save();
+
+        if ($oldAvatar !== $user->avatar) {
+            $this->deleteLocalAvatar($oldAvatar);
+        }
 
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
@@ -49,6 +70,8 @@ class ProfileController extends Controller
 
         $user = $request->user();
 
+        $this->deleteLocalAvatar($user->avatar);
+
         Auth::logout();
 
         $user->delete();
@@ -57,5 +80,14 @@ class ProfileController extends Controller
         $request->session()->regenerateToken();
 
         return Redirect::to('/');
+    }
+
+    private function deleteLocalAvatar(?string $avatar): void
+    {
+        $path = MediaStore::normalizePath($avatar);
+
+        if ($path && str_starts_with($path, 'avatars/')) {
+            MediaStore::delete($path);
+        }
     }
 }

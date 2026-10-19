@@ -7,6 +7,7 @@
 @endpush
 
 @section('content')
+@php($profileAvatarUrl = $user->avatar ? media_url($user->avatar) : null)
 <section class="account-page">
     <div class="account-shell">
         <div class="account-dashboard">
@@ -26,7 +27,13 @@
                 <div class="account-summary-grid">
                     <header class="account-hero">
                         <div class="account-hero-main">
-                            <div class="account-avatar" aria-hidden="true">{{ strtoupper(substr($user->name, 0, 1)) }}</div>
+                            <div class="account-avatar" aria-hidden="true">
+                                @if($profileAvatarUrl)
+                                    <img src="{{ $profileAvatarUrl }}" alt="">
+                                @else
+                                    {{ strtoupper(substr($user->name, 0, 1)) }}
+                                @endif
+                            </div>
                             <div class="account-identity">
                                 <div class="account-eyebrow">Profil Saya</div>
                                 <h2>{{ $user->name }}</h2>
@@ -127,6 +134,45 @@
 @push('scripts')
 <script>
 (function () {
+    var avatarInput = document.getElementById('avatar');
+    var avatarPreview = document.getElementById('profilePhotoPreview');
+    var avatarFallback = document.getElementById('profilePhotoFallback');
+    var removeAvatarInput = document.getElementById('remove_avatar');
+    var removeAvatarButton = document.getElementById('removeProfilePhoto');
+    var originalAvatar = avatarPreview ? avatarPreview.getAttribute('data-original-src') : '';
+
+    function showAvatarPreview(src) {
+        if (!avatarPreview || !avatarFallback) return;
+        if (src) {
+            avatarPreview.src = src;
+            avatarPreview.hidden = false;
+            avatarFallback.hidden = true;
+        } else {
+            avatarPreview.removeAttribute('src');
+            avatarPreview.hidden = true;
+            avatarFallback.hidden = false;
+        }
+    }
+
+    avatarInput?.addEventListener('change', function () {
+        var file = avatarInput.files && avatarInput.files[0];
+        if (!file) {
+            showAvatarPreview(originalAvatar);
+            return;
+        }
+
+        if (removeAvatarInput) removeAvatarInput.value = '0';
+        var reader = new FileReader();
+        reader.addEventListener('load', function () { showAvatarPreview(reader.result); });
+        reader.readAsDataURL(file);
+    });
+
+    removeAvatarButton?.addEventListener('click', function () {
+        avatarInput.value = '';
+        removeAvatarInput.value = '1';
+        showAvatarPreview('');
+    });
+
     var dialog = document.getElementById('deleteAccountDialog');
     var openButton = document.getElementById('openDeleteAccountDialog');
     var closeButton = document.getElementById('closeDeleteAccountDialog');

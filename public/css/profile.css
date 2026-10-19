@@ -73,7 +73,9 @@
   font-family: var(--font-display);
   font-size: 1.55rem;
   font-weight: 800;
+  overflow: hidden;
 }
+.account-avatar img { display: block; width: 100%; height: 100%; object-fit: cover; }
 
 .account-eyebrow {
   margin-bottom: .25rem;
@@ -275,6 +277,58 @@
 .account-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
 .account-field { min-width: 0; }
 
+.account-photo-editor {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: color-mix(in srgb, var(--bg-soft) 82%, transparent);
+}
+.account-photo-preview {
+  display: grid;
+  width: 72px;
+  height: 72px;
+  flex: 0 0 72px;
+  place-items: center;
+  overflow: hidden;
+  border: 2px solid color-mix(in srgb, var(--purple-light) 45%, var(--border));
+  border-radius: 50%;
+  background: var(--action-gradient);
+  box-shadow: 0 10px 24px -15px var(--action-glow);
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 1.55rem;
+  font-weight: 800;
+}
+.account-photo-preview img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.account-photo-preview [hidden] { display: none; }
+.account-photo-copy { min-width: 0; }
+.account-photo-copy strong { display: block; color: var(--text); font-size: .82rem; }
+.account-photo-copy p { margin-top: .18rem; color: var(--text-mute); font-size: .69rem; line-height: 1.45; }
+.account-photo-actions { display: flex; align-items: center; gap: .5rem; margin-top: .65rem; }
+.account-photo-button,
+.account-photo-remove {
+  display: inline-flex;
+  min-height: 36px;
+  align-items: center;
+  justify-content: center;
+  padding: .5rem .72rem;
+  border-radius: 9px;
+  font-size: .7rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+.account-photo-button { gap: .4rem; background: var(--purple); color: #fff; }
+.account-photo-button:hover { background: var(--purple-light); }
+.account-photo-button svg { width: 14px; height: 14px; }
+.account-photo-remove { border: 1px solid rgba(248, 113, 113, .3); color: #fca5a5; }
+.account-photo-remove:hover { background: rgba(248, 113, 113, .1); }
+.account-photo-button:focus-within,
+.account-photo-remove:focus-visible { outline: 2px solid var(--purple-light); outline-offset: 2px; }
+.account-photo-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; clip-path: inset(50%); }
+
 .account-label {
   display: block;
   margin-bottom: .42rem;
@@ -374,6 +428,8 @@
   .account-sidebar a { flex: 0 0 auto; padding: .62rem .7rem; }
   .account-sidebar a:hover { transform: none; }
   .account-form-grid { grid-template-columns: 1fr; }
+  .account-photo-editor { align-items: flex-start; padding: .85rem; }
+  .account-photo-preview { width: 62px; height: 62px; flex-basis: 62px; }
   .account-panel-head, .account-panel-body { padding: 1rem; }
   .account-dialog-actions { flex-direction: column-reverse; }
   .account-dialog-actions button { width: 100%; }
