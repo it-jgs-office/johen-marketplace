@@ -26,6 +26,30 @@
         <!-- KIRI: Digiflazz + Informasi Situs -->
         <div class="space-y-5">
 
+            <!-- VERIFIKASI NICKNAME MLBB -->
+            @php
+                $mlbbCheckEnabled = filter_var($settings['mlbb_nickname_check_enabled'] ?? '1', FILTER_VALIDATE_BOOLEAN);
+                $aluApiConfigured = trim((string) config('services.alu.api_key')) !== '';
+            @endphp
+            <div class="card-glass p-4">
+                <h3 class="font-semibold mb-3 flex items-center gap-2" style="font-size:0.9rem">
+                    <i class="fas fa-user-check" style="color:#8b5cf6;font-size:0.85rem"></i>
+                    <span>Pengecekan Nickname MLBB</span>
+                </h3>
+                <input type="hidden" name="mlbb_nickname_check_enabled" value="0">
+                <label class="flex items-center justify-between gap-4 cursor-pointer" for="mlbbNicknameCheckToggle">
+                    <span>
+                        <span class="block text-sm font-medium">Aktifkan verifikasi akun</span>
+                        <span class="block mt-1" style="color:var(--text-dim);font-size:0.72rem">Jika dimatikan, checkout tidak akan menolak akun berdasarkan hasil pengecekan nickname atau region.</span>
+                    </span>
+                    <input id="mlbbNicknameCheckToggle" type="checkbox" name="mlbb_nickname_check_enabled" value="1" {{ $mlbbCheckEnabled ? 'checked' : '' }} style="width:1.1rem;height:1.1rem;accent-color:var(--accent);flex-shrink:0">
+                </label>
+                <div class="alert mt-3" style="background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.25);color:var(--text-dim);font-size:0.72rem">
+                    <i class="fas fa-{{ $aluApiConfigured ? 'check-circle' : 'circle-info' }}" style="margin-right:0.25rem"></i>
+                    {{ $aluApiConfigured ? 'API ALU terkonfigurasi;' : 'API key ALU belum diatur;' }} key dibaca dari <code>ALU_API_KEY</code> di <code>.env</code>. Tanpa key atau saat API bermasalah, sistem memakai API cadangan.
+                </div>
+            </div>
+
             <!-- DIGIFLAZZ -->
             <div class="card-glass p-4">
                 <h3 class="font-semibold mb-3 flex items-center gap-2" style="font-size:0.9rem">

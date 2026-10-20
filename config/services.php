@@ -92,4 +92,8 @@ return [
         ],
     ],
 
+    'alu' => [
+        'api_key' => env('ALU_API_KEY'),
+    ],
+
 ];

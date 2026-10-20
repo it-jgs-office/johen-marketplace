@@ -18,13 +18,19 @@ class AuthController extends Controller
 
     public function login(Request $request): RedirectResponse
     {
-        $request->validate([
+        $rules = [
             'username' => ['required', 'string'],
             'password' => ['required', 'string'],
-            'g-recaptcha-response' => ['required', 'string'],
-        ]);
+        ];
 
-        if (! app(RecaptchaService::class)->passes($request->string('g-recaptcha-response')->toString(), $request->ip())) {
+        if (config('recaptcha.enabled')) {
+            $rules['g-recaptcha-response'] = ['required', 'string'];
+        }
+
+        $request->validate($rules);
+
+        if (config('recaptcha.enabled')
+            && ! app(RecaptchaService::class)->passes($request->string('g-recaptcha-response')->toString(), $request->ip())) {
             return back()->withErrors([
                 'g-recaptcha-response' => 'Silakan centang verifikasi reCAPTCHA terlebih dahulu.',
             ])->onlyInput('username');

@@ -263,6 +263,10 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
     Route::post('/settings', [AdminController::class, 'settingsUpdate'])->name('settings.update');
 
+    Route::get('/check-providers', [App\Http\Controllers\Admin\CheckProviderController::class, 'index'])->name('check-providers');
+    Route::put('/check-providers/{checkProvider}', [App\Http\Controllers\Admin\CheckProviderController::class, 'update'])->name('check-providers.update');
+    Route::patch('/check-providers/{checkProvider}/toggle', [App\Http\Controllers\Admin\CheckProviderController::class, 'toggle'])->name('check-providers.toggle');
+
     Route::get('/contact-inquiries', [AdminController::class, 'contactInquiries'])->name('contact-inquiries');
     Route::get('/contact-inquiries/{contactInquiry}', [AdminController::class, 'contactInquiriesShow'])->name('contact-inquiries.show');
     Route::patch('/contact-inquiries/{contactInquiry}/mark-read', [AdminController::class, 'contactInquiriesMarkRead'])->name('contact-inquiries.mark-read');
