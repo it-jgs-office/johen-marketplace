@@ -1040,7 +1040,6 @@ class AdminController extends Controller
             'company_npwp' => 'nullable|string|max:64',
             'footer_text' => 'nullable|string|max:500',
             'digiflazz_margin_percent' => 'nullable|numeric|min:0|max:100',
-            'game_account_check_enabled' => 'nullable|boolean',
             'mlbb_nickname_check_enabled' => 'required|boolean',
         ]);
 
@@ -1060,7 +1059,6 @@ class AdminController extends Controller
             SiteSetting::set('digiflazz_margin_percent', (string) $request->input('digiflazz_margin_percent'));
         }
 
-        SiteSetting::set('game_account_check_enabled', $request->boolean('game_account_check_enabled') ? '1' : '0');
         SiteSetting::set('mlbb_nickname_check_enabled', (string) $request->boolean('mlbb_nickname_check_enabled'));
 
         if ($request->hasFile('site_logo') && $request->file('site_logo')->isValid()) {

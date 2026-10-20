@@ -58,15 +58,21 @@ class PaymentGatewayService
     public function resolve(string $method): array
     {
         return match ($method) {
-            'qris' => ['gateway_type' => 'qris'],
-            'gopay', 'dana', 'ovo', 'shopeepay', 'linkaja' => ['gateway_type' => 'ewallet', 'channel_code' => $this->ewalletChannelCode($method)],
-            'bca_va', 'bca' => ['gateway_type' => 'va', 'bank_code' => 'BCA', 'label' => 'BCA Virtual Account'],
+            'doku_wallet' => ['gateway_type' => 'ewallet', 'channel_code' => 'DOKU'],
+            'akulaku' => ['gateway_type' => 'paylater'],
+            'bjb_va', 'bjb' => ['gateway_type' => 'va', 'bank_code' => 'BJB', 'label' => 'BJB Virtual Account'],
+            'bnc_va', 'bnc' => ['gateway_type' => 'va', 'bank_code' => 'BNC', 'label' => 'BNC Virtual Account'],
             'bri_va', 'bri' => ['gateway_type' => 'va', 'bank_code' => 'BRI', 'label' => 'BRI Virtual Account'],
             'bni_va', 'bni' => ['gateway_type' => 'va', 'bank_code' => 'BNI', 'label' => 'BNI Virtual Account'],
             'bsi_va', 'bsi' => ['gateway_type' => 'va', 'bank_code' => 'BSI', 'label' => 'BSI Virtual Account'],
+            'bss_va', 'bss' => ['gateway_type' => 'va', 'bank_code' => 'BSS', 'label' => 'BSS Virtual Account'],
+            'btn_va', 'btn' => ['gateway_type' => 'va', 'bank_code' => 'BTN', 'label' => 'BTN Virtual Account'],
             'cimb_va', 'cimb' => ['gateway_type' => 'va', 'bank_code' => 'CIMB', 'label' => 'CIMB Virtual Account'],
-            'mandiri_va', 'mandiri' => ['gateway_type' => 'va', 'bank_code' => 'MANDIRI', 'label' => 'Mandiri Virtual Account'],
+            'doku_va', 'doku' => ['gateway_type' => 'va', 'bank_code' => 'DOKU', 'label' => 'DOKU Virtual Account'],
+            'danamon_va', 'danamon' => ['gateway_type' => 'va', 'bank_code' => 'DANAMON', 'label' => 'Danamon Virtual Account'],
+            'maybank_va', 'maybank' => ['gateway_type' => 'va', 'bank_code' => 'MAYBANK', 'label' => 'Maybank Virtual Account'],
             'permata_va', 'permata' => ['gateway_type' => 'va', 'bank_code' => 'PERMATA', 'label' => 'Permata Virtual Account'],
+            'sinarmas_va', 'sinarmas' => ['gateway_type' => 'va', 'bank_code' => 'SINARMAS', 'label' => 'Sinarmas Virtual Account'],
             'alfamart' => ['gateway_type' => 'retail', 'retail_outlet_name' => 'ALFAMART', 'label' => 'Alfamart'],
             'indomaret' => ['gateway_type' => 'retail', 'retail_outlet_name' => 'INDOMARET', 'label' => 'Indomaret'],
             default => ['gateway_type' => 'invoice'],
@@ -110,7 +116,7 @@ class PaymentGatewayService
     public function normalizeMethodCode(string $method): string
     {
         return match ($method) {
-            'bca', 'bni', 'bri', 'bsi', 'cimb', 'mandiri', 'permata' => $method.'_va',
+            'bjb', 'bnc', 'bni', 'bri', 'bsi', 'bss', 'btn', 'cimb', 'doku', 'danamon', 'maybank', 'permata', 'sinarmas' => $method.'_va',
             default => $method,
         };
     }

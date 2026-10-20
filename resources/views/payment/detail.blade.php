@@ -52,9 +52,6 @@
 
   {{-- HEADER --}}
   <div class="pd-header">
-    <div class="pd-header-badge">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-    </div>
     <div class="pd-header-titles">
       <h1 class="pd-title">Detail Pembayaran</h1>
       <p class="pd-sub">Selesaikan pembayaran sebelum waktu habis.</p>
@@ -106,9 +103,23 @@
       <div class="pd-card pd-status-card" id="pdStatusCard">
         <div class="pd-status" id="pdStatusBody">
           <div class="pd-status-left">
-            <div class="pd-status-icon" id="pdStatusIcon">
-              <svg class="spin-slow" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" width="44" height="44">
-                <path d="M21 12a9 9 0 11-6.219-8.56"/>
+            <div class="pd-status-icon pd-status-icon-terminal" id="pdStatusIcon">
+              <svg class="pd-pos-terminal" viewBox="0 0 96 96" role="img" aria-label="Animasi terminal pembayaran">
+                <circle cx="47" cy="49" r="43" fill="#162f68" opacity=".55"/>
+                <g class="pd-pos-device">
+                  <rect x="23" y="19" width="53" height="68" rx="10" fill="#3158ad" stroke="#a9caff" stroke-width="2.5"/>
+                  <rect class="pd-pos-screen" x="31" y="29" width="37" height="22" rx="4" fill="#d5f6ff" stroke="#183d87" stroke-width="2"/>
+                  <path d="M38 37h23M38 43h16" fill="none" stroke="#3987bc" stroke-width="2.5" stroke-linecap="round"/>
+                  <circle cx="36" cy="61" r="2.5" fill="#bbd7ff"/><circle cx="49" cy="61" r="2.5" fill="#bbd7ff"/><circle cx="62" cy="61" r="2.5" fill="#bbd7ff"/>
+                  <circle cx="36" cy="71" r="2.5" fill="#bbd7ff"/><circle cx="49" cy="71" r="2.5" fill="#bbd7ff"/><circle cx="62" cy="71" r="2.5" fill="#f8c64f"/>
+                  <path d="M39 80h21" fill="none" stroke="#142f70" stroke-width="3" stroke-linecap="round"/>
+                </g>
+                <g class="pd-pos-card">
+                  <rect x="56" y="7" width="30" height="19" rx="4" fill="#ffca54" stroke="#fff0bc" stroke-width="2"/>
+                  <path d="M58 14h26" stroke="#d78831" stroke-width="3"/>
+                  <rect x="62" y="18" width="6" height="4" rx="1" fill="#fff1bb"/>
+                </g>
+                <path class="pd-pos-signal" d="M75 39c3-3 3-7 0-10m5 14c6-6 6-13 0-19" fill="none" stroke="#7ae5ff" stroke-width="2.5" stroke-linecap="round"/>
               </svg>
             </div>
             <div class="pd-status-info">
@@ -283,7 +294,7 @@
           </div>
           <div class="pd-method-success" id="pdMethodSuccess" style="display:none">
             <div class="pd-success-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" width="56" height="56"><path d="M20 6 9 17l-5-5"/></svg>
+              <img class="pd-success-lordicon" src="https://media.lordicon.com/icons/wired/flat/2607-credit-card-shield.gif" alt="Pembayaran berhasil">
             </div>
             <div class="pd-success-label">Pembayaran Berhasil</div>
             <div class="pd-success-sub">Diamond telah masuk ke akun kamu.</div>
@@ -327,9 +338,9 @@
   display:flex;align-items:center;justify-content:center;box-shadow:0 12px 26px rgba(239,43,36,.22);
 }
 .pd-method-illus-doku span{font-family:var(--font-display);font-size:1rem;font-weight:900;letter-spacing:.08em;color:#fff;}
-.pd-cancel-form{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center;}
-.pd-cancel-btn{border:0;background:transparent;color:#ef4444;font:inherit;font-size:.82rem;font-weight:700;cursor:pointer;padding:.45rem .75rem;border-radius:8px;transition:background .2s,color .2s;}
-.pd-cancel-btn:hover{background:rgba(239,68,68,.12);color:#f87171;}
+.pd-cancel-form{display:block;width:100%;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center;visibility:visible;opacity:1;}
+.pd-cancel-btn{display:inline-flex;align-items:center;justify-content:center;width:100%;min-height:42px;border:1px solid rgba(248,113,113,.58);background:rgba(239,68,68,.1);color:#fca5a5;font:inherit;font-size:.82rem;font-weight:800;cursor:pointer;padding:.55rem .85rem;border-radius:10px;transition:background .2s,color .2s,border-color .2s,box-shadow .2s;}
+.pd-cancel-btn:hover{background:rgba(239,68,68,.2);border-color:#f87171;color:#fff;box-shadow:0 8px 20px -14px rgba(248,113,113,.9);}
 .pd-breadcrumb{display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--text-dim);margin:-.2rem 0 1.2rem;}
 .pd-breadcrumb a{color:var(--text-dim);text-decoration:none;transition:color .2s;}
 .pd-breadcrumb a:hover{color:var(--text);}
@@ -341,6 +352,20 @@
 
 /* status card */
 .pd-status-card{border-bottom:1px solid var(--border);}
+.pd-status-icon-terminal{display:grid;place-items:center;width:94px;height:94px;border-radius:22px;background:radial-gradient(circle at 50% 40%,rgba(81,139,242,.22),rgba(34,66,137,.09) 70%,transparent);}
+.pd-status-icon-terminal .pd-pos-terminal{display:block;width:88px;height:88px;filter:none;overflow:visible;}
+.pd-status-icon-success{display:grid;place-items:center;width:94px;height:94px;border-radius:22px;background:radial-gradient(circle at 50% 40%,rgba(52,211,153,.2),rgba(16,185,129,.06) 70%,transparent);}
+.pd-status-icon-success .pd-success-lordicon{display:block;width:88px;height:88px;object-fit:contain;}
+.pd-success-lordicon{display:block;width:72px;height:72px;object-fit:contain;}
+.pd-pos-device{animation:pd-pos-float 3.4s ease-in-out infinite;transform-origin:center;}
+.pd-pos-card{animation:pd-pos-tap 3.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center;}
+.pd-pos-screen{animation:pd-pos-screen-glow 3.4s ease-in-out infinite;}
+.pd-pos-signal{animation:pd-pos-signal-pulse 3.4s ease-in-out infinite;}
+@keyframes pd-pos-float{0%,100%{transform:translateY(0)}50%{transform:translateY(1.5px)}}
+@keyframes pd-pos-tap{0%,10%,100%{transform:translate(10px,-10px) rotate(9deg);opacity:0}22%{opacity:1}40%,56%{transform:translate(-9px,10px) rotate(-7deg);opacity:1}76%{transform:translate(10px,-10px) rotate(9deg);opacity:1}88%{opacity:0}}
+@keyframes pd-pos-screen-glow{0%,34%,75%,100%{fill:#d5f6ff}45%,62%{fill:#8ce8f8}}
+@keyframes pd-pos-signal-pulse{0%,32%,72%,100%{opacity:0}42%,60%{opacity:1}}
+@media(prefers-reduced-motion:reduce){.pd-pos-device,.pd-pos-card,.pd-pos-screen,.pd-pos-signal{animation:none}.pd-pos-card{transform:translate(-9px,10px) rotate(-7deg)}.pd-pos-signal{opacity:1}}
 .pd-card-head{text-transform:none;font-size:.84rem;color:var(--text);gap:.55rem;}
 .pd-card-head svg{color:#854DEA;}
 
@@ -650,8 +675,9 @@ function simulatePayment() {
             '<div class="pd-qr-dummy"><img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data={{ $order->order_id }}" alt="QR Code" style="width:180px;height:180px;border-radius:8px;display:block;background:#fff;"></div>';
         document.getElementById('pdMethodName').textContent = 'QRIS — Demo Mode';
         document.querySelector('#pdVaCopyBtn').dataset.copy = orderId;
-        document.getElementById('pdStatusIcon').innerHTML =
-            '<svg viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" width="44" height="44"><path d="M12 6v6l4 2"/></svg>';
+        document.getElementById('pdStatusIcon').classList.add('pd-status-icon-terminal');
+        document.getElementById('pdStatusIcon').classList.remove('pd-status-icon-success');
+        document.getElementById('pdStatusIcon').innerHTML = pendingTerminalMarkup;
         document.getElementById('pdStatusLabel').textContent = 'Menunggu Pembayaran';
         document.getElementById('pdStatusSub').textContent = 'Scan QR untuk menyelesaikan pembayaran (Demo)';
         document.getElementById('pdStatusPill').textContent = 'MENUNGGU PEMBAYARAN';
@@ -671,6 +697,7 @@ const STATUS_MAP = {
 };
 
 function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+const pendingTerminalMarkup = document.getElementById('pdStatusIcon').innerHTML;
 
 function updateStatus(type, result) {
     const map = STATUS_MAP[type] || STATUS_MAP.pending;
@@ -685,11 +712,13 @@ function updateStatus(type, result) {
     const methodFailed = document.getElementById('pdMethodFailed');
     const cancelForm = document.getElementById('pdCancelForm');
 
+    icon.classList.toggle('pd-status-icon-terminal', type === 'pending' || type === 'processing');
+    icon.classList.toggle('pd-status-icon-success', type === 'success');
     if (cancelForm) cancelForm.style.display = type === 'pending' ? 'block' : 'none';
 
     // status card
     if (type === 'processing') {
-        icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5" width="44" height="44"><path d="M12 6v6l4 2"/></svg>';
+        icon.innerHTML = pendingTerminalMarkup;
         label.textContent = 'Pembayaran Diterima';
         sub.textContent = 'Diamond sedang dikirim ke akun kamu.';
         pill.textContent = 'SEDANG DIPROSES';
@@ -701,7 +730,7 @@ function updateStatus(type, result) {
         if (methodSuccess) methodSuccess.style.display = 'flex';
         if (methodFailed) methodFailed.style.display = 'none';
     } else if (type === 'success') {
-        icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" width="44" height="44"><path d="M20 6 9 17l-5-5"/></svg>';
+        icon.innerHTML = '<img class="pd-success-lordicon" src="https://media.lordicon.com/icons/wired/flat/2607-credit-card-shield.gif" alt="Pembayaran berhasil">';
         label.textContent = 'Pembayaran Berhasil';
         sub.textContent = 'Diamond telah masuk ke akun kamu.';
         pill.textContent = 'PEMBELIAN SUKSES';
@@ -732,7 +761,11 @@ function updateStatus(type, result) {
         }
     } else {
         // pending
-        icon.innerHTML = '<svg class="spin-slow" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" width="44" height="44"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>';
+        if (type === 'pending') {
+            if (!icon.querySelector('.pd-pos-terminal')) icon.innerHTML = pendingTerminalMarkup;
+        } else {
+            icon.innerHTML = '<svg class="spin-slow" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" width="44" height="44"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>';
+        }
         label.textContent = 'Menunggu Pembayaran';
         sub.textContent = 'Selesaikan pembayaran sebelum batas waktu habis.';
         pill.textContent = 'MENUNGGU PEMBAYARAN';

@@ -44,11 +44,19 @@
 @endpush
 
 @php
-  $grouped = $products->groupBy('type');
+  [$specialItems, $regularProducts] = $products->partition(fn ($product) =>
+      preg_match('/^(spesial|special)/iu', trim((string) $product->buyer_sku_code)) === 1
+      || in_array(mb_strtolower(trim((string) $product->type)), ['special items', 'spesial items'], true)
+  );
+  $grouped = $regularProducts->groupBy('type');
   $regions = collect();
   $itemGroups = collect();
 
-  foreach (['First Topup (Double Diamonds)', 'Special Items'] as $specialType) {
+  if ($specialItems->isNotEmpty()) {
+      $itemGroups->put('Spesial Items', $specialItems);
+  }
+
+  foreach (['First Topup (Double Diamonds)'] as $specialType) {
       if ($grouped->has($specialType)) {
           $itemGroups->put($specialType, $grouped->get($specialType));
           $grouped->forget($specialType);
@@ -79,8 +87,9 @@
       $code = strtolower($code);
       if ($code === 'doku_checkout') return 'doku';
       if (in_array($code, ['qris'], true)) return 'qris';
-      if (in_array($code, ['gopay', 'dana', 'ovo', 'shopeepay', 'linkaja', 'gcash'], true)) return 'ewallet';
-      if (in_array($code, ['bca', 'bca_va', 'bri', 'bri_va', 'bni', 'bni_va', 'bsi', 'bsi_va', 'cimb', 'cimb_va', 'mandiri', 'mandiri_va', 'permata', 'permata_va', 'sa', 'saham', 'other_bank'], true)) return 'va';
+      if ($code === 'doku_wallet') return 'ewallet';
+      if ($code === 'akulaku') return 'paylater';
+      if (str_ends_with($code, '_va')) return 'va';
       if (in_array($code, ['alfamart', 'indomaret'], true)) return 'convenience_store';
       return 'ewallet';
   };
@@ -108,6 +117,7 @@
       'doku' => 'Pembayaran Aman DOKU',
       'qris' => 'QRIS',
       'ewallet' => 'E-Wallet',
+      'paylater' => 'PayLater',
       'va' => 'Virtual Account / Bank',
       'convenience_store' => 'Convenience Store',
   ];
@@ -206,7 +216,7 @@
   <div class="gd-step">
     <div class="gd-step-head"><div class="gd-step-num">2</div><div class="gd-step-title">Pilih Nominal</div></div>
 
-    {{-- Item type groups (Special Items, First Topup, etc.) --}}
+    {{-- Item type groups (Spesial Items, First Topup, etc.) --}}
     @foreach($itemGroups as $itemType => $typeItems)
       <div class="gd-group">
         <div class="gd-group-head">
@@ -376,7 +386,7 @@
       @foreach($categories as $catKey => $catLabel)
         @php $catMethods = $groupedPay->get($catKey, collect()); @endphp
         @continue($catMethods->isEmpty())
-        <div class="gd-pay-category{{ in_array($catKey, ['doku', 'qris'], true) && $catMethods->isNotEmpty() ? ' open' : '' }}" data-category="{{ $catKey }}">
+        <div class="gd-pay-category open" data-category="{{ $catKey }}">
           <button type="button" class="gd-pay-cat-head">
             <span class="gd-pay-cat-label">{{ $catLabel }}</span>
             <svg class="gd-pay-cat-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
@@ -584,7 +594,7 @@ function scrollToOrderStep(stepId) {
 
 const brandName = @json($brand->name);
 const isMobileLegends = @json($isMobileLegends);
-const accountCheckEnabled = @json((string) \App\Models\SiteSetting::get('game_account_check_enabled', '1') !== '0');
+const accountCheckEnabled = true;
 const paymentMethods = @json($payData);
 const pointBalance = @json((int) $pointBalance);
 const usePointsInput = document.getElementById('usePointsInput');
@@ -745,17 +755,8 @@ userIdInput.addEventListener('input', togglePayLock);
 if (zoneIdInput) zoneIdInput.addEventListener('input', togglePayLock);
 togglePayLock();
 
-/* preselect metode pembayaran default (QRIS atau metode pertama yang tersedia) */
+/* Tampilkan seluruh metode dan pilih QRIS atau metode pertama sebagai default. */
 (function(){
-    const qrCategory = document.querySelector('.gd-pay-category[data-category="qris"]');
-    const defaultCategory = qrCategory?.querySelector('.gd-pay-row')
-        ? qrCategory
-        : $$('.gd-pay-category').find(category => category.querySelector('.gd-pay-row'));
-    if (defaultCategory) {
-        $$('.gd-pay-category').forEach(category => category.classList.remove('open'));
-        defaultCategory.classList.add('open');
-    }
-
     const qrRow = document.querySelector('.gd-pay-row[data-key="qris"]') || document.querySelector('.gd-pay-row');
     if (qrRow) {
         const method = paymentMethods.find(m => m.key === qrRow.dataset.key);
@@ -912,9 +913,7 @@ $('#payGroup').addEventListener('click', e => {
     const catHead = e.target.closest('.gd-pay-cat-head');
     if (catHead) {
         const cat = catHead.closest('.gd-pay-category');
-        const isOpen = cat.classList.contains('open');
-        $$('.gd-pay-category').forEach(c => c.classList.remove('open'));
-        if (!isOpen) cat.classList.add('open');
+        cat.classList.toggle('open');
         return;
     }
     /* method select */

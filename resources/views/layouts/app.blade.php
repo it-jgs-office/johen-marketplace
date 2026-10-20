@@ -14,7 +14,7 @@
         <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet" />
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
-        <link rel="stylesheet" href="{{ pwa_asset('css/frontend-promo.css') }}">
+        <link rel="stylesheet" href="/css/frontend-promo.css?v={{ filemtime(public_path('css/frontend-promo.css')) }}">
         <style>@media(max-width:860px){input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea{font-size:16px!important;}}</style>
     </head>
     <body class="font-sans antialiased">

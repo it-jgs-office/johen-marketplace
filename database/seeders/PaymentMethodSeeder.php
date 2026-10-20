@@ -10,7 +10,7 @@ class PaymentMethodSeeder extends Seeder
     /**
      * Sinkronkan daftar metode pembayaran dengan data lokal (idempotent).
      *
-     * Production hanya mengaktifkan VA BSI, BNI, dan CIMB melalui DOKU.
+     * Aktifkan hanya kanal yang berstatus aktif di dashboard DOKU merchant.
      */
     public function run(): void
     {
@@ -36,7 +36,6 @@ class PaymentMethodSeeder extends Seeder
                 'category' => 'ewallet',
                 'photo' => null,
                 'photo_light' => null,
-                // LinkAja sudah discontinued di Xendit, nonaktifkan agar tidak muncul.
                 'is_active' => false,
             ],
             [
@@ -73,7 +72,7 @@ class PaymentMethodSeeder extends Seeder
                 'code' => 'bri_va',
                 'category' => 'va',
                 'photo' => 'payments/bri.svg',
-                'is_active' => false,
+                'is_active' => true,
             ],
             [
                 'name' => 'BNI Virtual Account',
@@ -111,21 +110,101 @@ class PaymentMethodSeeder extends Seeder
                 'category' => 'va',
                 'photo' => null,
                 'photo_light' => null,
-                'is_active' => false,
+                'is_active' => true,
             ],
             [
                 'name' => 'Alfamart',
                 'code' => 'alfamart',
                 'category' => 'convenience_store',
                 'photo' => 'payments/alfamart.svg',
-                'is_active' => false,
+                'is_active' => true,
             ],
             [
                 'name' => 'Indomaret',
                 'code' => 'indomaret',
                 'category' => 'convenience_store',
                 'photo' => 'payments/indomaret.svg',
-                'is_active' => false,
+                'is_active' => true,
+            ],
+            [
+                'name' => 'DOKU e-Wallet',
+                'code' => 'doku_wallet',
+                'category' => 'ewallet',
+                'photo' => null,
+                'photo_light' => null,
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Akulaku',
+                'code' => 'akulaku',
+                'category' => 'paylater',
+                'photo' => null,
+                'photo_light' => null,
+                'is_active' => true,
+            ],
+            [
+                'name' => 'BJB Virtual Account',
+                'code' => 'bjb_va',
+                'category' => 'va',
+                'photo' => null,
+                'photo_light' => null,
+                'is_active' => true,
+            ],
+            [
+                'name' => 'BNC Virtual Account',
+                'code' => 'bnc_va',
+                'category' => 'va',
+                'photo' => null,
+                'photo_light' => null,
+                'is_active' => true,
+            ],
+            [
+                'name' => 'BSS Virtual Account',
+                'code' => 'bss_va',
+                'category' => 'va',
+                'photo' => null,
+                'photo_light' => null,
+                'is_active' => true,
+            ],
+            [
+                'name' => 'BTN Virtual Account',
+                'code' => 'btn_va',
+                'category' => 'va',
+                'photo' => null,
+                'photo_light' => null,
+                'is_active' => true,
+            ],
+            [
+                'name' => 'DOKU Virtual Account',
+                'code' => 'doku_va',
+                'category' => 'va',
+                'photo' => null,
+                'photo_light' => null,
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Danamon Virtual Account',
+                'code' => 'danamon_va',
+                'category' => 'va',
+                'photo' => null,
+                'photo_light' => null,
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Maybank Virtual Account',
+                'code' => 'maybank_va',
+                'category' => 'va',
+                'photo' => null,
+                'photo_light' => null,
+                'is_active' => true,
+            ],
+            [
+                'name' => 'Sinarmas Virtual Account',
+                'code' => 'sinarmas_va',
+                'category' => 'va',
+                'photo' => null,
+                'photo_light' => null,
+                'is_active' => true,
             ],
         ];
 

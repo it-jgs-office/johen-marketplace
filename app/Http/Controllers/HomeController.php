@@ -290,7 +290,11 @@ class HomeController extends Controller
 
         $products = $this->activeGameProductsQuery()
             ->whereRaw('LOWER(brand) = ?', [mb_strtolower($brand->name)])
-            ->when($isMobileLegends, fn ($query) => $query->whereRaw('LOWER(buyer_sku_code) LIKE ?', ['%-idn']))
+            ->when($isMobileLegends, fn ($query) => $query->where(function ($query) {
+                $query->whereRaw('LOWER(buyer_sku_code) LIKE ?', ['%-idn'])
+                    ->orWhereRaw('LOWER(TRIM(buyer_sku_code)) LIKE ?', ['spesial%'])
+                    ->orWhereRaw('LOWER(TRIM(buyer_sku_code)) LIKE ?', ['special%']);
+            }))
             ->orderBy('type')
             ->orderBy('selling_price')
             ->get();

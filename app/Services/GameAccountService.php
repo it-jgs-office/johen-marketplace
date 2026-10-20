@@ -18,7 +18,7 @@ class GameAccountService
 {
     public function isEnabled(): bool
     {
-        return (string) SiteSetting::get('game_account_check_enabled', '1') !== '0';
+        return true;
     }
 
     /**
@@ -32,10 +32,6 @@ class GameAccountService
      */
     public function check(string $brand, string $userId, ?string $zoneId = null, bool $allowPaidFallback = false): array
     {
-        if (! $this->isEnabled()) {
-            return $this->result(false, null, false);
-        }
-
         $userId = trim($userId);
         $zoneId = trim((string) $zoneId);
 

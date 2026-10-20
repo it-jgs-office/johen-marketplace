@@ -62,9 +62,13 @@
     function closeMobileMenu() {
         var hamburger = document.getElementById('hamburgerBtn');
         var mobileMenu = document.getElementById('mobileMenu');
+        var mobileMenuBackdrop = document.getElementById('mobileMenuBackdrop');
         if (hamburger) hamburger.classList.remove('open');
         if (hamburger) hamburger.setAttribute('aria-expanded', 'false');
         if (mobileMenu) mobileMenu.classList.remove('open');
+        if (mobileMenu) mobileMenu.setAttribute('aria-hidden', 'true');
+        if (mobileMenuBackdrop) mobileMenuBackdrop.classList.remove('open');
+        document.body.classList.remove('mobile-menu-open');
     }
 
     function openGuide(mode) {

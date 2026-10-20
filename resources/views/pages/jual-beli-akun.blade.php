@@ -190,10 +190,10 @@
               <span class="jba-stat">Garansi 100%</span>
             </div>
           </div>
-          <button type="button" class="jba-testi-link" id="jbaTestiBtn">
+          <a href="{{ route('testimoni', ['layanan' => 'jual-beli-akun']) }}" class="jba-testi-link">
             Lihat Testimoni
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </button>
+          </a>
         </div>
       </div>
     </div>
@@ -1754,14 +1754,6 @@
   });
 
   /* ---------- filter dropdowns ---------- */
-  const jbaTestiBtn = document.getElementById('jbaTestiBtn');
-  if (jbaTestiBtn) {
-    jbaTestiBtn.addEventListener('click', function() {
-      const sec = document.getElementById('jbaTestiSection');
-      if (sec) sec.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  }
-
   document.querySelectorAll('.jba-filter-trigger').forEach(function(trig) {
     trig.addEventListener('click', function(e) {
       e.stopPropagation();

@@ -31,8 +31,8 @@
 <link rel="icon" type="image/png" href="{{ $themeFavicon }}">
 <link rel="shortcut icon" href="{{ $themeFavicon }}">
 @include('partials.pwa')
-  <link rel="stylesheet" href="{{ pwa_asset('css/topup.css') }}">
-  <link rel="stylesheet" href="{{ pwa_asset('css/frontend-promo.css') }}">
+  <link rel="stylesheet" href="/css/topup.css?v={{ filemtime(public_path('css/topup.css')) }}">
+  <link rel="stylesheet" href="/css/frontend-promo.css?v={{ filemtime(public_path('css/frontend-promo.css')) }}">
 @if(!empty($activeThemeCss))
 <style>:root{{{ $activeThemeCss }}}</style>
 @endif
@@ -182,34 +182,78 @@
   </button>
 </nav>
 
-  <div class="mobile-menu" id="mobileMenu" aria-label="Menu lainnya">
-    <a href="{{ route('cart.index') }}" class="mobile-menu__cart {{ request()->routeIs('cart.*') || request()->routeIs('checkout.*') ? 'active' : '' }}">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-      </svg>
-      <span>Keranjang</span>
-      <span class="nav-cart-badge nav-cart-badge--inline" data-role="cart-badge" @if($cartCount < 1) hidden @endif>{{ $cartCount > 99 ? '99+' : $cartCount }}</span>
-    </a>
+  <div class="mobile-menu-backdrop" id="mobileMenuBackdrop" aria-hidden="true"></div>
+  <aside class="mobile-menu" id="mobileMenu" aria-label="Menu mobile" aria-hidden="true">
+    <div class="mobile-menu__header">
+      <a href="{{ route('home') }}" class="mobile-menu__brand" aria-label="Johen Gaming - Beranda">
+        <img src="{{ $themeLogo }}" alt="">
+        <strong>JOHEN <span>GAMING</span></strong>
+      </a>
+      <button type="button" class="mobile-menu__close" id="mobileMenuClose" aria-label="Tutup menu">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+      </button>
+    </div>
+
+    <nav class="mobile-menu__nav" aria-label="Navigasi mobile">
+      <a href="{{ route('home') }}" class="{{ request()->routeIs('home') || request()->routeIs('games.show') ? 'active' : '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h11L22 9l-10 12L2 9l4.5-6Z"/><path d="M2 9h20M9 3 7 9l5 12 5-12-2-6"/></svg>
+        <span>Top Up</span>
+      </a>
+      <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="10" r="2.2"/><path d="M5.5 17c.45-2 1.75-3 3-3s2.55 1 3 3M14 9h4.5M14 13h4.5M14 17h3"/></svg>
+        <span>Jual Beli Akun</span>
+      </a>
+      <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z"/><path d="m8 11 2 2 5-5M8 16h8"/></svg>
+        <span>Cek Transaksi</span>
+      </a>
+      <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 3h10v7a5 5 0 0 1-10 0V3Z"/><path d="M7 5H4v3a4 4 0 0 0 4 4M17 5h3v3a4 4 0 0 1-4 4"/></svg>
+        <span>Leaderboard</span>
+      </a>
+      <a href="{{ route('cart.index') }}" class="mobile-menu__cart {{ request()->routeIs('cart.*') || request()->routeIs('checkout.*') ? 'active' : '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span>Keranjang</span>
+        <span class="nav-cart-badge nav-cart-badge--inline" data-role="cart-badge" @if($cartCount < 1) hidden @endif>{{ $cartCount > 99 ? '99+' : $cartCount }}</span>
+      </a>
+    </nav>
+
+    <div class="mobile-menu__account">
+      @auth
+        <a href="{{ route('profile.edit') }}" class="mobile-menu__profile">
+          <span class="mobile-menu__avatar">
+            @if(Auth::user()->avatar)
+              <img src="{{ media_url(Auth::user()->avatar) }}" alt="">
+            @else
+              {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+            @endif
+          </span>
+          <span><small>Akun saya</small><strong>{{ Auth::user()->name }}</strong></span>
+        </a>
+        <form method="POST" action="{{ route('logout') }}">
+          @csrf
+          <button type="submit" class="mobile-menu__logout">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5M21 12H9"/></svg>
+            <span>Keluar</span>
+          </button>
+        </form>
+      @else
+        <div class="mobile-menu__guest-copy">
+          <strong>Akses akun</strong>
+          <span>Masuk untuk melihat profil dan pesanan.</span>
+        </div>
+        <div class="mobile-auth">
+          <a href="{{ route('login') }}" class="btn btn-outline">Masuk</a>
+          <a href="{{ route('register') }}" class="btn btn-solid">Daftar</a>
+        </div>
+      @endauth
+    </div>
+
     <button type="button" class="pwa-install-btn pwa-install-mobile-btn" data-pwa-install-trigger aria-label="Install App" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
       <span>Install App</span>
     </button>
-    @auth
-      <a href="{{ route('profile.edit') }}">Profil Saya</a>
-      <div class="mobile-auth">
-        <form method="POST" action="{{ route('logout') }}" style="width:100%;">
-          @csrf
-          <button type="submit" class="btn btn-outline" style="width:100%;justify-content:center;">Logout</button>
-        </form>
-      </div>
-    @else
-      <div class="mobile-auth">
-        <a href="{{ route('login') }}" class="btn btn-outline" style="flex:1;justify-content:center;">Masuk</a>
-        <a href="{{ route('register') }}" class="btn btn-solid" style="flex:1;justify-content:center;background:var(--action-gradient);">Daftar</a>
-      </div>
-    @endauth
-  </div>
+  </aside>
 
 @php
     $popupBanners = \App\Models\PopupBanner::activeBanners();
@@ -518,7 +562,7 @@ html:not([data-theme="light"]) .mobile-theme-btn .icon-moon {
   // Dipakai topup.js untuk menyegarkan angka keranjang tanpa reload halaman.
   window.CART_STATE_URL = @json(\Illuminate\Support\Facades\Route::has('cart.state') ? route('cart.state') : null);
 </script>
-  <script src="{{ pwa_asset('js/topup.js') }}"></script>
+  <script src="/js/topup.js?v={{ filemtime(public_path('js/topup.js')) }}"></script>
   <script src="{{ pwa_asset('js/frontend-promo.js') }}" defer></script>
 
 @if($popupBanners->isNotEmpty())

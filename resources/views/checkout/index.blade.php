@@ -10,8 +10,9 @@
         $code = strtolower($code);
         if ($code === 'doku_checkout') return 'doku';
         if (in_array($code, ['qris'], true)) return 'qris';
-        if (in_array($code, ['gopay', 'dana', 'ovo', 'shopeepay', 'linkaja', 'gcash'], true)) return 'ewallet';
-        if (in_array($code, ['bca', 'bca_va', 'bri', 'bri_va', 'bni', 'bni_va', 'bsi', 'bsi_va', 'cimb', 'cimb_va', 'mandiri', 'mandiri_va', 'permata', 'permata_va', 'sa', 'saham', 'other_bank'], true)) return 'va';
+        if ($code === 'doku_wallet') return 'ewallet';
+        if ($code === 'akulaku') return 'paylater';
+        if (str_ends_with($code, '_va')) return 'va';
         if (in_array($code, ['alfamart', 'indomaret'], true)) return 'convenience_store';
         return 'ewallet';
     };
@@ -19,6 +20,7 @@
         'doku' => 'Pembayaran Aman DOKU',
         'qris' => 'QRIS',
         'ewallet' => 'E-Wallet',
+        'paylater' => 'PayLater',
         'va' => 'Virtual Account / Bank',
         'convenience_store' => 'Convenience Store',
     ];

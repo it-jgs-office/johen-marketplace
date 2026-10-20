@@ -38,18 +38,28 @@ if (header) {
 // ============ MOBILE MENU ============
 const hamburgerBtn = document.getElementById('hamburgerBtn');
 const mobileMenu = document.getElementById('mobileMenu');
+const mobileMenuClose = document.getElementById('mobileMenuClose');
+const mobileMenuBackdrop = document.getElementById('mobileMenuBackdrop');
 if (hamburgerBtn && mobileMenu) {
   const closeMobileMenu = () => {
     hamburgerBtn.classList.remove('open');
     hamburgerBtn.setAttribute('aria-expanded', 'false');
     mobileMenu.classList.remove('open');
+    mobileMenu.setAttribute('aria-hidden', 'true');
+    mobileMenuBackdrop?.classList.remove('open');
+    document.body.classList.remove('mobile-menu-open');
   };
   hamburgerBtn.addEventListener('click', () => {
     const isOpen = mobileMenu.classList.toggle('open');
     hamburgerBtn.classList.toggle('open', isOpen);
     hamburgerBtn.setAttribute('aria-expanded', String(isOpen));
+    mobileMenu.setAttribute('aria-hidden', String(!isOpen));
+    mobileMenuBackdrop?.classList.toggle('open', isOpen);
+    document.body.classList.toggle('mobile-menu-open', isOpen);
   });
-  mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', closeMobileMenu));
+  mobileMenuClose?.addEventListener('click', closeMobileMenu);
+  mobileMenuBackdrop?.addEventListener('click', closeMobileMenu);
+  mobileMenu.querySelectorAll('a, [data-pwa-install-trigger]').forEach(item => item.addEventListener('click', closeMobileMenu));
   document.addEventListener('click', e => {
     if (!mobileMenu.contains(e.target) && !hamburgerBtn.contains(e.target)) closeMobileMenu();
   });

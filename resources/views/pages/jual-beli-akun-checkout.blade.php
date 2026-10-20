@@ -62,6 +62,7 @@
                   'doku' => 'Pembayaran Aman DOKU',
                   'qris' => 'QRIS',
                   'ewallet' => 'E-Wallet',
+                  'paylater' => 'PayLater',
                   'va' => 'Virtual Account',
                   'convenience_store' => 'Convenience Store',
               ];

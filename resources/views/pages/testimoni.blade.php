@@ -68,9 +68,10 @@
 .testi-page-time{margin:0 0 0 3.05rem;padding-top:.55rem;border-top:1px solid color-mix(in srgb,var(--border) 82%,transparent);color:var(--text-mute);font-size:.62rem;line-height:1.3;}
 
 @media (max-width: 640px) {
-  .testi-page{padding:2rem var(--layout-gutter) 3rem}
-  .testi-page-grid{grid-template-columns:1fr;gap:.7rem}
-  .testi-page-card{min-height:220px}
+  .testi-page{padding:2rem max(.65rem,var(--layout-gutter)) 3rem}
+  .testi-page-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}
+  .testi-page-card{min-width:0;min-height:190px;padding:.65rem}
+  .testi-page-time{margin-left:0;padding-top:.4rem}
 }
 </style>
 
