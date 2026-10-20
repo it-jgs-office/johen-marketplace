@@ -1,5 +1,11 @@
 @extends('layouts.topup')
 
+@php
+  $notFoundLogo = \App\Models\SiteSetting::get('site_logo')
+    ? media_url(\App\Models\SiteSetting::get('site_logo'))
+    : pwa_asset('logo.png');
+@endphp
+
 @section('title', 'Halaman Tidak Ditemukan - ' . config('app.name'))
 
 @push('styles')
@@ -25,7 +31,7 @@
 <section class="not-found-page" aria-labelledby="not-found-title">
   <div class="not-found-panel">
     <div class="not-found-signal" aria-hidden="true">
-      <img src="{{ $themeLogo }}" alt="">
+      <img src="{{ $notFoundLogo }}" alt="">
     </div>
     <p class="not-found-code" aria-hidden="true">404</p>
     <h1 id="not-found-title">Halaman tidak ditemukan</h1>
