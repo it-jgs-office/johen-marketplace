@@ -7,6 +7,7 @@ use App\Models\CheckProvider;
 use App\Models\Product;
 use App\Models\SiteSetting;
 use Illuminate\Http\Client\ConnectionException;
+use Illuminate\Http\Client\RequestException;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -467,13 +468,19 @@ class GameAccountService
      * Predikat retry untuk provider gratis: ulangi hanya saat gangguan sesaat
      * (koneksi gagal, timeout, 429, atau 5xx), bukan saat akun tidak ditemukan.
      */
-    protected function retryOnTransient(\Throwable $exception, $request): bool
+    protected function retryOnTransient(\Throwable $exception, $request = null, ?string $method = null): bool
     {
         if ($exception instanceof ConnectionException) {
             return true;
         }
 
-        $status = $request?->toPsrResponse()?->getStatusCode();
+        // Laravel passes PendingRequest as argument two; HTTP status is carried
+        // by RequestException::response, not by the pending request.
+        if (! ($exception instanceof RequestException)) {
+            return false;
+        }
+
+        $status = $exception->response->status();
 
         return $status !== null && ($status === 429 || $status >= 500);
     }

@@ -737,9 +737,11 @@
                 <a href="{{ route('admin.gateway-status') }}" class="{{ request()->routeIs('admin.gateway-status*') ? 'active' : '' }}">
                     <i class="fas fa-plug"></i> Status Gateway
                 </a>
-                <a href="{{ route('admin.check-providers') }}" class="{{ request()->routeIs('admin.check-providers*') ? 'active' : '' }}">
-                    <i class="fas fa-user-check"></i> Provider Cek Akun
-                </a>
+                @if(\Illuminate\Support\Facades\Route::has('admin.check-providers'))
+                    <a href="{{ route('admin.check-providers') }}" class="{{ request()->routeIs('admin.check-providers*') ? 'active' : '' }}">
+                        <i class="fas fa-user-check"></i> Provider Cek Akun
+                    </a>
+                @endif
                 <a href="{{ route('admin.settings') }}" class="{{ request()->routeIs('admin.settings*') ? 'active' : '' }}">
                     <i class="fas fa-cog"></i> Pengaturan
                 </a>

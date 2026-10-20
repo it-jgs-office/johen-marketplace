@@ -32,7 +32,9 @@ class CheckProviderController extends Controller
 
         $checkProvider->update([
             'label' => $data['label'],
-            'free_type' => $data['free_type'] ?: null,
+            // The database column is non-nullable; use "none" when no free
+            // provider is configured so the paid fallback can still be used.
+            'free_type' => $data['free_type'] ?: 'none',
             'free_config' => $this->decodeJson($data['free_config_json'] ?? null),
             'fallback_free_type' => $data['fallback_free_type'] ?: null,
             'fallback_free_config' => $this->decodeJson($data['fallback_free_config_json'] ?? null),
