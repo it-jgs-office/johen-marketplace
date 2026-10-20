@@ -61,7 +61,7 @@ class MobileLegendsRegionTest extends TestCase
         $this->assertSame('Indonesia', $first['region']);
         Http::assertSentCount(1);
         Http::assertSent(fn ($request) => $request['buyer_sku_code'] === 'usrnameml-johen'
-            && $request['customer_no'] === '12345678.2001'
+            && $request['customer_no'] === '123456782001'
             && $request['sign'] === md5('test-ml-region'.'test-key'.$request['ref_id']));
     }
 

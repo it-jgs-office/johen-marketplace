@@ -29,12 +29,16 @@
     <span class="badge badge-neutral">{{ $orders->total() }} total</span>
 </div>
 
-<form method="GET" action="{{ route('admin.account-orders') }}" class="admin-filter-bar" style="max-width:640px">
+<form method="GET" action="{{ route('admin.account-orders') }}" class="admin-filter-bar">
     <div class="search-wrap flex-1">
         <i class="fas fa-search search-icon"></i>
         <input type="text" name="search" value="{{ request('search') }}" class="input-field" placeholder="Cari no. pesanan, nama, akun..." style="padding-left:2.4rem">
     </div>
-    <select name="status" class="input-field" style="max-width:200px" onchange="this.form.submit()">
+    <select name="type" class="input-field" onchange="this.form.submit()">
+        <option value="topup" {{ request('type') === 'topup' ? 'selected' : '' }}>Top Up</option>
+        <option value="jual-beli" {{ request('type', 'jual-beli') === 'jual-beli' ? 'selected' : '' }}>Jual Beli Akun</option>
+    </select>
+    <select name="status" class="input-field" onchange="this.form.submit()">
         <option value="all" {{ request('status') === 'all' || !request('status') ? 'selected' : '' }}>Semua Status</option>
         <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
         <option value="processing" {{ request('status') === 'processing' ? 'selected' : '' }}>Processing</option>
@@ -42,6 +46,12 @@
         <option value="failed" {{ request('status') === 'failed' ? 'selected' : '' }}>Failed</option>
         <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Cancelled</option>
     </select>
+    <input type="date" name="date_from" value="{{ request('date_from') }}" class="input-field" title="Tanggal mulai">
+    <input type="date" name="date_until" value="{{ request('date_until') }}" class="input-field" title="Tanggal akhir">
+    <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Filter</button>
+    @if(request()->hasAny(['search', 'status', 'date_from', 'date_until']))
+        <a href="{{ route('admin.account-orders') }}" class="btn btn-ghost">Reset</a>
+    @endif
 </form>
 
 <div class="table-wrap">

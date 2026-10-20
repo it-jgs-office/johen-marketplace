@@ -599,17 +599,17 @@ class DigiflazzService
 
     /**
      * Format customer_no untuk Digiflazz:
-     * game ber-Zone ID memerlukan format "userid.zoneid".
+     * game ber-Zone ID menggunakan gabungan userid dan zoneid tanpa pemisah.
      */
     protected function buildCustomerNo(string $customerNumber, ?string $zoneId): string
     {
         $customerNumber = trim($customerNumber);
         $zoneId = trim((string) $zoneId);
 
-        if ($zoneId === '' || str_contains($customerNumber, '.')) {
+        if ($zoneId === '') {
             return $customerNumber;
         }
 
-        return $customerNumber.'.'.$zoneId;
+        return $customerNumber.$zoneId;
     }
 }

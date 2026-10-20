@@ -47,6 +47,15 @@
         && $order->saldo_status === 'held'
         && $order->status !== 'success'
         && ! $retryAlreadyUsed;
+    $canUpdateRecipient = ! $isRefunded
+        && $order->saldo_status === 'held'
+        && $order->status !== 'success';
+    $recipientUserId = $order->customer_number;
+    $recipientZoneId = $order->effective_zone_id;
+    if (str_contains($recipientUserId, '.')) {
+        [$recipientUserId, $legacyZoneId] = array_pad(explode('.', $recipientUserId, 2), 2, null);
+        $recipientZoneId = $recipientZoneId ?: $legacyZoneId;
+    }
 @endphp
 <div style="max-width:1100px;margin:0 auto">
     <a href="{{ route('admin.orders') }}" class="btn btn-ghost mb-4" style="padding-left:0">
@@ -155,6 +164,7 @@
         <div class="transaction-actions-bar">
             <h3 class="font-semibold"><i class="fas fa-screwdriver-wrench" style="color:var(--accent);margin-right:.5rem"></i>Aksi Transaksi</h3>
             <div class="transaction-actions">
+                <button type="button" class="btn btn-ghost" data-open-transaction-modal="recipientRetryModal" {{ $canUpdateRecipient ? '' : 'disabled' }}><i class="fas fa-pen mr-1"></i>Ubah ID &amp; Ulang Topup</button>
                 <button type="button" class="btn btn-ghost" data-open-transaction-modal="retryTopupModal" {{ $canRetryTopup ? '' : 'disabled' }}>Retry Topup</button>
                 <form method="POST" action="{{ route('admin.orders.check-provider', $order) }}">@csrf<button class="btn btn-primary"><i class="fas fa-rotate mr-1"></i>Cek Status Provider</button></form>
                 <button type="button" class="btn" style="background:#059669;color:white" data-open-transaction-modal="manualSuccessModal" {{ $isRefunded || $order->status === 'success' || $order->saldo_status !== 'held' || $order->adminActions->where('action','manual_success')->isNotEmpty() ? 'disabled' : '' }}>Manual Success</button>
@@ -167,6 +177,33 @@
                 <span style="color:var(--text-muted)">{{ $order->provider_error_reason ?: $order->note }} Retry transaksi setelah gangguan diperbaiki. Jika tidak di-retry, refund otomatis ke Johen Point pada {{ $order->provider_error_at->copy()->addMinutes((int) config('digiflazz.reconcile.provider_error_grace_minutes', 10))->timezone('Asia/Jakarta')->format('d M Y H:i') }} WIB.</span>
             </div>
         @endif
+    </div>
+
+    <div class="transaction-action-modal" id="recipientRetryModal" role="dialog" aria-modal="true" aria-labelledby="recipientRetryTitle" hidden>
+        <div class="transaction-action-modal__backdrop" data-close-transaction-modal></div>
+        <div class="transaction-action-modal__panel">
+            <div class="transaction-action-modal__head">
+                <div>
+                    <h3 id="recipientRetryTitle">Ubah ID Penerima &amp; Ulang Topup</h3>
+                    <p>Perubahan disimpan ke database sebelum topup dikirim ulang. User ID dan Server ID wajib dipisahkan tanpa titik.</p>
+                </div>
+                <button type="button" class="transaction-action-modal__close" data-close-transaction-modal aria-label="Tutup modal"><i class="fas fa-xmark"></i></button>
+            </div>
+            <form method="POST" action="{{ route('admin.orders.recipient-retry', $order) }}">
+                @csrf
+                <label style="display:block;font-size:.78rem;font-weight:700;color:var(--text-dim);margin-bottom:.4rem">User ID / Nomor Pelanggan</label>
+                <input class="input-field" name="customer_number" required maxlength="100" value="{{ $recipientUserId }}" autocomplete="off">
+                <label style="display:block;font-size:.78rem;font-weight:700;color:var(--text-dim);margin:.9rem 0 .4rem">Server ID / Zone ID <span style="font-weight:400">(opsional)</span></label>
+                <input class="input-field" name="zone_id" maxlength="20" value="{{ $recipientZoneId }}" autocomplete="off">
+                <div style="margin-top:.85rem;padding:.85rem 1rem;border:1px solid rgba(245,158,11,.3);border-radius:11px;background:rgba(245,158,11,.08);color:var(--text-muted);font-size:.78rem;line-height:1.55">
+                    Contoh Mobile Legends: User ID <strong style="color:var(--text)">1454641242</strong> dan Server ID <strong style="color:var(--text)">16479</strong>. Provider akan menerima <strong style="color:var(--text)">145464124216479</strong> tanpa titik.
+                </div>
+                <div class="transaction-action-modal__actions">
+                    <button type="button" class="btn btn-ghost" data-close-transaction-modal>Batal</button>
+                    <button class="btn btn-primary"><i class="fas fa-rotate mr-1"></i>Simpan &amp; Ulang Topup</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <div class="transaction-action-modal" id="retryTopupModal" role="dialog" aria-modal="true" aria-labelledby="retryTopupTitle" hidden>
@@ -242,7 +279,7 @@ document.querySelectorAll('[data-open-transaction-modal]').forEach(function (but
         if (!modal || button.disabled) return;
         modal.hidden = false;
         document.body.style.overflow = 'hidden';
-        modal.querySelector('textarea')?.focus();
+        modal.querySelector('input, textarea')?.focus();
     });
 });
 

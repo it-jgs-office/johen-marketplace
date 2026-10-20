@@ -527,9 +527,32 @@ class AdminController extends Controller
     }
 
     // ---- ORDERS ----
-    public function orders()
+    public function orders(Request $request)
     {
-        $orders = Order::with('user', 'transaction')->latest()->paginate(20);
+        if ($request->input('type') === 'jual-beli') {
+            return redirect()->route('admin.account-orders', $request->only([
+                'type', 'status', 'date_from', 'date_until', 'search',
+            ]));
+        }
+
+        $orders = Order::with('user', 'transaction')
+            ->when($request->filled('status') && $request->status !== 'all', fn ($query) => $query->where('status', $request->status))
+            ->when($request->filled('date_from'), fn ($query) => $query->whereDate('created_at', '>=', $request->date_from))
+            ->when($request->filled('date_until'), fn ($query) => $query->whereDate('created_at', '<=', $request->date_until))
+            ->when($request->filled('search'), function ($query) use ($request) {
+                $search = $request->search;
+                $query->where(function ($q) use ($search) {
+                    $q->where('order_id', 'like', "%{$search}%")
+                        ->orWhere('product_name', 'like', "%{$search}%")
+                        ->orWhere('brand', 'like', "%{$search}%")
+                        ->orWhere('customer_number', 'like', "%{$search}%")
+                        ->orWhereHas('user', fn ($user) => $user->where('name', 'like', "%{$search}%"));
+                });
+            })
+            ->latest()
+            ->paginate(20)
+            ->withQueryString();
+
         return view('admin.orders.index', compact('orders'));
     }
 
@@ -580,6 +603,49 @@ class AdminController extends Controller
         if (! $action) return back()->with('error', 'Retry untuk transaksi ini sudah pernah dijalankan.');
         $settlement->retry($order, Auth::guard('admin')->id());
         return back()->with('success', 'Retry topup telah dikirim ke provider.');
+    }
+
+    public function ordersUpdateRecipientAndRetry(Request $request, Order $order, TopupSettlementService $settlement)
+    {
+        $data = $request->validate([
+            'customer_number' => 'required|string|max:100|regex:/^[^\s.]+$/',
+            'zone_id' => 'nullable|string|max:20|regex:/^[A-Za-z0-9]+$/',
+        ], [
+            'customer_number.regex' => 'User ID tidak boleh mengandung spasi atau titik. Isi Server ID pada kolom terpisah.',
+            'zone_id.regex' => 'Server ID hanya boleh berisi huruf dan angka.',
+        ]);
+
+        if ($order->saldo_status !== 'held' || $order->status === 'success') {
+            return back()->with('error', 'ID penerima hanya dapat diubah saat dana masih ditahan dan topup belum sukses.');
+        }
+
+        $oldRecipient = [
+            'customer_number' => $order->customer_number,
+            'zone_id' => $order->effective_zone_id,
+        ];
+        $newRecipient = [
+            'customer_number' => trim($data['customer_number']),
+            'zone_id' => filled($data['zone_id'] ?? null) ? trim($data['zone_id']) : null,
+        ];
+
+        $order->update([
+            'customer_number' => $newRecipient['customer_number'],
+            'zone_id' => $newRecipient['zone_id'],
+            'customer_name' => null,
+        ]);
+
+        OrderAdminAction::create([
+            'order_id' => $order->id,
+            'admin_id' => Auth::guard('admin')->id(),
+            'action' => 'update_recipient_retry',
+            'reason' => 'ID penerima diperbaiki dan topup diulang.',
+            'payload' => ['before' => $oldRecipient, 'after' => $newRecipient],
+            'idempotency_key' => 'order:'.$order->id.':admin:update_recipient_retry:'.bin2hex(random_bytes(12)),
+        ]);
+
+        $settlement->retry($order->fresh(), Auth::guard('admin')->id());
+
+        return back()->with('success', 'ID penerima sudah diperbarui dan topup dikirim ulang ke provider.');
     }
 
     public function ordersCheckProvider(Order $order, TopupSettlementService $settlement)
@@ -640,6 +706,12 @@ class AdminController extends Controller
     // ---- ACCOUNT ORDERS (Jual Beli Akun) ----
     public function accountOrders(Request $request)
     {
+        if ($request->input('type') === 'topup') {
+            return redirect()->route('admin.orders', $request->only([
+                'type', 'status', 'date_from', 'date_until', 'search',
+            ]));
+        }
+
         $query = AccountOrder::with('user', 'listing');
 
         if ($request->filled('status') && $request->status !== 'all') {
@@ -655,6 +727,14 @@ class AdminController extends Controller
                         $l->where('product_name', 'like', "%{$search}%");
                     });
             });
+        }
+
+        if ($request->filled('date_from')) {
+            $query->whereDate('created_at', '>=', $request->date_from);
+        }
+
+        if ($request->filled('date_until')) {
+            $query->whereDate('created_at', '<=', $request->date_until);
         }
 
         $orders = $query->latest()->paginate(20)->withQueryString();

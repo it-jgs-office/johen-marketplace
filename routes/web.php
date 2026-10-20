@@ -246,6 +246,7 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
         ->name('email-preview.order-status');
     Route::get('/orders/{order}', [AdminController::class, 'ordersShow'])->name('orders.show');
     Route::post('/orders/{order}/retry', [AdminController::class, 'ordersRetry'])->name('orders.retry');
+    Route::post('/orders/{order}/recipient-retry', [AdminController::class, 'ordersUpdateRecipientAndRetry'])->name('orders.recipient-retry');
     Route::post('/orders/{order}/check-provider', [AdminController::class, 'ordersCheckProvider'])->name('orders.check-provider');
     Route::post('/orders/{order}/manual-success', [AdminController::class, 'ordersManualSuccess'])->name('orders.manual-success');
     Route::post('/orders/{order}/refund', [AdminController::class, 'ordersRefund'])->name('orders.refund');
