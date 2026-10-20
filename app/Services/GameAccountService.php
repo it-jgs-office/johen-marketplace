@@ -45,17 +45,12 @@ class GameAccountService
 
         $isMl = str_starts_with(mb_strtolower($brand), 'mobile legends');
 
-<<<<<<< HEAD
-        // Simulasi cek akun hanya aktif bila diatur secara eksplisit.
-        if (config('gameaccount.simulation')) {
-=======
         if ($isMl && ! filter_var(SiteSetting::get('mlbb_nickname_check_enabled', '1'), FILTER_VALIDATE_BOOLEAN)) {
             return $this->result(false, null, false);
         }
 
-        // Mode simulasi pembayaran: selalu terdeteksi agar UI bisa dites lokal.
-        if (config('services.payment.simulation')) {
->>>>>>> 388512dd876691d7bcaa2945982240c9827bc029
+        // Simulasi pengecekan akun harus diaktifkan secara eksplisit.
+        if (config('gameaccount.simulation')) {
             $suffix = str_pad((string) (abs(crc32($userId.$zoneId)) % 10000), 4, '0', STR_PAD_LEFT);
 
             return $this->result(true, 'PlayerSim'.$suffix, true, $isMl ? 'Indonesia' : null);
