@@ -670,6 +670,14 @@
                     <i class="fas fa-chart-pie"></i> Dashboard
                 </a>
 
+                <div class="nav-section">Pesanan</div>
+                <a href="{{ route('admin.orders') }}" class="{{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
+                    <i class="fas fa-shopping-cart"></i> Pesanan Top Up
+                </a>
+                <a href="{{ route('admin.account-orders') }}" class="{{ request()->routeIs('admin.account-orders*') ? 'active' : '' }}">
+                    <i class="fas fa-file-invoice-dollar"></i> Pesanan Akun
+                </a>
+
                 <div class="nav-section">Produk</div>
                 <a href="{{ route('admin.products') }}" class="{{ request()->routeIs('admin.products*') ? 'active' : '' }}">
                     <i class="fas fa-gem"></i> Top Up
@@ -698,14 +706,6 @@
                 </a>
                 <a href="{{ route('admin.vouchers.index') }}" class="{{ request()->routeIs('admin.vouchers*') ? 'active' : '' }}">
                     <i class="fas fa-ticket"></i> Voucher
-                </a>
-
-                <div class="nav-section">Pesanan</div>
-                <a href="{{ route('admin.orders') }}" class="{{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
-                    <i class="fas fa-shopping-cart"></i> Pesanan
-                </a>
-                <a href="{{ route('admin.account-orders') }}" class="{{ request()->routeIs('admin.account-orders*') ? 'active' : '' }}">
-                    <i class="fas fa-file-invoice-dollar"></i> Pesanan Akun
                 </a>
 
                 <div class="nav-section">Live Chat</div>

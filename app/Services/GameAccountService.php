@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Brand;
 use App\Models\Product;
+use App\Models\SiteSetting;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -11,6 +12,11 @@ use Illuminate\Support\Facades\RateLimiter;
 
 class GameAccountService
 {
+    public function isEnabled(): bool
+    {
+        return (string) SiteSetting::get('game_account_check_enabled', '1') !== '0';
+    }
+
     /**
      * Deteksi keberadaan akun game.
      *
@@ -20,6 +26,10 @@ class GameAccountService
      */
     public function check(string $brand, string $userId, ?string $zoneId = null): array
     {
+        if (! $this->isEnabled()) {
+            return $this->result(false, null, false);
+        }
+
         $userId = trim($userId);
         $zoneId = trim((string) $zoneId);
 
@@ -85,6 +95,10 @@ class GameAccountService
     /** Validasi server untuk SKU Mobile Legends Indonesia pada kedua jalur checkout. */
     public function idnAvailabilityMessage(Product $product, string $userId, ?string $zoneId): ?string
     {
+        if (! $this->isEnabled()) {
+            return null;
+        }
+
         if (! str_starts_with(mb_strtolower($product->brand), 'mobile legends')
             || ! str_ends_with(mb_strtolower($product->buyer_sku_code), '-idn')) {
             return null;

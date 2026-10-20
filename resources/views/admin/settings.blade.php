@@ -117,6 +117,21 @@
                     </div>
                 </div>
             </div>
+
+            <div class="card-glass p-4">
+                <h3 class="font-semibold mb-2 flex items-center gap-2" style="font-size:0.9rem">
+                    <i class="fas fa-user-check" style="color:#8b5cf6;font-size:0.85rem"></i>
+                    <span>Cek Nickname &amp; Region</span>
+                </h3>
+                <p style="color:var(--text-dim);font-size:0.74rem;line-height:1.5;margin-bottom:.85rem">
+                    Saat aktif, sistem memeriksa nickname dan region melalui User ID sebelum top up. Saat nonaktif, pelanggan dapat melanjutkan top up tanpa pengecekan tersebut.
+                </p>
+                <label style="display:flex;align-items:center;gap:.65rem;cursor:pointer;font-size:.82rem;font-weight:600">
+                    <input type="hidden" name="game_account_check_enabled" value="0">
+                    <input type="checkbox" name="game_account_check_enabled" value="1" {{ old('game_account_check_enabled', $settings['game_account_check_enabled'] ?? '1') === '1' ? 'checked' : '' }} style="width:16px;height:16px;accent-color:var(--accent)">
+                    Aktifkan cek nickname dan region
+                </label>
+            </div>
         </div>
 
         <!-- KANAN: Kontak + Tampilan -->

@@ -564,6 +564,7 @@ function scrollToOrderStep(stepId) {
 
 const brandName = @json($brand->name);
 const isMobileLegends = @json($isMobileLegends);
+const accountCheckEnabled = @json((string) \App\Models\SiteSetting::get('game_account_check_enabled', '1') !== '0');
 const paymentMethods = @json($payData);
 const pointBalance = @json((int) $pointBalance);
 const usePointsInput = document.getElementById('usePointsInput');
@@ -673,7 +674,7 @@ const accountLockNotice = $('#accountLockNotice');
 function accountDetailsReady() {
     return userIdInput.value.trim().length > 0
         && (!zoneRequired || zoneIdInput.value.trim().length > 0)
-        && (!isMobileLegends || detectedRegion === 'Indonesia');
+        && (!accountCheckEnabled || !isMobileLegends || detectedRegion === 'Indonesia');
 }
 
 function requireAccountDetails() {
@@ -839,6 +840,8 @@ function scheduleAccountCheck() {
     clearTimeout(accountCheckTimer);
     if (accountCheckAbort) accountCheckAbort.abort();
     clearAccountFeedback();
+    if (!accountCheckEnabled) return;
+
     const uid = userIdInput.value.trim();
     const zid = zoneIdInput ? zoneIdInput.value.trim() : '';
 
@@ -1033,7 +1036,7 @@ async function handleOrder(btn) {
     const okZone = !zoneRequired || validateField(zoneIdInput, $('#zoneIdError'), v => v.length > 0);
     const okEmail = validateField(emailInput, $('#emailError'), v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
     const okWa = validateField(waInput, $('#waError'), v => v.length === 0 || v.length >= 8);
-    if (!okUserId || !okZone || (isMobileLegends && detectedRegion !== 'Indonesia')) {
+    if (!okUserId || !okZone || (accountCheckEnabled && isMobileLegends && detectedRegion !== 'Indonesia')) {
       requireAccountDetails();
       return;
     }
