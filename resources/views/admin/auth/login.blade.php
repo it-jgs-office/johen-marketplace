@@ -10,7 +10,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}?v={{ pwa_build() }}">
     <link rel="shortcut icon" href="{{ asset('favicon.png') }}?v={{ pwa_build() }}">
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    @if(config('recaptcha.enabled'))
+        <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    @endif
     <style>
         :root{
             --bg-0:#020D2E;
@@ -369,15 +371,21 @@
                     </label>
                 </div>
 
-                <div class="field">
-                    <div class="g-recaptcha" data-sitekey="{{ config('recaptcha.site_key') }}" data-theme="dark"></div>
-                    @error('g-recaptcha-response')
-                        <div class="error-text">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                            {{ $message }}
-                        </div>
-                    @enderror
-                </div>
+                @if(config('recaptcha.enabled'))
+                    <div class="field">
+                        <div class="g-recaptcha" data-sitekey="{{ config('recaptcha.site_key') }}" data-theme="dark"></div>
+                        @error('g-recaptcha-response')
+                            <div class="error-text">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12.01" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                                {{ $message }}
+                            </div>
+                        @enderror
+                    </div>
+                @else
+                    <div class="field" style="color:var(--muted);font-size:12px;text-align:center">
+                        Verifikasi reCAPTCHA nonaktif di lingkungan lokal.
+                    </div>
+                @endif
 
                 <button type="submit" class="btn-login" id="adminLoginBtn">
                     <span class="spinner" aria-hidden="true"></span>

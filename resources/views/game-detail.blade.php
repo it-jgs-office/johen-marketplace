@@ -694,7 +694,7 @@ const accountLockNotice = $('#accountLockNotice');
 function accountDetailsReady() {
     return userIdInput.value.trim().length > 0
         && (!zoneRequired || zoneIdInput.value.trim().length > 0)
-        && (!accountCheckEnabled || !isMobileLegends || detectedRegion === 'Indonesia');
+        && (!accountCheckEnabled || (!detectedRegion || detectedRegion === 'Indonesia'));
 }
 
 function requireAccountDetails() {
@@ -732,9 +732,8 @@ function requireAccountDetails() {
 }
 
 function accountLockMessage() {
-    if (!isMobileLegends) return 'Isi Data Akun terlebih dahulu';
     if (detectedRegion && detectedRegion !== 'Indonesia') return 'Region ' + detectedRegion + ' belum tersedia saat ini.';
-    return 'Tunggu pengecekan username dan region.';
+    return 'Isi Data Akun terlebih dahulu';
 }
 
 function togglePayLock() {
@@ -1059,7 +1058,7 @@ async function handleOrder(btn) {
     const okZone = !zoneRequired || validateField(zoneIdInput, $('#zoneIdError'), v => v.length > 0);
     const okEmail = validateField(emailInput, $('#emailError'), v => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v));
     const okWa = validateField(waInput, $('#waError'), v => v.length === 0 || v.length >= 8);
-    if (!okUserId || !okZone || (accountCheckEnabled && isMobileLegends && detectedRegion !== 'Indonesia')) {
+    if (!okUserId || !okZone || (accountCheckEnabled && detectedRegion && detectedRegion !== 'Indonesia')) {
       requireAccountDetails();
       return;
     }

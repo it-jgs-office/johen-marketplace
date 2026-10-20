@@ -6,11 +6,26 @@ return [
     // Timeout request ke API pihak ketiga (detik)
     'timeout' => 5,
 
+    // Endpoint publik GoPay (dipakai MLBB & PUBG) lebih lambat/kurang stabil,
+    // jadi timeout & retry-nya dipisah agar jalur gratis tetap andal.
+    'gopay_timeout' => 12,
+    'gopay_connect_timeout' => 5,
+    'gopay_retry' => 2,
+    'gopay_retry_delay' => 400,
+
+    // Retry umum untuk provider gratis lain (alu/isan/enka) saat gangguan sesaat.
+    'free_retry' => 2,
+    'free_retry_delay' => 300,
+
     // Lama cache hasil cek per brand+user_id+zone_id (menit)
     'cache_ttl' => 5,
 
     // Cache hasil cek untuk mengurangi request berulang ke validator komunitas.
     'mobile_legends_cache_ttl' => 30,
+
+    // SKU pengecekan berbayar Digiflazz (fallback). Dibaca juga oleh seeder
+    // provider; bisa diubah dari panel admin per game.
+    'digiflazz_ml_sku' => env('DIGIFLAZZ_ML_USERNAME_SKU', 'usrnameml-johen'),
 
     // Base URL validator komunitas (agregator Codashop) — type 'isan'
     'isan_url' => 'https://api.isan.eu.org/nickname',
@@ -36,11 +51,14 @@ return [
 
     'brands' => [
         'mobile legends*' => [
-            'type' => 'isan',
-            'game' => 'ml',
-            'params' => ['id' => '{user_id}', 'server' => '{zone_id}'],
-            // Isan hanya mendukung akun Mobile Legends ID/SEA.
-            'region' => 'Indonesia',
+            'type' => 'alu',
+            'fallback' => [
+                'type' => 'isan',
+                'game' => 'ml',
+                'params' => ['id' => '{user_id}', 'server' => '{zone_id}'],
+                // Isan hanya mendukung akun Mobile Legends ID/SEA.
+                'region' => 'Indonesia',
+            ],
         ],
         'free fire*' => [
             'type' => 'isan',

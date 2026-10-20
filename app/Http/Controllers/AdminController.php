@@ -1041,6 +1041,7 @@ class AdminController extends Controller
             'footer_text' => 'nullable|string|max:500',
             'digiflazz_margin_percent' => 'nullable|numeric|min:0|max:100',
             'game_account_check_enabled' => 'nullable|boolean',
+            'mlbb_nickname_check_enabled' => 'required|boolean',
         ]);
 
         $textKeys = ['site_name', 'site_tagline', 'site_description', 'contact_email', 'contact_whatsapp', 'contact_instagram', 'contact_phone_display', 'contact_cs_email', 'contact_cs_hours', 'company_name', 'company_address', 'company_npwp', 'footer_text', 'min_balance_alert'];
@@ -1060,6 +1061,7 @@ class AdminController extends Controller
         }
 
         SiteSetting::set('game_account_check_enabled', $request->boolean('game_account_check_enabled') ? '1' : '0');
+        SiteSetting::set('mlbb_nickname_check_enabled', (string) $request->boolean('mlbb_nickname_check_enabled'));
 
         if ($request->hasFile('site_logo') && $request->file('site_logo')->isValid()) {
             $oldLogo = \App\Models\SiteSetting::get('site_logo');
