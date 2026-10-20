@@ -23,9 +23,6 @@
     ];
     $methodLabel = $methodLabels[strtolower((string) $checkout->payment_method)] ?? 'QRIS';
     $gatewayType = (string) $checkout->gateway_type;
-    if ($gatewayType === 'doku_checkout') {
-        $methodLabel = 'DOKU Checkout';
-    }
     $extra = (array) $checkout->gateway_extra;
 
     $statusMeta = match ($checkout->status) {

@@ -59,6 +59,7 @@
 
           @php
               $categories = [
+                  'doku' => 'Pembayaran Aman DOKU',
                   'qris' => 'QRIS',
                   'ewallet' => 'E-Wallet',
                   'va' => 'Virtual Account',

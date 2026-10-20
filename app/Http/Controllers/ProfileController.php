@@ -59,6 +59,37 @@ class ProfileController extends Controller
         return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
+    public function updateAvatar(Request $request): RedirectResponse
+    {
+        $request->validate([
+            'avatar' => ['nullable', 'required_if:remove_avatar,0', 'image', 'mimes:jpg,jpeg,png,webp', 'max:5120'],
+            'remove_avatar' => ['required', 'boolean'],
+        ]);
+
+        $user = $request->user();
+        $oldAvatar = $user->avatar;
+
+        if ($request->boolean('remove_avatar')) {
+            $user->avatar = null;
+        } elseif ($request->hasFile('avatar') && $request->file('avatar')->isValid()) {
+            $user->avatar = ImageOptimizer::storeOptimized(
+                $request->file('avatar'),
+                'avatars',
+                512,
+                512,
+                256 * 1024,
+            );
+        }
+
+        $user->save();
+
+        if ($oldAvatar !== $user->avatar) {
+            $this->deleteLocalAvatar($oldAvatar);
+        }
+
+        return Redirect::route('profile.edit')->with('status', 'avatar-updated');
+    }
+
     /**
      * Delete the user's account.
      */

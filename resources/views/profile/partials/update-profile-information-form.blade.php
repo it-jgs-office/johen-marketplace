@@ -14,9 +14,8 @@
             @csrf
         </form>
 
-        <form method="post" action="{{ route('profile.update') }}" class="account-form" enctype="multipart/form-data">
+        <form method="post" action="{{ route('profile.avatar.update') }}" class="account-photo-form" enctype="multipart/form-data" id="profileAvatarForm">
             @csrf
-            @method('patch')
 
             <div class="account-photo-editor">
                 <div class="account-photo-preview" aria-hidden="true">
@@ -38,8 +37,19 @@
                         @endif
                     </div>
                     <x-input-error class="account-error" :messages="$errors->get('avatar')" />
+                    @if (session('status') === 'avatar-updated')
+                        <span class="account-saved" style="margin-top:.55rem">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m5 12 4 4L19 6"/></svg>
+                            Foto profil tersimpan
+                        </span>
+                    @endif
                 </div>
             </div>
+        </form>
+
+        <form method="post" action="{{ route('profile.update') }}" class="account-form">
+            @csrf
+            @method('patch')
 
             <div class="account-form-grid">
                 <div class="account-field">

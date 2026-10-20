@@ -815,12 +815,8 @@ class HomeController extends Controller
                         'order_ref' => $order->order_ref,
                     ]);
                 } else {
-                    $label = PaymentMethod::where('code', $method)->value('name') ?: $method;
-                    $minAmount = in_array($gateway->resolve($method)['gateway_type'], ['va', 'retail'], true)
-                        ? 'Rp 10.000'
-                        : 'Rp 1.000';
-                    $message = "Metode $label gagal dibuat untuk nominal ini (minimal $minAmount)."
-                        .' Silakan pilih QRIS atau metode lain.';
+                    $message = $gateway->lastChargeError()
+                        ?: 'Halaman pembayaran DOKU gagal dibuat. Silakan coba lagi.';
 
                     app(\App\Services\BalanceService::class)->restorePoints($order, 'Pembuatan pembayaran gagal; Johen Point dikembalikan');
                     $order->delete();

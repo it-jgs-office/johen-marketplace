@@ -77,6 +77,7 @@
   // tetap benar). Pastikan channel code sesuai Xendit.
   $channelCategory = function (string $code): string {
       $code = strtolower($code);
+      if ($code === 'doku_checkout') return 'doku';
       if (in_array($code, ['qris'], true)) return 'qris';
       if (in_array($code, ['gopay', 'dana', 'ovo', 'shopeepay', 'linkaja', 'gcash'], true)) return 'ewallet';
       if (in_array($code, ['bca', 'bca_va', 'bri', 'bri_va', 'bni', 'bni_va', 'bsi', 'bsi_va', 'cimb', 'cimb_va', 'mandiri', 'mandiri_va', 'permata', 'permata_va', 'sa', 'saham', 'other_bank'], true)) return 'va';
@@ -104,6 +105,7 @@
       ];
   })->values();
   $categories = [
+      'doku' => 'Pembayaran Aman DOKU',
       'qris' => 'QRIS',
       'ewallet' => 'E-Wallet',
       'va' => 'Virtual Account / Bank',
@@ -404,13 +406,23 @@
           </div>
         </div>
       @endforeach
+      @auth
+        <div class="gd-pay-points">
+          <label for="usePointsInput" class="gd-pay-points-main">
+            <span class="gd-pay-icon gd-pay-points-icon"><x-johen-point-icon size="22" /></span>
+            <span class="gd-pay-label">
+              <span class="gd-pay-t">Gunakan Johen Point</span>
+              <span class="gd-pay-min">Tersedia {{ number_format($pointBalance, 0, ',', '.') }} JP</span>
+            </span>
+          </label>
+          <input id="pointAmountInput" class="gd-pay-points-amount" type="number" value="{{ (int) $pointBalance }}" min="1" max="{{ (int) $pointBalance }}" aria-label="Jumlah Johen Point" {{ $pointBalance < 1 ? 'disabled' : '' }}>
+          <label for="usePointsInput" class="gd-pay-points-choice" aria-label="Gunakan Johen Point">
+            <input id="usePointsInput" class="gd-pay-points-checkbox" type="checkbox" {{ $pointBalance < 1 ? 'disabled' : '' }}>
+            <span class="gd-pay-radio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+          </label>
+        </div>
+      @endauth
     </div>
-    @auth
-      <label class="gd-card" style="display:flex;align-items:center;justify-content:space-between;gap:1rem;margin-top:.8rem;border-color:rgba(250,204,21,.35);background:rgba(250,204,21,.08);cursor:pointer;">
-        <span><strong style="display:flex;align-items:center;gap:.45rem;color:#fde047;"><x-johen-point-icon size="22" /> Gunakan Johen Point</strong><small style="color:var(--text-dim);">Tersedia {{ number_format($pointBalance, 0, ',', '.') }} JP</small><input id="pointAmountInput" type="number" value="{{ (int) $pointBalance }}" min="1" max="{{ (int) $pointBalance }}" style="display:block;width:150px;margin-top:.55rem;padding:.5rem .65rem;border:1px solid rgba(250,204,21,.3);border-radius:8px;background:#0c1d47;color:#fff;" aria-label="Jumlah Johen Point" {{ $pointBalance < 1 ? 'disabled' : '' }}></span>
-        <input id="usePointsInput" type="checkbox" style="width:20px;height:20px;accent-color:#facc15;" {{ $pointBalance < 1 ? 'disabled' : '' }}>
-      </label>
-    @endauth
   </div>
 
   <!-- ===== STEP 6: Kontak ===== -->
@@ -521,7 +533,7 @@
     </div>
   </div>
   <div class="gd-mobile-bar-inner">
-    <button class="gd-mobile-toggle" id="mobileToggle" aria-label="Buka detail pesanan">
+    <button class="gd-mobile-toggle" id="mobileToggle" aria-label="Buka detail pesanan" aria-expanded="false">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
     </button>
     <div class="gd-mobile-bar-info">
@@ -540,7 +552,15 @@
 
 @push('scripts')
 <style>
-@media(max-width:640px){.fab-cs{display:none;}}
+@media(max-width:640px){
+  body.gd-summary-open #gc-fab,
+  body.gd-summary-open #lc-fab,
+  body.gd-summary-open #lc-fab-greeting{
+    opacity:0!important;
+    visibility:hidden!important;
+    pointer-events:none!important;
+  }
+}
 </style>
 @if(!$products->isEmpty())
 <script>
@@ -1016,6 +1036,8 @@ $('#mobileToggle').addEventListener('click', function() {
     const bar = document.getElementById('mobileOrderBar');
     bar.classList.toggle('open');
     const isOpen = bar.classList.contains('open');
+    document.body.classList.toggle('gd-summary-open', isOpen);
+    this.setAttribute('aria-expanded', isOpen ? 'true' : 'false');
     this.setAttribute('aria-label', isOpen ? 'Tutup detail pesanan' : 'Buka detail pesanan');
 });
 // auto close accordion on product select
@@ -1024,6 +1046,7 @@ document.addEventListener('click', e => {
     if (card) {
         const bar = document.getElementById('mobileOrderBar');
         if (bar) bar.classList.remove('open');
+        document.body.classList.remove('gd-summary-open');
     }
 });
 

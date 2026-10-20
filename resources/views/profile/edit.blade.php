@@ -139,6 +139,7 @@
     var avatarFallback = document.getElementById('profilePhotoFallback');
     var removeAvatarInput = document.getElementById('remove_avatar');
     var removeAvatarButton = document.getElementById('removeProfilePhoto');
+    var avatarForm = document.getElementById('profileAvatarForm');
     var originalAvatar = avatarPreview ? avatarPreview.getAttribute('data-original-src') : '';
 
     function showAvatarPreview(src) {
@@ -165,12 +166,14 @@
         var reader = new FileReader();
         reader.addEventListener('load', function () { showAvatarPreview(reader.result); });
         reader.readAsDataURL(file);
+        avatarForm?.requestSubmit();
     });
 
     removeAvatarButton?.addEventListener('click', function () {
         avatarInput.value = '';
         removeAvatarInput.value = '1';
         showAvatarPreview('');
+        avatarForm?.requestSubmit();
     });
 
     var dialog = document.getElementById('deleteAccountDialog');

@@ -77,11 +77,65 @@ class PaymentController extends Controller
             ->where('is_active', true)
             ->where('stock', '>', 0)
             ->first();
+        $canCancel = $order->status === 'pending' && $this->canCancelOrder(request(), $order);
 
         return view('payment.detail', compact(
             'order', 'invoiceUrl', 'isDemo', 'isSimulation', 'brand', 'isQris', 'qrString', 'gatewayType', 'hasReviewed', 'canReview', 'reorderProduct',
-            'vaNumber', 'paymentCode', 'checkoutUrl', 'gatewayExtra', 'gatewayName'
+            'vaNumber', 'paymentCode', 'checkoutUrl', 'gatewayExtra', 'gatewayName', 'canCancel'
         ));
+    }
+
+    public function cancel(Request $request, Order $order)
+    {
+        abort_unless($this->canCancelOrder($request, $order), 403);
+
+        $this->syncFromGateway($order);
+        $order->refresh();
+
+        if ($order->status !== 'pending') {
+            return back()->with('error', 'Pesanan tidak dapat dibatalkan karena status pembayaran sudah berubah.');
+        }
+
+        $cancelled = Order::query()
+            ->whereKey($order->getKey())
+            ->where('status', 'pending')
+            ->update([
+                'status' => 'cancelled',
+                'note' => 'Pesanan dibatalkan oleh pelanggan.',
+                'updated_at' => now(),
+            ]);
+
+        if (! $cancelled) {
+            return back()->with('error', 'Pesanan tidak dapat dibatalkan karena statusnya sudah berubah.');
+        }
+
+        $order->refresh();
+        $order->transaction?->update(['status' => 'cancelled']);
+        $order->releaseDiscounts();
+        $this->balance->restorePoints($order, 'Pesanan dibatalkan; Johen Point dikembalikan');
+
+        $request->session()->put('cancelable_order_ids', array_values(array_filter(
+            (array) $request->session()->get('cancelable_order_ids', []),
+            fn ($id) => (int) $id !== (int) $order->getKey()
+        )));
+
+        return redirect()->route('payment.detail', $order)
+            ->with('success', 'Pesanan berhasil dibatalkan.');
+    }
+
+    private function canCancelOrder(Request $request, Order $order): bool
+    {
+        $userId = auth('web')->id();
+
+        if ($userId !== null) {
+            return (int) $order->user_id === (int) $userId;
+        }
+
+        return in_array(
+            (int) $order->getKey(),
+            array_map('intval', (array) $request->session()->get('cancelable_order_ids', [])),
+            true
+        );
     }
 
     /**

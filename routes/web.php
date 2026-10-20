@@ -92,6 +92,7 @@ Route::get('/api/leaderboard', [HomeController::class, 'leaderboardApi'])->name(
 Route::middleware('auth:web,admin')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::post('/profile/avatar', [ProfileController::class, 'updateAvatar'])->name('profile.avatar.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
     // Dituju oleh resources/views/layouts/navigation.blade.php (default Breeze).
@@ -139,6 +140,7 @@ Route::get('/keranjang/state', [CartController::class, 'state'])->name('cart.sta
 Route::get('/payment/detail/{order}', [PaymentController::class, 'detail'])->name('payment.detail');
 Route::get('/payment/success/{order}', [PaymentController::class, 'success'])->name('payment.success');
 Route::get('/payment/status/{order}', [PaymentController::class, 'status'])->name('payment.status');
+Route::post('/payment/cancel/{order}', [PaymentController::class, 'cancel'])->name('payment.cancel');
 
 Route::post('/payment/simulate/{order}', [PaymentController::class, 'simulatePay'])
     ->name('payment.simulate');

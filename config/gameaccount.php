@@ -1,6 +1,8 @@
 <?php
 
 return [
+    'simulation' => (bool) env('GAMEACCOUNT_SIMULATION', false),
+
     // Timeout request ke API pihak ketiga (detik)
     'timeout' => 5,
 

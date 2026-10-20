@@ -124,10 +124,9 @@
     <ol class="list-decimal list-inside space-y-1 text-sm" style="color:var(--text-muted)">
         <li>Deploy aplikasi ke hosting + domain + SSL, set <code>APP_URL=https://domainmu</code>.</li>
         @if(config('services.payment.gateway') === 'doku')
-        <li>Di DOKU Back Office sesuai environment, set Notification URL VA/gerai ke <code>{{ route('payment.doku.notification') }}</code>.</li>
-        <li>Aktifkan kanal Direct API, lalu isi kode kanal yang disetujui di <code>DOKU_DIRECT_METHODS</code>. Aktifkan juga metode tersebut pada pengaturan pembayaran.</li>
-        <li>Untuk QRIS/VA, isi <code>DOKU_PRIVATE_KEY_PATH</code> dan daftarkan pasangan public key di DOKU. Lengkapi Merchant ID, Terminal ID, kode pos QRIS atau partner service ID dan customer prefix setiap bank sesuai DOKU.</li>
-        <li>Jalankan scheduler Laravel dan queue worker. Status disinkronkan melalui notifikasi dan <code>doku:reconcile</code>, termasuk ketika halaman pelanggan sudah ditutup.</li>
+        <li>Di DOKU Back Office sesuai environment, set Notification URL Checkout ke <code>{{ route('payment.doku.notification') }}</code>.</li>
+        <li>Aktifkan kanal pembayaran yang ingin ditampilkan pada hosted DOKU Checkout.</li>
+        <li>Jalankan scheduler Laravel dan queue worker agar status pembayaran tetap disinkronkan ketika halaman pelanggan sudah ditutup.</li>
         <li>Selesaikan pengujian Sandbox dan verifikasi notifikasi sukses.</li>
         <li>Setelah siap live, gunakan credential production dan set <code>DOKU_ENVIRONMENT=production</code>.</li>
         @else

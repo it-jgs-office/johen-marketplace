@@ -149,15 +149,12 @@ class AdminController extends Controller
             $checks['xendit_callback_token'] = [
                 'label' => 'Verifikasi signature webhook DOKU',
                 'ok' => $doku->isConfigured(),
-                'detail' => 'Signature HMAC-SHA256 (Non-SNAP) / HMAC-SHA512 (VA SNAP) diverifikasi otomatis.',
+                'detail' => 'Signature HMAC-SHA256 DOKU Checkout diverifikasi otomatis.',
             ];
-            $directMethods = $paymentGateway->filterAvailableMethods(\App\Models\PaymentMethod::where('is_active', true)->get());
             $checks['doku_direct'] = [
-                'label' => 'Metode pembayaran langsung DOKU',
-                'ok' => $directMethods->isNotEmpty(),
-                'detail' => $directMethods->isNotEmpty()
-                    ? $directMethods->pluck('name')->implode(', ').'. Aktivasi merchant tetap harus dikonfirmasi di DOKU.'
-                    : 'Isi DOKU_DIRECT_METHODS sesuai kanal aktif. QRIS/VA memerlukan private key SNAP dan identitas kanal.',
+                'label' => 'Hosted DOKU Checkout',
+                'ok' => $doku->isConfigured(),
+                'detail' => 'Pelanggan diarahkan ke halaman aman DOKU untuk memilih kanal pembayaran.',
             ];
             $checks['webhook_route']['detail'] = 'payment/doku/notification, payment/notification, dan digiflazz/callback sudah dikecualikan dari CSRF.';
         }

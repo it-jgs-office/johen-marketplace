@@ -120,6 +120,12 @@ class OrderController extends Controller
             return back()->with('error', $e->getMessage())->withInput();
         }
 
+        $cancelableOrders = (array) $request->session()->get('cancelable_order_ids', []);
+        $request->session()->put('cancelable_order_ids', array_values(array_unique([
+            ...$cancelableOrders,
+            (int) $order->getKey(),
+        ])));
+
         $demo = $order->gateway_invoice_id ? false : true;
 
         if ($request->wantsJson()) {
@@ -164,6 +170,12 @@ class OrderController extends Controller
 
             return back()->with('error', $e->getMessage());
         }
+
+        $cancelableOrders = (array) $request->session()->get('cancelable_order_ids', []);
+        $request->session()->put('cancelable_order_ids', array_values(array_unique([
+            ...$cancelableOrders,
+            (int) $order->getKey(),
+        ])));
 
         if ($request->wantsJson()) {
             return response()->json(['success' => true, 'redirect' => route('payment.detail', $order), 'demo' => true]);

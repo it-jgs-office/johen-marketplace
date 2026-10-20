@@ -61,7 +61,7 @@
               </div>
               <div>
                 <div class="jpay-method-result-label">Pembayaran via</div>
-                <div class="jpay-method-result-name">{{ $gatewayType === 'doku_checkout' ? 'DOKU Checkout' : ($paymentMethod?->name ?: strtoupper((string) $accountOrder->payment_method)) }}</div>
+                <div class="jpay-method-result-name">{{ $paymentMethod?->name ?: strtoupper((string) $accountOrder->payment_method) }}</div>
               </div>
             </div>
 
@@ -220,7 +220,7 @@
             </div>
             <div class="jpay-ringkasan-row">
               <span class="jpay-r-label">Metode Bayar</span>
-              <span class="jpay-r-value">{{ $gatewayType === 'doku_checkout' ? 'DOKU Checkout' : ($paymentMethod?->name ?: strtoupper((string) $accountOrder->payment_method)) }}</span>
+              <span class="jpay-r-value">{{ $paymentMethod?->name ?: strtoupper((string) $accountOrder->payment_method) }}</span>
             </div>
             <div class="jpay-ringkasan-row">
               <span class="jpay-r-label">Status</span>

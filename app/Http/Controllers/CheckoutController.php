@@ -282,7 +282,8 @@ class CheckoutController extends Controller
 
                     if (! $charged) {
                         throw new \RuntimeException(
-                            'Metode pembayaran gagal dibuat untuk nominal ini. Silakan pilih metode lain.'
+                            ($this->gateway->lastChargeError()
+                                ?: 'Halaman pembayaran DOKU gagal dibuat. Silakan coba lagi.')
                             .' (checkout: '.$checkout->checkout_ref.')'
                         );
                     }

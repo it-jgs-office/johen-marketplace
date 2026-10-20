@@ -8,6 +8,7 @@
     'success' => ['label' => 'PEMBELIAN SUKSES', 'color' => '#10b981'],
     'processing' => ['label' => 'SEDANG DIPROSES', 'color' => '#f59e0b'],
     'failed' => ['label' => 'PEMBAYARAN GAGAL', 'color' => '#ef4444'],
+    'cancelled' => ['label' => 'PESANAN DIBATALKAN', 'color' => '#ef4444'],
     'refund' => ['label' => 'REFUND', 'color' => '#94a3b8'],
     default => ['label' => 'MENUNGGU PEMBAYARAN', 'color' => '#854DEA'],
   };
@@ -31,9 +32,6 @@
     'indomaret' => 'Indomaret',
   ];
   $methodLabel = $methodLabels[strtolower((string) $paymentMethod)] ?? ($paidType ?: 'QRIS');
-  if ($gatewayType === 'doku_checkout') {
-    $methodLabel = 'DOKU Checkout';
-  }
   $codeAliases = [
     'bca' => 'bca_va', 'bni' => 'bni_va', 'bri' => 'bri_va', 'bsi' => 'bsi_va', 'cimb' => 'cimb_va',
     'mandiri' => 'mandiri_va', 'permata' => 'permata_va',
@@ -61,16 +59,6 @@
       <h1 class="pd-title">Detail Pembayaran</h1>
       <p class="pd-sub">Selesaikan pembayaran sebelum waktu habis.</p>
     </div>
-    <div class="pd-header-actions">
-      <a href="{{ route('home') }}" class="btn btn-outline">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-        Kembali ke Beranda
-      </a>
-      <a href="{{ route('orders.my') }}" class="btn btn-outline">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-        Cek Transaksi
-      </a>
-    </div>
   </div>
 
   @if($isDemo)
@@ -80,8 +68,38 @@
   </div>
   @endif
 
-  <div class="pd-grid">
+  <div class="pd-grid pd-grid-single">
     <div class="pd-left">
+      {{-- PROGRESS STATUS (horizontal, 4 tahap) --}}
+      <div class="pd-card">
+        <div class="pd-card-head">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span>Progress Status</span>
+        </div>
+        <div class="pd-steps">
+          <div class="pd-step" id="pdStepA" data-state="pending">
+            <div class="pd-step-dot"><span class="pd-step-num">1</span></div>
+            <div class="pd-step-label">Menunggu Pembayaran</div>
+          </div>
+          <div class="pd-step" id="pdStepB" data-state="pending">
+            <div class="pd-step-dot"><span class="pd-step-num">2</span></div>
+            <div class="pd-step-label">Pembayaran Diterima</div>
+          </div>
+          <div class="pd-step" id="pdStepC" data-state="pending">
+            <div class="pd-step-dot"><span class="pd-step-num">3</span></div>
+            <div class="pd-step-label">Top Up Diproses</div>
+          </div>
+          <div class="pd-step" id="pdStepD" data-state="pending">
+            <div class="pd-step-dot"><span class="pd-step-num">4</span></div>
+            <div class="pd-step-label">Top Up Berhasil</div>
+          </div>
+        </div>
+        <div class="pd-progress-note" id="pdProgressNote" style="display:none">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
+          <span id="pdProgressNoteText"></span>
+        </div>
+      </div>
+
       @include('partials.doku-payment-status', ['paymentOrder' => $order])
 
       {{-- STATUS PEMBAYARAN (live) --}}
@@ -118,6 +136,7 @@
         </div>
       </div>
 
+      <div class="pd-payment-layout{{ $gatewayType === 'doku_checkout' ? ' pd-payment-layout-checkout' : '' }}">
       {{-- DETAIL TRANSAKSI (2 kolom) --}}
       <div class="pd-card">
         <div class="pd-card-head">
@@ -172,37 +191,31 @@
         </div>
       </div>
 
-      {{-- PROGRESS STATUS (horizontal, 4 tahap) --}}
-      <div class="pd-card">
-        <div class="pd-card-head">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-          <span>Progress Status</span>
-        </div>
-        <div class="pd-steps">
-          <div class="pd-step" id="pdStepA" data-state="pending">
-            <div class="pd-step-dot"><span class="pd-step-num">1</span></div>
-            <div class="pd-step-label">Menunggu Pembayaran</div>
-          </div>
-          <div class="pd-step" id="pdStepB" data-state="pending">
-            <div class="pd-step-dot"><span class="pd-step-num">2</span></div>
-            <div class="pd-step-label">Pembayaran Diterima</div>
-          </div>
-          <div class="pd-step" id="pdStepC" data-state="pending">
-            <div class="pd-step-dot"><span class="pd-step-num">3</span></div>
-            <div class="pd-step-label">Top Up Diproses</div>
-          </div>
-          <div class="pd-step" id="pdStepD" data-state="pending">
-            <div class="pd-step-dot"><span class="pd-step-num">4</span></div>
-            <div class="pd-step-label">Top Up Berhasil</div>
-          </div>
-        </div>
-        <div class="pd-progress-note" id="pdProgressNote" style="display:none">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6 9 17l-5-5"/></svg>
-          <span id="pdProgressNoteText"></span>
-        </div>
-      </div>
-
       {{-- METODE PEMBAYARAN --}}
+      @if($gatewayType === 'doku_checkout')
+      <div class="pd-checkout-actions" id="pdMethodPlaceholder">
+        <button class="btn btn-solid btn-lg pd-continue-payment" id="payNowBtn">
+          Lanjut Pembayaran
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
+        </button>
+        <div class="pd-payment-nav">
+          <a href="{{ route('home') }}" class="btn btn-solid">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            Kembali ke Beranda
+          </a>
+          <a href="{{ route('orders.my') }}" class="btn btn-solid">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+            Cek Transaksi
+          </a>
+        </div>
+        @if($canCancel)
+        <form method="POST" action="{{ route('payment.cancel', $order) }}" class="pd-cancel-form" id="pdCancelForm" onsubmit="return confirm('Batalkan pesanan ini? Pembayaran tidak dapat dilanjutkan setelah pesanan dibatalkan.')">
+          @csrf
+          <button type="submit" class="pd-cancel-btn">Batalkan Pesanan</button>
+        </form>
+        @endif
+      </div>
+      @else
       <div class="pd-card pd-method-card" id="pdMethodCard">
         <div class="pd-card-head">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
@@ -210,15 +223,24 @@
         </div>
         <div class="pd-method" id="pdMethodBody">
           <div class="pd-method-placeholder" id="pdMethodPlaceholder">
-            <div class="pd-method-illus">
+            <div class="pd-method-illus{{ $gatewayType === 'doku_checkout' ? ' pd-method-illus-doku' : '' }}">
+              @if($gatewayType === 'doku_checkout')
+              <span>DOKU</span>
+              @else
               <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-mute)" stroke-width="1.2">
                 <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M7 15h4"/>
               </svg>
+              @endif
             </div>
-            <p class="pd-method-placeholder-text">Klik tombol di bawah untuk membuka pembayaran.</p>
+            <p class="pd-method-placeholder-text">{{ $gatewayType === 'doku_checkout' ? 'Metode '.$methodLabel.' sudah dipilih. Lanjutkan pembayaran pada halaman aman DOKU.' : 'Klik tombol di bawah untuk membuka pembayaran.' }}</p>
             <button class="btn btn-solid btn-lg" id="payNowBtn">
+              @if($gatewayType === 'doku_checkout')
+              Bayar dengan {{ $methodLabel }}
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
+              @else
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
               @if($isSimulation) Simulasi Bayar (QRIS) @else Bayar Sekarang @endif
+              @endif
             </button>
           </div>
           <div class="pd-method-result" id="pdMethodResult" style="display:none">
@@ -273,142 +295,41 @@
             <div class="pd-failed-label">Pembayaran Gagal</div>
             <div class="pd-failed-sub">Silakan coba lagi atau hubungi admin.</div>
           </div>
-        </div>
-      </div>
-
-    </div>
-
-    {{-- RIGHT COLUMN --}}
-    <div class="pd-right">
-      {{-- RINGKASAN PESANAN --}}
-      <div class="pd-card pd-card-sticky">
-        <div class="pd-card-head">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-          <span>Ringkasan Pesanan</span>
-        </div>
-        <div class="pd-ringkasan">
-          <div class="pd-ringkasan-product">
-            <div class="pd-ringkasan-icon">
-              @if($brand && $brand->thumbnail_url)
-                <img src="{{ $brand->thumbnail_url }}" alt="{{ $order->brand }}" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">
-              @else
-                <svg width="24" height="24" viewBox="0 0 32 32" fill="none"><defs><linearGradient id="rg" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#9d5cf5"/><stop offset="100%" stop-color="#4c1d95"/></linearGradient></defs><polygon points="16,2 27,11 22,30 10,30 5,11" fill="url(#rg)"/></svg>
-              @endif
-            </div>
-            <div>
-              <div class="pd-ringkasan-game">{{ $order->brand }}</div>
-              <div class="pd-ringkasan-pkg">{{ $order->product_name }} @if($order->quantity > 1)({{ $order->quantity }}x)@endif</div>
-            </div>
-          </div>
-          <div class="pd-ringkasan-details">
-            <div class="pd-ringkasan-row">
-              <span class="pd-r-label">Item</span>
-              <span class="pd-r-value">{{ $order->product_name }}</span>
-            </div>
-            <div class="pd-ringkasan-row">
-              <span class="pd-r-label">User ID</span>
-              <span class="pd-r-value">{{ $order->customer_number }}</span>
-            </div>
-            <div class="pd-ringkasan-row">
-              <span class="pd-r-label">Server ID</span>
-              <span class="pd-r-value">{{ $order->effective_zone_id ?: '-' }}</span>
-            </div>
-            <div class="pd-ringkasan-row">
-              <span class="pd-r-label">Status</span>
-              <span class="pd-status-dot" id="pdRingkasanStatus">
-                <span class="pd-dot pending"></span>
-                <span id="pdRingkasanStatusText">Pending</span>
-              </span>
-            </div>
-          </div>
-          <div class="pd-rincian">
-            <div class="pd-rincian-row">
-              <span>Subtotal</span>
-              <span>Rp {{ number_format($order->price, 0, ',', '.') }}</span>
-            </div>
-            @if($order->points_used > 0)
-            <div class="pd-rincian-row"><span><x-johen-point-icon size="17" /> Johen Point</span><span class="pd-green">-{{ number_format($order->points_used, 0, ',', '.') }} JP</span></div>
-            @endif
-            <div class="pd-rincian-row">
-              <span>Admin Fee</span>
-              <span class="pd-green">Gratis</span>
-            </div>
-            <div class="pd-rincian-total">
-              <span>Total Pembayaran</span>
-              <span class="pd-total-price">Rp {{ number_format($order->cash_amount, 0, ',', '.') }}</span>
-            </div>
-          </div>
-        </div>
-        <div class="pd-ringkasan-actions">
-          @auth
-          <a href="{{ route('orders.my') }}" class="btn btn-outline btn-full">Lihat Semua Pesanan</a>
-          @else
-          <a href="{{ route('home') }}" class="btn btn-outline btn-full">Kembali ke Beranda</a>
-          @endauth
-        </div>
-      </div>
-
-      {{-- BUTUH BANTUAN --}}
-      <div class="pd-card">
-        <div class="pd-card-head">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 015.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-          <span>Butuh Bantuan?</span>
-        </div>
-        <div class="pd-help">
-          <p class="pd-help-text">Jika kamu memiliki kendala saat pembayaran, tim support kami siap membantu!</p>
-          <a href="{{ route('kontak') }}" class="btn btn-outline btn-full">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 14h3a2 2 0 012 2v3a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a9 9 0 0118 0v7a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3"/></svg>
-            Hubungi CS
-          </a>
-        </div>
-      </div>
-
-      {{-- BELI LAGI PRODUKNYA --}}
-      <div class="pd-card pd-reorder">
-        <div class="pd-card-head">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 019-9 9.75 9.75 0 016.74 2.74L21 8"/><polyline points="21 3 21 9 15 9"/><path d="M21 12a9 9 0 01-9 9 9.75 9.75 0 01-6.74-2.74L3 16"/><polyline points="8 16 3 16 3 21"/></svg>
-          <span>Beli Lagi Produknya</span>
-        </div>
-        <div class="pd-reorder-body">
-          @if($reorderProduct)
-            <div class="pd-reorder-product">
-              <div class="pd-reorder-icon">
-                @if($reorderProduct->photo_url)
-                  <img src="{{ $reorderProduct->photo_url }}" alt="{{ $reorderProduct->product_name }}" style="width:100%;height:100%;object-fit:cover;">
-                @else
-                  <svg width="26" height="26" viewBox="0 0 32 32" fill="none"><defs><linearGradient id="rr" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#9d5cf5"/><stop offset="100%" stop-color="#4c1d95"/></linearGradient></defs><polygon points="16,2 27,11 22,30 10,30 5,11" fill="url(#rr)"/></svg>
-                @endif
-              </div>
-              <div class="pd-reorder-info">
-                <div class="pd-reorder-game">{{ $reorderProduct->brand }}</div>
-                <div class="pd-reorder-pkg">{{ $reorderProduct->product_name }}</div>
-                <div class="pd-reorder-price">Rp {{ number_format($reorderProduct->selling_price, 0, ',', '.') }}</div>
-              </div>
-            </div>
-            <form method="POST" action="{{ route('orders.reorder', $order) }}">
-              @csrf
-              <button type="submit" class="btn btn-solid btn-full">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 5v14M5 12h14"/></svg>
-                Beli Lagi
-              </button>
-            </form>
-          @else
-            <p class="pd-help-text">Mau beli produk atau item yang lain? Silakan cek katalog kami.</p>
-            <a href="{{ route('home') }}#topup" class="btn btn-outline btn-full">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 15a9 9 0 109-9 3 3 0 013 4"/><path d="M3 3v4h4"/></svg>
-              Cari Produk Lain
-            </a>
+          @if($canCancel)
+          <form method="POST" action="{{ route('payment.cancel', $order) }}" class="pd-cancel-form" id="pdCancelForm" onsubmit="return confirm('Batalkan pesanan ini? Pembayaran tidak dapat dilanjutkan setelah pesanan dibatalkan.')">
+            @csrf
+            <button type="submit" class="pd-cancel-btn">Batalkan Pesanan</button>
+          </form>
           @endif
         </div>
       </div>
+      @endif
+      </div>
 
     </div>
+
   </div>
 </div>
 
 <style>
 /* ===== Replate status detail dengan design system yang sama dengan halaman transaksi existing (dt-*) ===== */
 .pd-wrap{max-width:var(--layout-max);}
+.pd-grid.pd-grid-single{grid-template-columns:minmax(0,1fr);}
+.pd-payment-layout{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(360px,.92fr);gap:1rem;align-items:stretch;}
+.pd-payment-layout>.pd-card{height:100%;}
+.pd-payment-layout-checkout{grid-template-columns:minmax(0,1fr);}
+.pd-checkout-actions{display:flex;flex-direction:column;align-items:center;gap:.35rem;}
+.pd-continue-payment{width:100%;justify-content:center;}
+.pd-payment-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;width:100%;margin-top:.3rem;}
+.pd-payment-nav .btn{width:100%;justify-content:center;text-align:center;}
+.pd-method-illus-doku{
+  width:86px;height:48px;margin-inline:auto;border-radius:12px;background:#ef2b24;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 12px 26px rgba(239,43,36,.22);
+}
+.pd-method-illus-doku span{font-family:var(--font-display);font-size:1rem;font-weight:900;letter-spacing:.08em;color:#fff;}
+.pd-cancel-form{margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center;}
+.pd-cancel-btn{border:0;background:transparent;color:#ef4444;font:inherit;font-size:.82rem;font-weight:700;cursor:pointer;padding:.45rem .75rem;border-radius:8px;transition:background .2s,color .2s;}
+.pd-cancel-btn:hover{background:rgba(239,68,68,.12);color:#f87171;}
 .pd-breadcrumb{display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--text-dim);margin:-.2rem 0 1.2rem;}
 .pd-breadcrumb a{color:var(--text-dim);text-decoration:none;transition:color .2s;}
 .pd-breadcrumb a:hover{color:var(--text);}
@@ -468,11 +389,12 @@
 
 @media(max-width:1000px){
   .pd-grid{grid-template-columns:1fr;}
+  .pd-payment-layout{grid-template-columns:1fr;}
   .pd-card-sticky{position:static;}
 }
 @media(max-width:768px){
-  .pd-header-actions{width:100%;}
-  .pd-header-actions .btn{flex:1;justify-content:center;}
+  .pd-payment-nav{grid-template-columns:repeat(2,minmax(0,1fr));}
+  .pd-payment-nav .btn{padding-inline:.6rem;font-size:.72rem;white-space:normal;}
   .pd-detail-grid{grid-template-columns:1fr;gap:0;}
   .pd-detail-col .pd-detail-item{border-bottom:1px dashed var(--border);}
 }
@@ -594,6 +516,10 @@ function startPayment() {
     }
     if (gatewayType === 'retail' && paymentCode) {
         renderRetail(paymentCode);
+        return;
+    }
+    if (gatewayType === 'doku_checkout' && checkoutUrl) {
+        window.location.href = checkoutUrl;
         return;
     }
     if (gatewayType === 'ewallet' && checkoutUrl) {
@@ -740,6 +666,7 @@ const STATUS_MAP = {
     processing: { label: 'SEDANG DIPROSES',     color: '#f59e0b', step: 3 },
     success:    { label: 'PEMBELIAN SUKSES',    color: '#10b981', step: 4 },
     failed:     { label: 'PEMBAYARAN GAGAL',    color: '#ef4444', step: 0 },
+    cancelled:  { label: 'PESANAN DIBATALKAN',  color: '#ef4444', step: 0 },
     refund:     { label: 'REFUND',              color: '#94a3b8', step: 0 },
 };
 
@@ -756,6 +683,9 @@ function updateStatus(type, result) {
     const methodResult = document.getElementById('pdMethodResult');
     const methodSuccess = document.getElementById('pdMethodSuccess');
     const methodFailed = document.getElementById('pdMethodFailed');
+    const cancelForm = document.getElementById('pdCancelForm');
+
+    if (cancelForm) cancelForm.style.display = type === 'pending' ? 'block' : 'none';
 
     // status card
     if (type === 'processing') {
@@ -766,10 +696,10 @@ function updateStatus(type, result) {
         pill.style.background = 'rgba(245,158,11,.15)';
         pill.style.color = '#f59e0b';
         countdown.style.display = 'none';
-        placeholder.style.display = 'none';
-        methodResult.style.display = 'none';
-        methodSuccess.style.display = 'flex';
-        methodFailed.style.display = 'none';
+        if (placeholder) placeholder.style.display = 'none';
+        if (methodResult) methodResult.style.display = 'none';
+        if (methodSuccess) methodSuccess.style.display = 'flex';
+        if (methodFailed) methodFailed.style.display = 'none';
     } else if (type === 'success') {
         icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" width="44" height="44"><path d="M20 6 9 17l-5-5"/></svg>';
         label.textContent = 'Pembayaran Berhasil';
@@ -778,23 +708,28 @@ function updateStatus(type, result) {
         pill.style.background = 'rgba(16,185,129,.15)';
         pill.style.color = '#10b981';
         countdown.style.display = 'none';
-        placeholder.style.display = 'none';
-        methodResult.style.display = 'none';
-        methodSuccess.style.display = 'flex';
-        methodFailed.style.display = 'none';
+        if (placeholder) placeholder.style.display = 'none';
+        if (methodResult) methodResult.style.display = 'none';
+        if (methodSuccess) methodSuccess.style.display = 'flex';
+        if (methodFailed) methodFailed.style.display = 'none';
         maybeShowReviewPopup('success');
-    } else if (type === 'failed') {
+    } else if (type === 'failed' || type === 'cancelled') {
         icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" width="44" height="44"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
-        label.textContent = 'Pembayaran Gagal';
-        sub.textContent = 'Silakan coba lagi atau hubungi admin.';
-        pill.textContent = 'PEMBAYARAN GAGAL';
+        const cancelled = type === 'cancelled';
+        label.textContent = cancelled ? 'Pesanan Dibatalkan' : 'Pembayaran Gagal';
+        sub.textContent = cancelled ? 'Pesanan dibatalkan tanpa proses refund.' : 'Silakan coba lagi atau hubungi admin.';
+        pill.textContent = cancelled ? 'PESANAN DIBATALKAN' : 'PEMBAYARAN GAGAL';
         pill.style.background = 'rgba(239,68,68,.15)';
         pill.style.color = '#ef4444';
         countdown.style.display = 'none';
-        placeholder.style.display = 'none';
-        methodResult.style.display = 'none';
-        methodSuccess.style.display = 'none';
-        methodFailed.style.display = 'flex';
+        if (placeholder) placeholder.style.display = 'none';
+        if (methodResult) methodResult.style.display = 'none';
+        if (methodSuccess) methodSuccess.style.display = 'none';
+        if (methodFailed) {
+            methodFailed.style.display = 'flex';
+            methodFailed.querySelector('.pd-failed-label').textContent = cancelled ? 'Pesanan Dibatalkan' : 'Pembayaran Gagal';
+            methodFailed.querySelector('.pd-failed-sub').textContent = cancelled ? 'Pesanan ini tidak dilanjutkan.' : 'Silakan coba lagi atau hubungi admin.';
+        }
     } else {
         // pending
         icon.innerHTML = '<svg class="spin-slow" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" width="44" height="44"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>';
@@ -823,11 +758,11 @@ function updateDetailBadge(type, map) {
     const ringkasanText = document.getElementById('pdRingkasanStatusText');
     const ringkasanDot = document.querySelector('#pdRingkasanStatus .pd-dot');
     if (ringkasanText) {
-        const nice = { pending: 'Pending', processing: 'Diproses', success: 'Success', failed: 'Gagal' };
+        const nice = { pending: 'Pending', processing: 'Diproses', success: 'Success', failed: 'Gagal', cancelled: 'Dibatalkan' };
         ringkasanText.textContent = nice[type] || type;
     }
     if (ringkasanDot) {
-        const dotClass = { pending: 'pending', processing: 'processing', success: 'success', failed: 'failed' };
+        const dotClass = { pending: 'pending', processing: 'processing', success: 'success', failed: 'failed', cancelled: 'failed' };
         ringkasanDot.className = 'pd-dot ' + (dotClass[type] || 'pending');
     }
 }
@@ -880,12 +815,13 @@ updateStatus(initialStatus, resultNote);
 
 /* ===== countdown ===== */
 (function() {
-    const created = new Date(@json($order->created_at->toIso8601String()));
     const gatewayExpiry = @json(data_get($order->gateway_extra, 'expired_date'));
-    const expires = gatewayExpiry ? new Date(gatewayExpiry) : new Date(created.getTime() + 24 * 60 * 60 * 1000);
+    const defaultExpiresAt = @json($order->created_at->copy()->addHour()->getTimestamp() * 1000);
+    const parsedGatewayExpiry = gatewayExpiry ? Date.parse(gatewayExpiry) : NaN;
+    const expiresAt = Number.isFinite(parsedGatewayExpiry) ? parsedGatewayExpiry : defaultExpiresAt;
 
     function tick() {
-        const diff = Math.max(0, expires - new Date());
+        const diff = Math.max(0, expiresAt - Date.now());
         const h = Math.floor(diff / 3600000);
         const m = Math.floor((diff % 3600000) / 60000);
         const s = Math.floor((diff % 60000) / 1000);
@@ -911,7 +847,7 @@ function startPolling() {
             .then(data => {
                 const s = data.status;
                 document.dispatchEvent(new CustomEvent('payment:updated', {detail: data}));
-                if (s === 'success' || s === 'processing' || s === 'failed') {
+                if (s === 'success' || s === 'processing' || s === 'failed' || s === 'cancelled') {
                     if (data.note && s === 'success') resultNote = data.note;
                     updateStatus(s);
                     if (s !== 'processing') return;
