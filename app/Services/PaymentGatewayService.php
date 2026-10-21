@@ -350,7 +350,10 @@ class PaymentGatewayService
             ], fn ($value) => $value !== null && $value !== ''),
         ];
 
-        if ($dokuMethod !== null) {
+        // Pada DOKU Checkout ter-host, biarkan DOKU menampilkan seluruh kanal
+        // yang memang aktif pada akun merchant. Pembatasan hanya dikirim bila
+        // sengaja diaktifkan melalui environment.
+        if (config('doku.restrict_payment_method') && $dokuMethod !== null) {
             $payload['payment']['payment_method_types'] = [$dokuMethod];
         }
 
