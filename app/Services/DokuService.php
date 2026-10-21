@@ -219,8 +219,7 @@ class DokuService
 
             return [
                 'success' => false,
-                'message' => data_get($data, 'error_messages.0')
-                    ?: data_get($data, 'message.0')
+                'message' => $this->errorMessage($data)
                     ?: 'DOKU menolak pembuatan pembayaran.',
                 'request_id' => $requestId,
                 'raw' => $data,
@@ -235,5 +234,45 @@ class DokuService
             'request_id' => $requestId,
             'raw' => $data,
         ];
+    }
+
+    private function errorMessage(array $data): ?string
+    {
+        foreach ([
+            'error_messages',
+            'message',
+            'error.message',
+            'errors',
+            'response.message',
+            'response.responseMessage',
+            'response.status_message',
+        ] as $path) {
+            $message = $this->firstText(data_get($data, $path));
+
+            if ($message !== null) {
+                return $message;
+            }
+        }
+
+        return null;
+    }
+
+    private function firstText(mixed $value): ?string
+    {
+        if (is_string($value) || is_numeric($value)) {
+            $text = trim((string) $value);
+
+            return $text !== '' ? $text : null;
+        }
+
+        if (is_array($value)) {
+            foreach ($value as $item) {
+                if ($text = $this->firstText($item)) {
+                    return $text;
+                }
+            }
+        }
+
+        return null;
     }
 }
