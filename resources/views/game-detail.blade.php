@@ -1082,7 +1082,14 @@ async function handleOrder(btn) {
     try {
       const res = await fetch('{{ route('orders.store') }}', {method:'POST', headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json'}, body:fd});
       if (res.status === 401) { window.location.href = @json(route('login')); return; }
-      if (!res.ok) { showToast('Server error: ' + res.status, false); btn.disabled = false; btn.textContent = 'Pesan Sekarang'; return; }
+      if (!res.ok) {
+        const error = await res.json().catch(() => null);
+        const message = error?.message || Object.values(error?.errors || {}).flat()[0] || ('Server error: ' + res.status);
+        showToast(message, false);
+        btn.disabled = false;
+        btn.textContent = 'Pesan Sekarang';
+        return;
+      }
       const data = await res.json();
       if (data.success && data.redirect) { window.location.href = data.redirect; }
       else { btn.disabled = false; btn.textContent = 'Pesan Sekarang'; showToast(data.message || 'Gagal memproses pesanan', false); }
