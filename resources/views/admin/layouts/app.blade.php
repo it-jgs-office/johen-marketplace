@@ -672,7 +672,7 @@
 
                 <div class="nav-section">Pesanan</div>
                 <a href="{{ route('admin.orders') }}" class="{{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
-                    <i class="fas fa-shopping-cart"></i> Pesanan Top Up
+                    <i class="fas fa-shopping-cart"></i> Pesanan Top Up &amp; Joki
                 </a>
                 <a href="{{ route('admin.account-orders') }}" class="{{ request()->routeIs('admin.account-orders*') ? 'active' : '' }}">
                     <i class="fas fa-file-invoice-dollar"></i> Pesanan Akun
@@ -681,6 +681,9 @@
                 <div class="nav-section">Produk</div>
                 <a href="{{ route('admin.products') }}" class="{{ request()->routeIs('admin.products*') ? 'active' : '' }}">
                     <i class="fas fa-gem"></i> Top Up
+                </a>
+                <a href="{{ route('admin.joki-packages') }}" class="{{ request()->routeIs('admin.joki-packages*') ? 'active' : '' }}">
+                    <i class="fas fa-trophy"></i> Paket Joki MLBB
                 </a>
                 <a href="{{ route('admin.account-listings') }}" class="{{ request()->routeIs('admin.account-listings*') ? 'active' : '' }}">
                     <i class="fas fa-store"></i> Jual Beli Akun

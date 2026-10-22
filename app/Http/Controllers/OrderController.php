@@ -61,11 +61,24 @@ class OrderController extends Controller
             'payment_method' => 'nullable|string|max:50',
             'use_points' => 'nullable|boolean',
             'points_amount' => 'exclude_unless:use_points,1|required|integer|min:1',
+            'joki_login_method' => 'nullable|string|max:40',
+            'joki_login_identifier' => 'nullable|string|max:255',
+            'joki_login_password' => 'nullable|string|max:255',
+            'joki_notes' => 'nullable|string|max:1000',
         ], [
             'zone_id.regex' => 'Zone ID hanya boleh berisi huruf dan angka.',
         ]);
 
         $product = Product::findOrFail($request->product_id);
+        $isJoki = $product->type === 'joki';
+
+        if ($isJoki) {
+            $request->validate([
+                'joki_login_method' => 'required|in:moonton,facebook,google,tiktok,vk',
+                'joki_login_identifier' => 'required|string|max:255',
+                'joki_login_password' => 'required|string|max:255',
+            ]);
+        }
 
         if ($product->stock < 1) {
             if ($request->wantsJson()) {
@@ -75,7 +88,7 @@ class OrderController extends Controller
         }
 
         // Game yang membutuhkan Zone ID wajib mengisinya (divalidasi di server).
-        $brandRequiresZone = (str_starts_with(mb_strtolower($product->brand), 'mobile legends')
+        $brandRequiresZone = $isJoki || (str_starts_with(mb_strtolower($product->brand), 'mobile legends')
                 && str_ends_with(mb_strtolower($product->buyer_sku_code), '-idn'))
             || (bool) Brand::where('name', $product->brand)->value('requires_zone_id');
         $zoneId = $request->filled('zone_id') ? trim($request->zone_id) : null;
@@ -88,7 +101,9 @@ class OrderController extends Controller
             return back()->withErrors(['zone_id' => $message])->withInput();
         }
 
-        $regionError = $gameAccount->idnAvailabilityMessage($product, trim((string) $request->customer_number), $zoneId);
+        $regionError = $isJoki
+            ? null
+            : $gameAccount->idnAvailabilityMessage($product, trim((string) $request->customer_number), $zoneId);
         if ($regionError !== null) {
             if ($request->wantsJson()) {
                 return response()->json(['success' => false, 'message' => $regionError], 422);
@@ -111,6 +126,10 @@ class OrderController extends Controller
                 'payment_method' => $request->payment_method,
                 'use_points' => $request->boolean('use_points'),
                 'points_amount' => $request->points_amount,
+                'joki_login_method' => $request->joki_login_method,
+                'joki_login_identifier' => $request->joki_login_identifier,
+                'joki_login_password' => $request->joki_login_password,
+                'joki_notes' => $request->joki_notes,
             ]);
         } catch (\RuntimeException $e) {
             if ($request->wantsJson()) {
@@ -227,6 +246,11 @@ class OrderController extends Controller
                 'email' => $email,
                 'price' => $subtotal,
                 'voucher_id' => $voucherId,
+                'service_type' => $product->type === 'joki' ? 'joki' : 'topup',
+                'joki_login_method' => $input['joki_login_method'] ?? null,
+                'joki_login_identifier' => $input['joki_login_identifier'] ?? null,
+                'joki_login_password' => $input['joki_login_password'] ?? null,
+                'joki_notes' => $input['joki_notes'] ?? null,
             ], $locked);
 
             if ($voucher) {

@@ -21,6 +21,7 @@ class AccountListing extends Model
         'price',
         'original_price',
         'whatsapp',
+        'login_credentials',
         'is_active',
         'promo_type',
         'discount_percent',
@@ -38,6 +39,11 @@ class AccountListing extends Model
         'price' => 'decimal:2',
         'original_price' => 'decimal:2',
         'discount_percent' => 'integer',
+        'login_credentials' => 'encrypted',
+    ];
+
+    protected $hidden = [
+        'login_credentials',
     ];
 
     protected $appends = [

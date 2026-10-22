@@ -42,12 +42,13 @@
 @section('content')
 @php
     $isRefunded = $order->saldo_status === 'refunded';
+    $isJoki = $order->service_type === 'joki';
     $retryAlreadyUsed = $order->adminActions->where('action', 'retry')->isNotEmpty();
-    $canRetryTopup = ! $isRefunded
+    $canRetryTopup = ! $isJoki && ! $isRefunded
         && $order->saldo_status === 'held'
         && $order->status !== 'success'
         && ! $retryAlreadyUsed;
-    $canUpdateRecipient = ! $isRefunded
+    $canUpdateRecipient = ! $isJoki && ! $isRefunded
         && $order->saldo_status === 'held'
         && $order->status !== 'success';
     $recipientUserId = $order->customer_number;
@@ -111,6 +112,18 @@
         </div>
     </div>
 
+    @if($isJoki)
+    <div class="card-glass p-6 mb-6">
+        <h3 class="font-semibold mb-4"><i class="fas fa-shield-halved" style="color:#fbbf24;margin-right:.5rem"></i>Data Login Joki</h3>
+        <div class="grid grid-cols-2 gap-4">
+            <div><p style="font-size:.72rem;color:var(--text-dim);text-transform:uppercase">Metode Login</p><strong>{{ ucfirst($order->joki_login_method ?: '-') }}</strong></div>
+            <div><p style="font-size:.72rem;color:var(--text-dim);text-transform:uppercase">Email / Nomor Login</p><strong style="word-break:break-all">{{ $order->joki_login_identifier ?: '-' }}</strong></div>
+            <div><p style="font-size:.72rem;color:var(--text-dim);text-transform:uppercase">Password</p><strong style="word-break:break-all">{{ $order->joki_login_password ?: '-' }}</strong></div>
+            <div><p style="font-size:.72rem;color:var(--text-dim);text-transform:uppercase">Catatan</p><strong>{{ $order->joki_notes ?: '-' }}</strong></div>
+        </div>
+    </div>
+    @endif
+
     @if($order->transaction)
     <div class="card-glass p-6 mb-6">
         <h3 class="font-semibold mb-4">
@@ -171,7 +184,7 @@
             <div class="transaction-actions">
                 <button type="button" class="btn btn-ghost" data-open-transaction-modal="recipientRetryModal" {{ $canUpdateRecipient ? '' : 'disabled' }}><i class="fas fa-pen mr-1"></i>Ubah ID &amp; Ulang Topup</button>
                 <button type="button" class="btn btn-ghost" data-open-transaction-modal="retryTopupModal" {{ $canRetryTopup ? '' : 'disabled' }}>Retry Topup</button>
-                <form method="POST" action="{{ route('admin.orders.check-provider', $order) }}">@csrf<button class="btn btn-primary"><i class="fas fa-rotate mr-1"></i>Cek Status Provider</button></form>
+                @unless($isJoki)<form method="POST" action="{{ route('admin.orders.check-provider', $order) }}">@csrf<button class="btn btn-primary"><i class="fas fa-rotate mr-1"></i>Cek Status Provider</button></form>@endunless
                 <button type="button" class="btn" style="background:#059669;color:white" data-open-transaction-modal="manualSuccessModal" {{ $isRefunded || $order->status === 'success' || $order->saldo_status !== 'held' || $order->adminActions->where('action','manual_success')->isNotEmpty() ? 'disabled' : '' }}>Manual Success</button>
                 <button type="button" class="btn btn-danger" data-open-transaction-modal="refundModal" {{ $isRefunded || $order->saldo_status !== 'held' || $order->adminActions->where('action','manual_refund')->isNotEmpty() ? 'disabled' : '' }}><x-johen-point-icon size="18" /> Refund ke Johen Point</button>
             </div>

@@ -50,16 +50,6 @@
 @endif
 </head>
 <body class="{{ $isAccountHubPage ? 'account-hub-layout' : '' }} {{ request()->routeIs('profile.*') ? 'profile-page-layout' : '' }}">
-<script>
-  if ('scrollRestoration' in history) {
-    history.scrollRestoration = 'manual';
-  }
-
-  window.scrollTo(0, 0);
-  window.addEventListener('pageshow', function () {
-    window.scrollTo(0, 0);
-  });
-</script>
 @include('partials.splash')
 @include('partials.floating-decoration')
 @unless($isAccountHubPage || $isInvoicePage)
@@ -95,6 +85,10 @@
       <a href="{{ route('home') }}" class="{{ request()->routeIs('home') || request()->routeIs('games.show') ? 'active' : '' }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h11L22 9l-10 12L2 9l4.5-6Z"/><path d="M2 9h20M9 3 7 9l5 12 5-12-2-6"/></svg>
         <span>Top Up</span>
+      </a>
+      <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="10" r="2.2"/><path d="M5.5 17c.45-2 1.75-3 3-3s2.55 1 3 3M14 9h4.5M14 13h4.5M14 17h3"/></svg>
+        <span>Jual Beli Akun</span>
       </a>
       <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z"/><path d="m8 11 2 2 5-5M8 16h8"/></svg>
@@ -165,6 +159,9 @@
   <a href="{{ route('home') }}" class="{{ request()->routeIs('home') || request()->routeIs('games.show') ? 'active' : '' }}" @if(request()->routeIs('home') || request()->routeIs('games.show')) aria-current="page" @endif>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h11L22 9l-10 12L2 9l4.5-6Z"/><path d="M2 9h20M9 3 7 9l5 12 5-12-2-6"/></svg><span>Top Up</span>
   </a>
+  <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}" @if(request()->routeIs('jual-beli-akun*')) aria-current="page" @endif>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="10" r="2"/><path d="M5 17c.5-2 2-3 3-3s2.5 1 3 3M14 9h5M14 13h5M14 17h4"/></svg><span>Jual Akun</span>
+  </a>
   <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}" @if(request()->routeIs('check.transaction')) aria-current="page" @endif>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z"/><path d="m8 11 2 2 5-5M8 16h8"/></svg><span>Cek Transaksi</span>
   </a>
@@ -192,6 +189,10 @@
       <a href="{{ route('home') }}" class="{{ request()->routeIs('home') || request()->routeIs('games.show') ? 'active' : '' }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h11L22 9l-10 12L2 9l4.5-6Z"/><path d="M2 9h20M9 3 7 9l5 12 5-12-2-6"/></svg>
         <span>Top Up</span>
+      </a>
+      <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="10" r="2.2"/><path d="M5.5 17c.45-2 1.75-3 3-3s2.55 1 3 3M14 9h4.5M14 13h4.5M14 17h3"/></svg>
+        <span>Jual Beli Akun</span>
       </a>
       <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z"/><path d="m8 11 2 2 5-5M8 16h8"/></svg>

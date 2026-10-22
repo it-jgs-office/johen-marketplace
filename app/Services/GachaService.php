@@ -124,22 +124,67 @@ class GachaService
     }
 
     /**
-     * Pilih sektor acak berdasarkan bobot, dengan baris sektor dikunci agar
-     * kuota tidak terpakai dua kali oleh request yang bersamaan.
+     * Pilih hadiah dengan baris hadiah dikunci agar urutan peserta global dan
+     * kuota tetap konsisten saat beberapa pengunjung memutar bersamaan.
      */
     private function pickPrize(): GachaPrize
     {
-        $prizes = GachaPrize::active()
+        $allPrizes = GachaPrize::query()
             ->lockForUpdate()
             ->orderBy('sort_order')
             ->orderBy('id')
-            ->get()
+            ->get();
+
+        $prizes = $allPrizes
             ->filter(fn (GachaPrize $prize) => $prize->isEligible())
             ->values();
 
         if ($prizes->isEmpty()) {
             throw new RuntimeException('Semua hadiah sudah habis. Coba lagi nanti ya!');
         }
+
+        if ((bool) SiteSetting::get('gacha_special_prize_enabled', true)) {
+            $specialPrizeId = (int) SiteSetting::get('gacha_special_prize_id', 0);
+            $specialPrize = $specialPrizeId > 0
+                ? $allPrizes->firstWhere('id', $specialPrizeId)
+                : ($prizes->first(fn (GachaPrize $prize) => $this->isTwentyPercentPrize($prize))
+                    ?? $allPrizes->first(fn (GachaPrize $prize) => $this->isTwentyPercentPrize($prize)));
+
+            if ($specialPrize && $this->isTwentyPercentPrize($specialPrize)) {
+                $interval = max(2, (int) SiteSetting::get('gacha_special_prize_interval', 20));
+                $counterBase = max(0, (int) SiteSetting::get('gacha_special_prize_counter_base', 0));
+                $participantNumber = max(0, GachaSpin::count() - $counterBase) + 1;
+
+                if ($participantNumber % $interval === 0) {
+                    if (! $specialPrize->isEligible()) {
+                        throw new RuntimeException('Hadiah Diskon 20% sedang habis. Hubungi admin.');
+                    }
+
+                    return $specialPrize;
+                }
+
+                // Peserta selain urutan pemenang tidak boleh mendapat hadiah khusus.
+                $prizes = $prizes
+                    ->reject(fn (GachaPrize $prize) => $this->isTwentyPercentPrize($prize))
+                    ->values();
+
+                if ($prizes->isEmpty()) {
+                    throw new RuntimeException('Belum ada hadiah reguler yang bisa dimasuki undian.');
+                }
+            }
+        }
+
+        return $this->pickByWeight($prizes);
+    }
+
+    private function isTwentyPercentPrize(GachaPrize $prize): bool
+    {
+        return $prize->discount_type === 'percent'
+            && (float) $prize->discount_value === 20.0;
+    }
+
+    private function pickByWeight(Collection $prizes): GachaPrize
+    {
 
         $total = (int) $prizes->sum('weight');
 

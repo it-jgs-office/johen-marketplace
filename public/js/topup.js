@@ -88,6 +88,8 @@ document.querySelectorAll('.tab-pill').forEach(tab => {
   tab.addEventListener('click', () => {
     const filter = tab.dataset.filter;
 
+    if (!filter && tab.matches('a[href]')) return;
+
     if (filter === 'check') {
       window.location.href = '/cek-transaksi';
       return;
@@ -215,6 +217,21 @@ function searchResultCard(item, compact = false) {
   const image = item.image_url
     ? `<img src="${escapeSearchHtml(item.image_url)}" alt="" loading="lazy" onerror="this.parentElement.textContent='${item.type === 'account' ? 'A' : 'T'}'">`
     : (item.type === 'account' ? 'A' : 'T');
+
+  if (item.type === 'topup') {
+    const startingPrice = Number(item.price) > 0
+      ? `<strong class="global-search-card-price">Mulai dari ${formatSearchPrice(item.price)}</strong>`
+      : '';
+    return `
+      <a class="global-search-card is-game" data-type="topup" href="${escapeSearchHtml(item.url)}">
+        <span class="global-search-card-image">${image}</span>
+        <span class="global-search-card-copy">
+          <span class="global-search-card-title">${escapeSearchHtml(item.title)}</span>
+          ${startingPrice}
+        </span>
+      </a>`;
+  }
+
   const description = compact || !item.description
     ? ''
     : `<span class="global-search-card-description">${escapeSearchHtml(item.description)}</span>`;
@@ -252,7 +269,7 @@ function renderGlobalSearchResults(data, query) {
   globalSearchTitle.textContent = data.fallback ? 'Produk tidak ditemukan' : `Hasil untuk “${query}”`;
   globalSearchSummary.textContent = data.fallback
     ? 'Coba kata lain atau lihat akun game yang masih tersedia.'
-    : `${topups.length + accounts.length} produk sesuai pencarian kamu.`;
+    : `${topups.length + accounts.length} hasil sesuai pencarian kamu.`;
 
   if (!topups.length && !accounts.length) {
     renderGlobalSearchState('Belum ada produk tersedia', 'Coba lagi beberapa saat atau gunakan kata kunci lain.');
@@ -260,7 +277,7 @@ function renderGlobalSearchResults(data, query) {
   }
 
   globalSearchResults.innerHTML = `${data.fallback ? '<p class="global-search-fallback">Tidak ada produk yang cocok. Berikut beberapa akun game yang bisa kamu lihat.</p>' : ''}
-    ${searchResultGroup('Produk Top Up', 'Top up instan sesuai kata kunci', topups)}
+    ${searchResultGroup('Game Top Up', 'Pilih game untuk melihat produk top up', topups)}
     ${searchResultGroup(data.fallback ? 'Rekomendasi Jual Akun' : 'Produk Jual Akun', data.fallback ? 'Pilihan singkat akun yang tersedia' : 'Akun game sesuai judul atau deskripsi', accounts, data.fallback)}`;
 }
 

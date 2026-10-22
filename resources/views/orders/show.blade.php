@@ -4,6 +4,7 @@
 
 @section('content')
 @php
+  $isJoki = $order->service_type === 'joki';
   $statusBadge = match($order->status) {
     'success' => ['label' => 'PEMBELIAN SUKSES', 'color' => '#10b981'],
     'processing' => ['label' => 'SEDANG DIPROSES', 'color' => '#f59e0b'],
@@ -29,7 +30,7 @@
   <div class="dt-header">
     <div class="dt-header-left">
       <h1 class="dt-title">Detail Transaksi</h1>
-      <p class="dt-subtitle">Informasi lengkap transaksi Top Up kamu.</p>
+      <p class="dt-subtitle">Informasi lengkap transaksi {{ $isJoki ? 'Joki Mobile Legends' : 'Top Up' }} kamu.</p>
     </div>
     <div class="dt-header-actions">
       <a href="{{ route('orders.my') }}" class="dt-btn-outline">
@@ -160,8 +161,8 @@
             $steps = [
               ['label' => 'Pesanan Dibuat', 'desc' => 'Pesanan berhasil dibuat dan tercatat', 'time' => $order->created_at->format('d M H:i')],
               ['label' => 'Pembayaran Berhasil', 'desc' => 'Pembayaran telah dikonfirmasi', 'time' => $order->transaction?->updated_at?->format('d M H:i') ?? '-'],
-              ['label' => 'Top Up Diproses', 'desc' => 'Pesanan sedang diproses sistem', 'time' => in_array($order->status, ['processing', 'success']) ? $order->updated_at->format('d M H:i') : '-'],
-              ['label' => 'Top Up Berhasil', 'desc' => $order->note ? 'SN: '.$order->note : 'Saldo sudah masuk ke akun game', 'time' => $order->status === 'success' ? $order->updated_at->format('d M H:i') : '-'],
+              ['label' => $isJoki ? 'Joki Diproses' : 'Top Up Diproses', 'desc' => $isJoki ? 'Pesanan sedang dikerjakan tim joki' : 'Pesanan sedang diproses sistem', 'time' => in_array($order->status, ['processing', 'success']) ? $order->updated_at->format('d M H:i') : '-'],
+              ['label' => $isJoki ? 'Joki Berhasil' : 'Top Up Berhasil', 'desc' => $isJoki ? 'Target paket sudah selesai dikerjakan' : ($order->note ? 'SN: '.$order->note : 'Saldo sudah masuk ke akun game'), 'time' => $order->status === 'success' ? $order->updated_at->format('d M H:i') : '-'],
             ];
             $completedUntil = match($order->status) {
               'success' => 4,

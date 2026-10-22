@@ -15,6 +15,8 @@ use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\GachaController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\JokiController;
+use App\Http\Controllers\AdminJokiPackageController;
 use App\Http\Controllers\LiveChatController;
 use App\Http\Controllers\LCAdmin\LCAdminDashboardController;
 use App\Http\Controllers\LCAdmin\LCAdminConversationController;
@@ -67,11 +69,16 @@ Route::post('/api/account/check', [HomeController::class, 'checkAccount'])
 Route::get('/api/push/latest-message', [PushSubscriptionController::class, 'latestNotification'])
     ->name('api.push.latest-message');
 Route::get('/games/{brand:name}', [HomeController::class, 'gameDetail'])->name('games.show');
+Route::redirect('/joki', '/joki/mobile-legends')->name('joki.index');
+Route::get('/joki/mobile-legends', [JokiController::class, 'mobileLegends'])->name('joki.mobile-legends');
 Route::get('/cek-transaksi', [HomeController::class, 'checkTransaction'])->name('check.transaction');
 Route::get('/jual-beli-akun', [App\Http\Controllers\HomeController::class, 'jualBeliAkun'])->name('jual-beli-akun');
 Route::get('/jual-beli-akun/{game}', [App\Http\Controllers\HomeController::class, 'jualBeliAkunGame'])
     ->where('game', 'mlbb|pubg|efootball|fcm|ff|roblox|valorant')
     ->name('jual-beli-akun.game');
+Route::post('/jual-beli-akun/email-test', [App\Http\Controllers\HomeController::class, 'jualBeliAkunEmailTest'])
+    ->middleware('throttle:3,1')
+    ->name('jual-beli-akun.email-test');
 Route::get('/jual-beli-akun/pesanan-saya', [App\Http\Controllers\HomeController::class, 'jualBeliAkunOrders'])
     ->name('jual-beli-akun.orders')
     ->middleware('auth:web');
@@ -178,6 +185,11 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::patch('/products/{product}/selling-price', [AdminController::class, 'productsUpdateSellingPrice'])->name('products.selling-price');
     Route::patch('/products/{product}/toggle', [AdminController::class, 'productsToggle'])->name('products.toggle');
     Route::post('/products/sync', [AdminController::class, 'productsSync'])->name('products.sync');
+
+    Route::get('/joki-packages', [AdminJokiPackageController::class, 'index'])->name('joki-packages');
+    Route::post('/joki-packages', [AdminJokiPackageController::class, 'store'])->name('joki-packages.store');
+    Route::put('/joki-packages/{product}', [AdminJokiPackageController::class, 'update'])->name('joki-packages.update');
+    Route::delete('/joki-packages/{product}', [AdminJokiPackageController::class, 'destroy'])->name('joki-packages.destroy');
 
     Route::get('/account-listings', [App\Http\Controllers\AdminAccountListingController::class, 'index'])->name('account-listings');
     Route::get('/account-listings/create', [App\Http\Controllers\AdminAccountListingController::class, 'create'])->name('account-listings.create');

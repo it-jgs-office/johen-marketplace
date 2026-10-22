@@ -534,16 +534,7 @@ class PaymentController extends Controller
      */
     private function settleAccountOrder(AccountOrder $accountOrder): void
     {
-        if ($accountOrder->status !== 'pending') {
-            return;
-        }
-
-        $balance = app(\App\Services\BalanceService::class);
-        $balance->markAccountPaid($accountOrder);
-        $accountOrder->update(['status' => 'success']);
-        $accountOrder->listing?->update(['is_sold' => true]);
-        $balance->markAccountDelivered($accountOrder->fresh());
-        Log::info('Account order lunas', ['order_ref' => $accountOrder->order_ref]);
+        app(\App\Services\AccountDeliveryService::class)->deliver($accountOrder);
     }
 
     private function failAccountOrder(AccountOrder $accountOrder): void

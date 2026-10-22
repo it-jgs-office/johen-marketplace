@@ -140,6 +140,17 @@
     return Math.max(8.5, Math.min(base, byArc));
   }
 
+  function sectorScale(prize) {
+    var scale = Number(prize.sector_scale);
+    return Number.isFinite(scale) && scale > 0 ? scale : 1;
+  }
+
+  function totalSectorScale(prizes) {
+    return prizes.reduce(function (sum, prize) {
+      return sum + sectorScale(prize);
+    }, 0);
+  }
+
   function renderWheel() {
     var prizes = state.prizes;
     var cx = 150;
@@ -149,13 +160,13 @@
     while (wheel.firstChild) wheel.removeChild(wheel.firstChild);
     if (!prizes.length) return;
 
-    var total = prizes.reduce(function (sum, p) { return sum + Math.max(1, p.weight); }, 0);
+    var baseSpan = 360 / totalSectorScale(prizes);
     var defs = svgEl('defs');
     var cursor = 0;
 
     // Sektor dengan gradien dari pusat ke tepi (lebih terang di tengah roda).
     prizes.forEach(function (prize) {
-      var span = (Math.max(1, prize.weight) / total) * 360;
+      var span = baseSpan * sectorScale(prize);
       var start = cursor;
       var end = cursor + span;
       cursor = end;
@@ -188,7 +199,7 @@
     // Garis pemisah putih di atas sektor tapi di bawah label.
     cursor = 0;
     prizes.forEach(function (prize) {
-      var span = (Math.max(1, prize.weight) / total) * 360;
+      var span = baseSpan * sectorScale(prize);
       var start = cursor;
       cursor += span;
       var p1 = polar(cx, cy, r, start);
@@ -202,7 +213,7 @@
     // Label radial 1-2 baris; ukuran teks menyesuaikan lebar sektor.
     cursor = 0;
     prizes.forEach(function (prize) {
-      var span = (Math.max(1, prize.weight) / total) * 360;
+      var span = baseSpan * sectorScale(prize);
       var start = cursor;
       cursor += span;
 
@@ -288,11 +299,12 @@
 
   function sectorOf(prizeId) {
     var prizes = state.prizes;
-    var total = prizes.reduce(function (sum, p) { return sum + Math.max(1, p.weight); }, 0);
+    var scaleTotal = totalSectorScale(prizes);
+    var baseSpan = scaleTotal ? 360 / scaleTotal : 0;
     var cursor = 0;
 
     for (var i = 0; i < prizes.length; i++) {
-      var span = (Math.max(1, prizes[i].weight) / total) * 360;
+      var span = baseSpan * sectorScale(prizes[i]);
       if (prizes[i].id === prizeId) {
         return { start: cursor, span: span, center: cursor + span / 2 };
       }

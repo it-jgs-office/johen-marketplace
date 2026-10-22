@@ -34,8 +34,9 @@
 <div class="card-glass p-4 mb-5" style="display:flex;align-items:flex-start;gap:.75rem">
     <i class="fas fa-sliders-h" style="color:var(--accent);margin-top:0.2rem"></i>
     <div style="font-size:0.82rem;color:var(--text-muted);line-height:1.6;flex:1">
-        <b>Bobot (weight)</b> menentukan peluang sektor terpilih sekaligus besar sudut sektor di roda,
-        jadi yang tampil di roda sama dengan peluang sebenarnya. <b>Kuota</b> kosong berarti tanpa batas;
+        Semua sektor reguler tampil dengan ukuran yang sama dan sektor Diskon 20% dibuat sedikit lebih kecil.
+        <b>Bobot (weight)</b> menentukan peluang hadiah reguler terpilih.
+        Hadiah Diskon 20% mengikuti urutan peserta yang diatur di Pengaturan Gacha. <b>Kuota</b> kosong berarti tanpa batas;
         sektor habis otomatis hilang dari roda. <b>Masa berlaku</b> adalah masa berlaku kode voucher yang
         diterbitkan, dihitung sejak voucher dibuat. Voucher hasil gacha berkuota 1 (sekali pakai).
     </div>
@@ -180,7 +181,7 @@
                 <div>
                     <label class="block text-sm font-medium mb-1.5">Bobot Peluang</label>
                     <input type="number" name="weight" id="f_weight" required min="1" max="10000" class="input-field" oninput="updatePrizePreview()">
-                    <p style="color:var(--text-dim);font-size:0.72rem;margin-top:0.25rem">Semakin besar bobot, semakin besar sudut sektor di roda.</p>
+                    <p style="color:var(--text-dim);font-size:0.72rem;margin-top:0.25rem">Semakin besar bobot, semakin besar peluang hadiah reguler terpilih.</p>
                     <p class="text-red-400 text-xs mt-1 hidden" id="err_weight"></p>
                 </div>
                 <div>
@@ -229,7 +230,7 @@
 <!-- MODAL PENGATURAN -->
 <div class="fixed inset-0 z-50 flex items-center justify-center" id="settingsModal" style="display:none">
     <div class="fixed inset-0 bg-black/60 backdrop-blur-sm" onclick="closeSettingsModal()"></div>
-    <div class="relative" style="background:var(--bg-card);border:1px solid var(--glass-border);border-radius:20px;width:100%;max-width:440px;margin:0 1rem;box-shadow:0 24px 64px -16px rgba(0,0,0,0.5)">
+    <div class="relative" style="background:var(--bg-card);border:1px solid var(--glass-border);border-radius:20px;width:100%;max-width:480px;margin:0 1rem;max-height:92vh;overflow-y:auto;box-shadow:0 24px 64px -16px rgba(0,0,0,0.5)">
         <div class="flex items-center justify-between p-5" style="border-bottom:1px solid var(--glass-border)">
             <h3 class="text-lg font-bold">Pengaturan Gacha</h3>
             <button type="button" style="background:none;border:none;color:var(--text-muted);font-size:1.4rem;cursor:pointer;line-height:1" onclick="closeSettingsModal()">&times;</button>
@@ -250,6 +251,50 @@
                 <label class="block text-sm font-medium mb-1.5">Batas Putar per Hari</label>
                 <input type="number" name="daily_limit" id="s_daily_limit" min="0" max="50" class="input-field" value="{{ $stats['daily_limit'] }}">
                 <p style="color:var(--text-dim);font-size:0.72rem;margin-top:0.3rem">Isi 0 untuk mematikan gacha sementara.</p>
+            </div>
+
+            <div style="border-top:1px solid var(--glass-border);margin-top:1rem;padding-top:1rem">
+                <label class="flex items-center gap-2" style="cursor:pointer">
+                    <input type="checkbox" id="s_special_enabled" value="1" {{ $stats['special_prize_enabled'] ? 'checked' : '' }}
+                           style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
+                    <span class="text-sm font-medium">Pemenang Diskon 20% Berdasarkan Urutan</span>
+                </label>
+                <p style="color:var(--text-dim);font-size:0.72rem;margin-top:0.3rem">Peserta selain urutan pemenang tidak akan mendapatkan Diskon 20%.</p>
+            </div>
+
+            <div class="mt-4">
+                <label class="block text-sm font-medium mb-1.5">Hadiah Diskon 20%</label>
+                <select id="s_special_prize_id" class="input-field">
+                    <option value="">Otomatis pilih Diskon 20%</option>
+                    @foreach($specialPrizeOptions as $specialPrize)
+                        <option value="{{ $specialPrize->id }}" {{ $stats['special_prize_id'] === $specialPrize->id ? 'selected' : '' }}>
+                            {{ $specialPrize->label }}{{ $specialPrize->is_active ? '' : ' (Nonaktif)' }}
+                        </option>
+                    @endforeach
+                </select>
+            </div>
+
+            <div class="mt-4">
+                <label class="block text-sm font-medium mb-1.5">Menang Setiap Peserta Ke-</label>
+                <input type="number" id="s_special_interval" min="2" max="100000" class="input-field" value="{{ $stats['special_prize_interval'] }}">
+                <p style="color:var(--text-dim);font-size:0.72rem;margin-top:0.3rem">Urutan berikutnya saat ini: peserta ke-{{ $stats['special_sequence_position'] }}.</p>
+            </div>
+
+            <div class="mt-4">
+                <label class="block text-sm font-medium mb-1.5">Ukuran Sektor Diskon 20%</label>
+                <div class="flex items-center gap-3">
+                    <input type="number" id="s_special_sector_size" min="40" max="100" class="input-field" value="{{ $stats['special_sector_size'] }}">
+                    <span style="font-weight:700">%</span>
+                </div>
+                <p style="color:var(--text-dim);font-size:0.72rem;margin-top:0.3rem">Sektor reguler tetap sama rata. Nilai lebih kecil membuat sektor Diskon 20% lebih kecil.</p>
+            </div>
+
+            <div class="mt-4">
+                <label class="flex items-center gap-2" style="cursor:pointer">
+                    <input type="checkbox" id="s_reset_special_sequence" value="1"
+                           style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer">
+                    <span class="text-sm font-medium">Mulai ulang hitungan dari peserta ke-1</span>
+                </label>
             </div>
 
             <div class="flex justify-end gap-3 mt-5">
@@ -387,7 +432,12 @@ document.getElementById('settingsForm').addEventListener('submit', async functio
     const enabled = document.getElementById('s_enabled').checked;
     const payload = {
         gacha_enabled: enabled ? '1' : '0',
-        gacha_daily_limit: String(document.getElementById('s_daily_limit').value || 0)
+        gacha_daily_limit: String(document.getElementById('s_daily_limit').value || 0),
+        gacha_special_prize_enabled: document.getElementById('s_special_enabled').checked ? '1' : '0',
+        gacha_special_prize_id: document.getElementById('s_special_prize_id').value || null,
+        gacha_special_prize_interval: String(document.getElementById('s_special_interval').value || 20),
+        gacha_special_sector_size: String(document.getElementById('s_special_sector_size').value || 72),
+        reset_special_sequence: document.getElementById('s_reset_special_sequence').checked ? '1' : '0'
     };
 
     try {

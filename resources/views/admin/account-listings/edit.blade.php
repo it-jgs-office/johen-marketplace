@@ -98,6 +98,15 @@
                 </div>
             </div>
 
+            <div class="mb-6" style="border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.07);border-radius:12px;padding:1rem">
+                <label class="block text-sm font-medium mb-2">Data Login Akun</label>
+                <textarea name="login_credentials" rows="5" required
+                          class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500"
+                          placeholder="Email, password, metode login, dan catatan keamanan">{{ old('login_credentials', $accountListing->login_credentials) }}</textarea>
+                <p class="text-gray-500 text-xs mt-1">Disimpan terenkripsi dan otomatis dikirim ke email pembeli setelah pembayaran berhasil.</p>
+                @error('login_credentials') <p class="text-red-400 text-sm mt-1">{{ $message }}</p> @enderror
+            </div>
+
             <div class="mb-6" style="border-top:1px solid var(--glass-border);padding-top:1.5rem">
                 <h3 class="text-md font-semibold mb-4" style="color:var(--jba-accent, #9d5cf5)">Promo</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

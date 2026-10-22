@@ -22,6 +22,8 @@ class Product extends Model
         'selling_markup_type',
         'selling_markup_value',
         'type',
+        'estimated_duration',
+        'joki_sort_order',
         'is_active',
         'stock',
         'stock_alert_sent',
@@ -34,6 +36,7 @@ class Product extends Model
         'stock_alert_sent' => 'boolean',
         'selling_price_override' => 'decimal:2',
         'selling_markup_value' => 'decimal:2',
+        'joki_sort_order' => 'integer',
     ];
 
     protected $appends = ['photo_url'];

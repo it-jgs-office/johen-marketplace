@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\GachaSpin;
+use App\Models\SiteSetting;
 use App\Services\GachaService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -20,6 +21,7 @@ class GachaController extends Controller
         $userId = $request->user()?->id;
         $guestId = $this->guestId($request);
         $prizes = $this->gacha->activePrizes();
+        $specialSectorScale = max(40, min(100, (int) SiteSetting::get('gacha_special_sector_size', 72))) / 100;
 
         return response()->json([
             'enabled' => $this->gacha->isEnabled() && $prizes->isNotEmpty(),
@@ -33,6 +35,12 @@ class GachaController extends Controller
                 'icon' => $prize->icon,
                 'weight' => (int) $prize->weight,
                 'remaining' => $prize->remaining_quota,
+                'is_twenty_percent' => $prize->discount_type === 'percent'
+                    && (float) $prize->discount_value === 20.0,
+                'sector_scale' => $prize->discount_type === 'percent'
+                    && (float) $prize->discount_value === 20.0
+                        ? $specialSectorScale
+                        : 1,
             ])->values(),
         ]);
     }

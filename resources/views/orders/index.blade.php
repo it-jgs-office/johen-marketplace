@@ -294,7 +294,7 @@
           $thumbnail = $brand?->thumbnail_url;
           $paymentType = $order->transaction?->payment_type;
           $cat = strtolower($order->category ?? '');
-          $tabCat = $cat === 'joki' || $brand?->service_type === 'joki' ? 'joki' : 'topup';
+          $tabCat = $order->service_type === 'joki' || $cat === 'joki' || $brand?->service_type === 'joki' ? 'joki' : 'topup';
           $dateStr = $order->created_at->format('d M Y');
           $timeStr = $order->created_at->format('H:i') . ' WIB';
           $payLogo = payment_logo_asset($paymentType);

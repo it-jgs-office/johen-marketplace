@@ -753,14 +753,26 @@ class AdminController extends Controller
 
         $newStatus = $request->status;
 
-        if ($newStatus === 'success' && $accountOrder->status !== 'pending') {
+        if ($newStatus === 'success' && ! in_array($accountOrder->status, ['pending', 'processing'], true)) {
             return back()->with('error', 'Pesanan akun yang sudah final tidak dapat diubah menjadi sukses.');
         }
 
         $balance = app(BalanceService::class);
 
-        if ($newStatus === 'success' && $accountOrder->status === 'pending') {
-            HomeController::settleAccountOrder($accountOrder);
+        if ($newStatus === 'success' && in_array($accountOrder->status, ['pending', 'processing'], true)) {
+            $delivered = HomeController::settleAccountOrder($accountOrder);
+            $accountOrder->refresh();
+
+            if (! $delivered || $accountOrder->status !== 'success') {
+                $message = $accountOrder->credentials_email_error
+                    ?: 'Data login akun belum berhasil dikirim ke email pembeli.';
+
+                if ($request->ajax() || $request->wantsJson()) {
+                    return response()->json(['success' => false, 'message' => $message], 422);
+                }
+
+                return back()->with('error', $message);
+            }
         } elseif (in_array($newStatus, ['failed', 'cancelled'], true)) {
             if ($accountOrder->saldo_status === 'held') {
                 $balance->markAccountRefunded($accountOrder, 'Refund transaksi akun oleh admin');

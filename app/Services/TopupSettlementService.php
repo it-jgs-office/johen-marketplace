@@ -40,6 +40,18 @@ class TopupSettlementService
 
         $this->balance->markPaid($order);
 
+        $product = Product::where('buyer_sku_code', $order->buyer_sku_code)->first();
+        if ($order->service_type === 'joki' || $product?->type === 'joki') {
+            $order->update([
+                'status' => 'processing',
+                'digiflazz_started_at' => null,
+                'note' => 'Pembayaran diterima. Pesanan menunggu dikerjakan oleh tim joki.',
+            ]);
+            $order->transaction?->update(['status' => 'processing']);
+
+            return;
+        }
+
         $result = $this->digiflazz->topUp(
             $order->buyer_sku_code,
             $order->customer_number,
@@ -156,6 +168,10 @@ class TopupSettlementService
      */
     public function poll(Order $order, ?int $adminId = null): ?string
     {
+        if ($order->service_type === 'joki') {
+            return null;
+        }
+
         try {
             $result = $this->digiflazz->checkStatus(
                 $order->buyer_sku_code,
@@ -252,6 +268,10 @@ class TopupSettlementService
 
     public function retry(Order $order, ?int $adminId = null): array
     {
+        if ($order->service_type === 'joki') {
+            throw new \RuntimeException('Pesanan joki diproses manual dan tidak dikirim ke provider top up.');
+        }
+
         $order->forceFill([
             'provider_error_at' => null,
             'provider_error_reason' => null,

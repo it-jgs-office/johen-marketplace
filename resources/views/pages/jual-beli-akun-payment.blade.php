@@ -172,7 +172,7 @@
               <svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" width="56" height="56"><path d="M20 6 9 17l-5-5"/></svg>
             </div>
             <div class="jpay-success-label" id="jpaySuccessLabel">Pembayaran Berhasil</div>
-            <div class="jpay-success-sub" id="jpaySuccessSub">Pesanan sedang diproses. Admin akan menghubungi kamu via WhatsApp.</div>
+            <div class="jpay-success-sub" id="jpaySuccessSub">Data login akun sedang dikirim ke email kamu.</div>
           </div>
           <div class="jpay-method-failed" id="jpayMethodFailed" style="display:none">
             <div class="jpay-failed-icon">
@@ -529,28 +529,31 @@
     const pill = document.getElementById('jpayStatusPill');
     const methodResult = document.getElementById('jpayMethodResult');
     const methodSuccess = document.getElementById('jpayMethodSuccess');
+    const methodSuccessSub = document.getElementById('jpaySuccessSub');
     const methodFailed = document.getElementById('jpayMethodFailed');
 
     if (type === 'processing') {
       icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5" width="44" height="44"><path d="M12 6v6l4 2"/></svg>';
       label.textContent = 'Pembayaran Diterima';
-      sub.textContent = 'Pesanan sedang diproses admin.';
+      sub.textContent = 'Data login akun sedang dikirim ke email kamu.';
       pill.textContent = 'DIPROSES';
       pill.style.background = 'rgba(251,191,36,.15)';
       pill.style.color = '#fbbf24';
       if (methodResult) methodResult.style.display = 'none';
       if (methodSuccess) methodSuccess.style.display = 'flex';
+      if (methodSuccessSub) methodSuccessSub.textContent = 'Data login akun sedang dikirim ke email kamu.';
       if (methodFailed) methodFailed.style.display = 'none';
       setSummaryStatus('processing');
     } else if (type === 'success') {
       icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" width="44" height="44"><path d="M20 6 9 17l-5-5"/></svg>';
       label.textContent = 'Pesanan Selesai';
-      sub.textContent = 'Pembayaran dikonfirmasi. Admin akan mengirim akun via WhatsApp.';
+      sub.textContent = 'Data login akun sudah dikirim ke email kamu.';
       pill.textContent = 'BERHASIL';
       pill.style.background = 'rgba(52,211,153,.15)';
       pill.style.color = '#34d399';
       if (methodResult) methodResult.style.display = 'none';
       if (methodSuccess) methodSuccess.style.display = 'flex';
+      if (methodSuccessSub) methodSuccessSub.textContent = 'Data login akun sudah dikirim ke email kamu.';
       if (methodFailed) methodFailed.style.display = 'none';
       setSummaryStatus('success');
       maybeShowAccountReview('success');

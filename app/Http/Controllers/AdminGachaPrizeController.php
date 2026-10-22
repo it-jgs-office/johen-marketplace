@@ -17,15 +17,29 @@ class AdminGachaPrizeController extends Controller
             ->paginate(20);
 
         $today = GachaSpin::whereDate('created_at', now()->toDateString())->count();
+        $totalSpins = GachaSpin::count();
+        $specialInterval = max(2, (int) SiteSetting::get('gacha_special_prize_interval', 20));
+        $counterBase = max(0, (int) SiteSetting::get('gacha_special_prize_counter_base', 0));
 
         $stats = [
             'enabled' => (bool) SiteSetting::get('gacha_enabled', true),
             'daily_limit' => (int) SiteSetting::get('gacha_daily_limit', 1),
             'spins_today' => $today,
-            'vouchers_issued' => GachaSpin::count(),
+            'vouchers_issued' => $totalSpins,
+            'special_prize_enabled' => (bool) SiteSetting::get('gacha_special_prize_enabled', true),
+            'special_prize_id' => (int) SiteSetting::get('gacha_special_prize_id', 0),
+            'special_prize_interval' => $specialInterval,
+            'special_sector_size' => max(40, min(100, (int) SiteSetting::get('gacha_special_sector_size', 72))),
+            'special_sequence_position' => (max(0, $totalSpins - $counterBase) % $specialInterval) + 1,
         ];
 
-        return view('admin.gacha.prizes', compact('prizes', 'stats') + [
+        $specialPrizeOptions = GachaPrize::where('discount_type', 'percent')
+            ->where('discount_value', 20)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get(['id', 'label', 'is_active']);
+
+        return view('admin.gacha.prizes', compact('prizes', 'stats', 'specialPrizeOptions') + [
             'totalWeight' => max(1, (int) GachaPrize::sum('weight')),
         ]);
     }
@@ -76,17 +90,41 @@ class AdminGachaPrizeController extends Controller
     }
 
     /**
-     * Pengaturan umum gacha: nyala/mati dan jatah putar per hari.
+     * Pengaturan umum dan hadiah khusus berdasarkan urutan peserta global.
      */
     public function settings(Request $request)
     {
         $data = $request->validate([
             'gacha_enabled' => 'required|boolean',
             'gacha_daily_limit' => 'required|integer|min:0|max:50',
+            'gacha_special_prize_enabled' => 'required|boolean',
+            'gacha_special_prize_id' => 'nullable|integer|exists:gacha_prizes,id',
+            'gacha_special_prize_interval' => 'required|integer|min:2|max:100000',
+            'gacha_special_sector_size' => 'required|integer|min:40|max:100',
+            'reset_special_sequence' => 'nullable|boolean',
         ]);
+
+        if (! empty($data['gacha_special_prize_id'])) {
+            $specialPrize = GachaPrize::find($data['gacha_special_prize_id']);
+
+            if ($specialPrize->discount_type !== 'percent' || (float) $specialPrize->discount_value !== 20.0) {
+                return response()->json([
+                    'message' => 'Hadiah khusus harus berupa Diskon 20%.',
+                    'errors' => ['gacha_special_prize_id' => ['Hadiah khusus harus berupa Diskon 20%.']],
+                ], 422);
+            }
+        }
 
         SiteSetting::set('gacha_enabled', $data['gacha_enabled'] ? '1' : '0');
         SiteSetting::set('gacha_daily_limit', (string) $data['gacha_daily_limit']);
+        SiteSetting::set('gacha_special_prize_enabled', $data['gacha_special_prize_enabled'] ? '1' : '0');
+        SiteSetting::set('gacha_special_prize_id', (string) ($data['gacha_special_prize_id'] ?? 0));
+        SiteSetting::set('gacha_special_prize_interval', (string) $data['gacha_special_prize_interval']);
+        SiteSetting::set('gacha_special_sector_size', (string) $data['gacha_special_sector_size']);
+
+        if (! empty($data['reset_special_sequence'])) {
+            SiteSetting::set('gacha_special_prize_counter_base', (string) GachaSpin::count());
+        }
 
         $payload = [
             'message' => 'Pengaturan gacha berhasil disimpan',

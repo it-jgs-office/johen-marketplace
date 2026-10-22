@@ -23,6 +23,9 @@ class AccountOrder extends Model
         'checkout_url',
         'gateway_extra',
         'status',
+        'credentials_email_attempted_at',
+        'credentials_email_sent_at',
+        'credentials_email_error',
         'total_price',
         'points_used',
         'points_status',
@@ -40,6 +43,8 @@ class AccountOrder extends Model
         'saldo_amount' => 'decimal:2',
         'saldo_released_at' => 'datetime',
         'gateway_extra' => 'array',
+        'credentials_email_attempted_at' => 'datetime',
+        'credentials_email_sent_at' => 'datetime',
     ];
 
     public function listing()

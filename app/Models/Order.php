@@ -28,6 +28,11 @@ class Order extends Model
         'product_name',
         'brand',
         'category',
+        'service_type',
+        'joki_login_method',
+        'joki_login_identifier',
+        'joki_login_password',
+        'joki_notes',
         'price',
         'original_price',
         'flash_deal_id',
@@ -64,6 +69,8 @@ class Order extends Model
         'saldo_released_at' => 'datetime',
         'success_email_sent_at' => 'datetime',
         'failed_email_sent_at' => 'datetime',
+        'joki_login_identifier' => 'encrypted',
+        'joki_login_password' => 'encrypted',
     ];
 
     public function user()

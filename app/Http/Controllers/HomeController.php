@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\AccountEmailTestMail;
 use App\Models\AccountListing;
 use App\Models\AccountOrder;
 use App\Models\Brand;
@@ -23,7 +24,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class HomeController extends Controller
 {
@@ -362,27 +365,28 @@ class HomeController extends Controller
             ->limit(24)
             ->get();
 
+        $matchedBrandNames = $products->pluck('brand')->unique()->values();
         $brands = Brand::query()
-            ->whereIn('name', $products->pluck('brand')->unique())
+            ->whereIn('name', $matchedBrandNames)
             ->get()
             ->keyBy(fn (Brand $brand) => mb_strtolower($brand->name));
 
-        $topups = $products->map(function (Product $product) use ($brands) {
-            $brand = $brands->get(mb_strtolower($product->brand));
-            $description = $brand?->description
-                ?: "Top Up {$product->product_name} untuk {$product->brand} dengan proses instan.";
+        $minimumPrices = $this->activeGameProductsQuery()
+            ->whereIn('brand', $matchedBrandNames)
+            ->where('selling_price', '>', 0)
+            ->selectRaw('LOWER(brand) as brand_key, MIN(selling_price) as minimum_price')
+            ->groupBy(DB::raw('LOWER(brand)'))
+            ->pluck('minimum_price', 'brand_key');
 
+        $topups = $matchedBrandNames->map(function (string $brandName) use ($brands, $minimumPrices) {
+            $brand = $brands->get(mb_strtolower($brandName));
             return [
-                'id' => $product->id,
+                'id' => $brand?->id ?: $brandName,
                 'type' => 'topup',
-                'title' => $product->product_name,
-                'description' => Str::limit(strip_tags((string) $description), 140),
-                'meta' => $product->brand,
-                'price' => (float) $product->selling_price,
-                'image_url' => $product->photo_url
-                    ?: topup_product_icon_asset($product->brand, $product->product_name, $product->type)
-                    ?: $brand?->thumbnail_url,
-                'url' => route('games.show', ['brand' => $product->brand]).'?product='.$product->id,
+                'title' => $brand?->name ?: $brandName,
+                'price' => (float) ($minimumPrices->get(mb_strtolower($brandName)) ?? 0),
+                'image_url' => $brand?->thumbnail_url,
+                'url' => route('games.show', ['brand' => $brand?->name ?: $brandName]),
             ];
         })->values();
 
@@ -828,6 +832,39 @@ class HomeController extends Controller
         return view('pages.jual-beli-akun-checkout', compact('listing', 'paymentMethods', 'pointBalance'));
     }
 
+    public function jualBeliAkunEmailTest(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email:rfc', 'max:255'],
+        ]);
+        $email = mb_strtolower(trim($validated['email']));
+        $token = Str::random(48);
+
+        try {
+            Mail::to($email)->send(new AccountEmailTestMail($email, business_info()));
+        } catch (\Throwable $exception) {
+            Log::error('Email tes pemesanan akun gagal dikirim', [
+                'recipient' => $email,
+                'error' => $exception->getMessage(),
+            ]);
+
+            return response()->json([
+                'message' => 'Email tes gagal dikirim. Periksa alamat email atau coba lagi.',
+            ], 422);
+        }
+
+        $request->session()->put('jba_email_test', [
+            'email' => $email,
+            'token_hash' => hash('sha256', $token),
+            'expires_at' => now()->addMinutes(15)->timestamp,
+        ]);
+
+        return response()->json([
+            'message' => 'Email tes sudah dikirim. Periksa inbox atau folder spam.',
+            'token' => $token,
+        ]);
+    }
+
     public function jualBeliAkunCheckoutStore(Request $request, int $listing)
     {
         $listing = app(JbaApiClient::class)->find($listing);
@@ -844,12 +881,37 @@ class HomeController extends Controller
         $validated = $request->validate([
             'customer_name' => 'required|string|max:255',
             'customer_email' => 'required|email|max:255',
+            'email_test_token' => 'required|string|size:48',
+            'email_test_confirmed' => 'accepted',
             'customer_phone' => 'required|string|max:20',
             'payment_method' => ['required', 'string', \Illuminate\Validation\Rule::in($availableCodes)],
             'notes' => 'nullable|string|max:1000',
             'use_points' => 'nullable|boolean',
             'points_amount' => 'exclude_unless:use_points,1|required|integer|min:1',
         ]);
+
+        $emailTest = (array) $request->session()->get('jba_email_test', []);
+        $emailTestValid = isset($emailTest['email'], $emailTest['token_hash'], $emailTest['expires_at'])
+            && (int) $emailTest['expires_at'] >= now()->timestamp
+            && hash_equals((string) $emailTest['email'], mb_strtolower(trim($validated['customer_email'])))
+            && hash_equals((string) $emailTest['token_hash'], hash('sha256', $validated['email_test_token']));
+
+        if (! $emailTestValid) {
+            throw ValidationException::withMessages([
+                'customer_email' => 'Kirim ulang email tes dan konfirmasi bahwa email sudah diterima.',
+            ]);
+        }
+
+        $credentialListing = AccountListing::query()
+            ->where('source', 'jba_api')
+            ->where('source_id', (string) $listing->id)
+            ->first();
+
+        if (! $credentialListing || trim((string) $credentialListing->login_credentials) === '') {
+            return back()
+                ->with('error', 'Produk belum siap dikirim otomatis. Silakan hubungi CS Johen.')
+                ->withInput();
+        }
 
         $totalPrice = (float) $listing->price;
         $points = $request->boolean('use_points') && auth()->check()
@@ -915,6 +977,8 @@ class HomeController extends Controller
         if ((float) $order->cash_amount <= 0) {
             static::settleAccountOrder($order);
         }
+
+        $request->session()->forget('jba_email_test');
 
         return redirect()->route('jual-beli-akun.payment', $order)
             ->with('success', 'Pesanan berhasil dibuat! Silakan lakukan pembayaran.');
@@ -996,6 +1060,11 @@ class HomeController extends Controller
      */
     public function jualBeliAkunPaymentStatus(AccountOrder $accountOrder)
     {
+        if ($accountOrder->status === 'processing' && ! $accountOrder->credentials_email_sent_at) {
+            app(\App\Services\AccountDeliveryService::class)->deliver($accountOrder);
+            $accountOrder->refresh();
+        }
+
         if (data_get($accountOrder->gateway_extra, 'integration') === 'direct'
             && data_get($accountOrder->gateway_extra, 'provider') === 'doku') {
             app(\App\Services\DokuPaymentSyncService::class)->sync($accountOrder);
@@ -1082,18 +1151,9 @@ class HomeController extends Controller
     /**
      * Tandai account order lunas (idempotent): success + listing terjual.
      */
-    public static function settleAccountOrder(AccountOrder $accountOrder): void
+    public static function settleAccountOrder(AccountOrder $accountOrder): bool
     {
-        if ($accountOrder->status !== 'pending') {
-            return;
-        }
-
-        $balance = app(\App\Services\BalanceService::class);
-        $balance->markAccountPaid($accountOrder);
-        $accountOrder->update(['status' => 'success']);
-        $accountOrder->listing?->update(['is_sold' => true]);
-        $balance->markAccountDelivered($accountOrder->fresh());
-        Log::info('Account order lunas', ['order_ref' => $accountOrder->order_ref]);
+        return app(\App\Services\AccountDeliveryService::class)->deliver($accountOrder);
     }
 
     public static function getTestimonials(): array

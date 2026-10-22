@@ -22,11 +22,15 @@
             <span class="jco-section-num">1</span>
             <div>
               <h2 class="jco-section-title">Data Pemesan</h2>
-              <p class="jco-section-desc">Isi data diri kamu untuk proses pemesanan.</p>
+              <p class="jco-section-desc">Data login akun akan dikirim ke email yang sudah kamu tes dan konfirmasi.</p>
             </div>
           </div>
 
           <div class="jco-fields">
+            <div class="jco-email-notice">
+              <strong>Pastikan email aktif dan dapat menerima pesan</strong>
+              <span>Setelah pembayaran berhasil, seluruh data login akun game dikirim otomatis ke email pemesan.</span>
+            </div>
             <div class="jco-field">
               <label for="customer_name">Nama Lengkap <span class="jco-req">*</span></label>
               <input type="text" name="customer_name" id="customer_name" value="{{ old('customer_name', auth()->user()->name ?? '') }}" required placeholder="Masukkan nama lengkap">
@@ -37,7 +41,16 @@
               <div class="jco-field">
                 <label for="customer_email">Email <span class="jco-req">*</span></label>
                 <input type="email" name="customer_email" id="customer_email" value="{{ old('customer_email', auth()->user()->email ?? '') }}" required placeholder="email@contoh.com">
+                <input type="hidden" name="email_test_token" id="email_test_token" value="{{ old('email_test_token') }}">
+                <button type="button" class="jco-email-test-btn" id="emailTestBtn">Kirim Email Tes</button>
+                <span class="jco-email-test-status" id="emailTestStatus" aria-live="polite"></span>
+                <label class="jco-email-confirm" id="emailConfirmWrap" @if(!old('email_test_token')) hidden @endif>
+                  <input type="checkbox" name="email_test_confirmed" id="email_test_confirmed" value="1" {{ old('email_test_confirmed') ? 'checked' : '' }}>
+                  <span>Ya, email tes dari Johen Gaming sudah masuk.</span>
+                </label>
                 @error('customer_email')<span class="jco-error">{{ $message }}</span>@enderror
+                @error('email_test_token')<span class="jco-error">Kirim email tes terlebih dahulu.</span>@enderror
+                @error('email_test_confirmed')<span class="jco-error">Konfirmasikan bahwa email tes sudah masuk.</span>@enderror
               </div>
               <div class="jco-field">
                 <label for="customer_phone">No. WhatsApp <span class="jco-req">*</span></label>
@@ -326,6 +339,49 @@
   color: #f87171;
   margin-top: .3rem;
 }
+.jco-email-notice {
+  display: flex;
+  flex-direction: column;
+  gap: .25rem;
+  padding: .85rem 1rem;
+  border: 1px solid rgba(245, 158, 11, .35);
+  border-radius: 11px;
+  background: rgba(245, 158, 11, .08);
+  color: var(--text-dim, #999);
+  font-size: .76rem;
+  line-height: 1.5;
+}
+.jco-email-notice strong { color: #fbbf24; font-size: .8rem; }
+.jco-email-test-btn {
+  width: 100%;
+  margin-top: .55rem;
+  padding: .62rem .8rem;
+  border: 1px solid rgba(59, 130, 246, .45);
+  border-radius: 9px;
+  background: rgba(37, 99, 235, .12);
+  color: #60a5fa;
+  font-size: .76rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.jco-email-test-btn:disabled { cursor: wait; opacity: .65; }
+.jco-email-test-status { display: block; margin-top: .4rem; color: var(--text-dim, #999); font-size: .7rem; line-height: 1.45; }
+.jco-email-test-status.is-success { color: #34d399; }
+.jco-email-test-status.is-error { color: #f87171; }
+.jco-email-confirm {
+  display: flex !important;
+  align-items: flex-start;
+  gap: .5rem;
+  margin-top: .6rem !important;
+  padding: .7rem;
+  border: 1px solid rgba(52, 211, 153, .3);
+  border-radius: 9px;
+  background: rgba(16, 185, 129, .08);
+  color: #6ee7b7 !important;
+  cursor: pointer;
+}
+.jco-email-confirm[hidden] { display: none !important; }
+.jco-email-confirm input { margin-top: .1rem; accent-color: #10b981; }
 
 /* Payment */
 .jco-pay-group {
@@ -637,6 +693,69 @@
     if (pointAmount) pointAmount.addEventListener('input', updatePointTotal);
     updatePointTotal();
   }
+
+  const checkoutForm = document.getElementById('checkoutForm');
+  const emailInput = document.getElementById('customer_email');
+  const emailTestBtn = document.getElementById('emailTestBtn');
+  const emailTestToken = document.getElementById('email_test_token');
+  const emailTestStatus = document.getElementById('emailTestStatus');
+  const emailConfirmWrap = document.getElementById('emailConfirmWrap');
+  const emailConfirmed = document.getElementById('email_test_confirmed');
+
+  function resetEmailTest() {
+    emailTestToken.value = '';
+    emailConfirmed.checked = false;
+    emailConfirmWrap.hidden = true;
+    emailTestStatus.textContent = 'Kirim email tes setelah alamat email benar.';
+    emailTestStatus.className = 'jco-email-test-status';
+  }
+
+  emailInput?.addEventListener('input', resetEmailTest);
+  emailTestBtn?.addEventListener('click', async function() {
+    if (!emailInput.reportValidity()) return;
+
+    emailTestBtn.disabled = true;
+    emailTestBtn.textContent = 'Mengirim...';
+    emailTestStatus.textContent = '';
+    emailTestStatus.className = 'jco-email-test-status';
+
+    try {
+      const response = await fetch(@json(route('jual-beli-akun.email-test')), {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({email: emailInput.value.trim()})
+      });
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.message || 'Email tes gagal dikirim.');
+
+      emailTestToken.value = data.token;
+      emailConfirmed.checked = false;
+      emailConfirmWrap.hidden = false;
+      emailTestStatus.textContent = data.message;
+      emailTestStatus.className = 'jco-email-test-status is-success';
+    } catch (error) {
+      resetEmailTest();
+      emailTestStatus.textContent = error.message || 'Email tes gagal dikirim.';
+      emailTestStatus.className = 'jco-email-test-status is-error';
+    } finally {
+      emailTestBtn.disabled = false;
+      emailTestBtn.textContent = 'Kirim Ulang Email Tes';
+    }
+  });
+
+  checkoutForm?.addEventListener('submit', function(event) {
+    if (!emailTestToken.value || !emailConfirmed.checked) {
+      event.preventDefault();
+      emailTestStatus.textContent = 'Kirim email tes lalu konfirmasi bahwa email sudah masuk.';
+      emailTestStatus.className = 'jco-email-test-status is-error';
+      emailInput.scrollIntoView({behavior: 'smooth', block: 'center'});
+    }
+  });
 })();
 </script>
 @endpush

@@ -195,6 +195,13 @@
                 </div>
             </div>
 
+            <div class="mt-4" style="border:1px solid rgba(245,158,11,.35);background:rgba(245,158,11,.07);border-radius:12px;padding:1rem">
+                <label class="block text-sm font-medium mb-1.5" for="f_login_credentials">Data Login Akun</label>
+                <textarea name="login_credentials" id="f_login_credentials" rows="5" required class="input-field" placeholder="Contoh:&#10;Email: akun@email.com&#10;Password: ********&#10;Login melalui: Moonton/Facebook/Google&#10;Catatan keamanan lainnya"></textarea>
+                <p style="color:var(--text-dim);font-size:.72rem;margin-top:.35rem">Data ini disimpan terenkripsi dan otomatis dikirim ke email pembeli setelah pembayaran berhasil.</p>
+                <p class="text-red-400 text-xs mt-1 hidden" id="err_login_credentials"></p>
+            </div>
+
             <div class="mt-4" style="border-top:1px solid var(--glass-border);padding-top:1.25rem">
                 <h3 class="text-sm font-semibold mb-3" style="color:var(--jba-accent, #9d5cf5)">Promo</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">

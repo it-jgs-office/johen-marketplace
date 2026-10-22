@@ -4,6 +4,7 @@
 
 @section('content')
 @php
+  $isJoki = $order->service_type === 'joki';
   $statusBadge = match($order->status) {
     'success' => ['label' => 'PEMBELIAN SUKSES', 'color' => '#10b981'],
     'processing' => ['label' => 'SEDANG DIPROSES', 'color' => '#f59e0b'],
@@ -46,7 +47,7 @@
 
   {{-- BREADCRUMB --}}
   <nav class="pd-breadcrumb">
-    <a href="{{ route('home') }}">Top Up</a>
+    <a href="{{ $isJoki ? route('joki.mobile-legends') : route('home') }}">{{ $isJoki ? 'Joki MLBB' : 'Top Up' }}</a>
     <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
     <span>Detail Pembayaran</span>
   </nav>
@@ -85,11 +86,11 @@
           </div>
           <div class="pd-step" id="pdStepC" data-state="pending">
             <div class="pd-step-dot"><span class="pd-step-num">3</span></div>
-            <div class="pd-step-label">Top Up Diproses</div>
+            <div class="pd-step-label">{{ $isJoki ? 'Joki Diproses' : 'Top Up Diproses' }}</div>
           </div>
           <div class="pd-step" id="pdStepD" data-state="pending">
             <div class="pd-step-dot"><span class="pd-step-num">4</span></div>
-            <div class="pd-step-label">Top Up Berhasil</div>
+            <div class="pd-step-label">{{ $isJoki ? 'Joki Berhasil' : 'Top Up Berhasil' }}</div>
           </div>
         </div>
         <div class="pd-progress-note" id="pdProgressNote" style="display:none">

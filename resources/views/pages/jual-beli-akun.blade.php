@@ -294,7 +294,7 @@
         @endif
       </div>
       <div class="jba-card-body">
-        <div class="jba-card-game">{{ $l->game }}</div>
+        <div class="jba-card-game" data-game-label="{{ $gameSlugs[$l->game] ?? 'other' }}">{{ $l->game }}</div>
         <h3 class="jba-card-title">{{ $l->product_name }}</h3>
         @if($l->owner_name)
           <div class="jba-card-owner">{{ $l->owner_name }}</div>
@@ -993,14 +993,40 @@
   padding: .85rem 1rem;
 }
 .jba-card-game {
-  font-size: .65rem;
-  color: var(--jba-accent);
-  font-weight: 500;
+  --game-label-color: var(--jba-accent);
+  display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+  align-items: center;
+  padding: .22rem .48rem;
+  border: 1px solid color-mix(in srgb, var(--game-label-color) 38%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--game-label-color) 14%, transparent);
+  color: var(--game-label-color);
+  font-size: .6rem;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: .04em;
-  margin-bottom: .15rem;
-  opacity: .7;
+  letter-spacing: .055em;
+  line-height: 1.2;
+  margin-bottom: .4rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+.jba-card-game[data-game-label="mlbb"]{--game-label-color:#38bdf8}
+.jba-card-game[data-game-label="pubg"]{--game-label-color:#f59e0b}
+.jba-card-game[data-game-label="efootball"]{--game-label-color:#3b82f6}
+.jba-card-game[data-game-label="fcm"]{--game-label-color:#60a5fa}
+.jba-card-game[data-game-label="ff"]{--game-label-color:#fb7185}
+.jba-card-game[data-game-label="roblox"]{--game-label-color:#a3a3a3}
+.jba-card-game[data-game-label="valorant"]{--game-label-color:#ff4655}
+[data-theme="light"] .jba-card-game[data-game-label="mlbb"]{--game-label-color:#0369a1}
+[data-theme="light"] .jba-card-game[data-game-label="pubg"]{--game-label-color:#b45309}
+[data-theme="light"] .jba-card-game[data-game-label="efootball"]{--game-label-color:#1d4ed8}
+[data-theme="light"] .jba-card-game[data-game-label="fcm"]{--game-label-color:#1d4ed8}
+[data-theme="light"] .jba-card-game[data-game-label="ff"]{--game-label-color:#be123c}
+[data-theme="light"] .jba-card-game[data-game-label="roblox"]{--game-label-color:#475569}
+[data-theme="light"] .jba-card-game[data-game-label="valorant"]{--game-label-color:#be123c}
 .jba-card-title {
   font-size: .88rem;
   font-weight: 600;
@@ -1546,7 +1572,7 @@
       if (isSold) { card.setAttribute('tabindex', '-1'); card.setAttribute('aria-disabled', 'true'); }
       card.innerHTML = '<div class="jba-card-img">' + thumbHtml + badgeHtml + '</div>' +
         '<div class="jba-card-body">' +
-        '<div class="jba-card-game">' + l.game + '</div>' +
+        '<div class="jba-card-game" data-game-label="' + (gameSlugs[l.game] || 'other') + '">' + l.game + '</div>' +
         '<h3 class="jba-card-title">' + l.product_name + '</h3>' +
         (l.owner_name ? '<div class="jba-card-owner">' + l.owner_name + '</div>' : '') +
         '<div class="jba-card-prices">' +

@@ -73,10 +73,15 @@ class AdminAccountListingController extends Controller
     public function store(Request $request, JbaApiClient $api)
     {
         $this->validateRequest($request, true);
+        $result = $api->adminCreate($this->payload($request), $this->files($request));
+
+        if ($result['successful'] && ! empty($result['json']['id'])) {
+            $this->saveLocalCredentials($request, (int) $result['json']['id'], $api);
+        }
 
         return $this->writeResponse(
             $request,
-            $api->adminCreate($this->payload($request), $this->files($request)),
+            $result,
             'Listing akun berhasil ditambahkan.'
         );
     }
@@ -85,6 +90,11 @@ class AdminAccountListingController extends Controller
     {
         $accountListing = $api->adminFind($listing);
         abort_unless($accountListing, 404);
+        $localListing = AccountListing::query()
+            ->where('source', 'jba_api')
+            ->where('source_id', (string) $listing)
+            ->first();
+        $accountListing->login_credentials = $localListing?->login_credentials;
         $brands = Brand::where('is_active', true)->orderBy('name')->get();
 
         return view('admin.account-listings.edit', compact('accountListing', 'brands'));
@@ -95,10 +105,15 @@ class AdminAccountListingController extends Controller
         $accountListing = $api->adminFind($listing);
         abort_unless($accountListing, 404);
         $this->validateRequest($request);
+        $result = $api->adminUpdate($listing, $this->payload($request, $accountListing), $this->files($request));
+
+        if ($result['successful']) {
+            $this->saveLocalCredentials($request, $listing, $api);
+        }
 
         return $this->writeResponse(
             $request,
-            $api->adminUpdate($listing, $this->payload($request, $accountListing), $this->files($request)),
+            $result,
             'Listing akun berhasil diperbarui.'
         );
     }
@@ -146,6 +161,26 @@ class AdminAccountListingController extends Controller
             'detail_photo_3' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'detail_photo_4' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
             'video_url' => 'nullable|string|max:255',
+            'login_credentials' => 'required|string|max:4000',
+        ]);
+    }
+
+    private function saveLocalCredentials(Request $request, int $listingId, JbaApiClient $api): void
+    {
+        AccountListing::updateOrCreate([
+            'source' => 'jba_api',
+            'source_id' => (string) $listingId,
+        ], [
+            'source_url' => $api->sourceUrl($listingId),
+            'game' => (string) $request->input('game'),
+            'product_name' => (string) $request->input('product_name'),
+            'specifications' => (string) $request->input('specifications'),
+            'owner_name' => (string) $request->input('penjual'),
+            'price' => (float) $request->input('price'),
+            'original_price' => $request->filled('original_price') ? (float) $request->input('original_price') : null,
+            'is_active' => true,
+            'is_sold' => $request->boolean('is_sold'),
+            'login_credentials' => trim((string) $request->input('login_credentials')),
         ]);
     }
 
