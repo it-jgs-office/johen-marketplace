@@ -40,7 +40,6 @@
         <div class="transaction-table-filters" role="tablist" aria-label="Filter jenis transaksi">
             <button type="button" class="transaction-table-filter is-active" data-transaction-filter="all" role="tab" aria-selected="true">Semua</button>
             <button type="button" class="transaction-table-filter" data-transaction-filter="topup" role="tab" aria-selected="false">Top Up</button>
-            <button type="button" class="transaction-table-filter" data-transaction-filter="account" role="tab" aria-selected="false">Jual Beli Akun</button>
         </div>
 
         <section class="recent-transactions recent-transactions--table" aria-label="Transaksi terbaru">

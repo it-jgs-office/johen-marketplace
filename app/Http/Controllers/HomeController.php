@@ -546,35 +546,12 @@ class HomeController extends Controller
                 'timestamp' => $order->created_at?->getTimestamp() ?? 0,
             ]);
 
-        $recentAccountOrders = AccountOrder::query()
-            ->with('listing:id,product_name,game')
-            ->select(['id', 'account_listing_id', 'order_ref', 'customer_phone', 'total_price', 'status', 'created_at'])
-            ->latest('created_at')
-            ->latest('id')
-            ->limit(10)
-            ->get()
-            ->map(fn (AccountOrder $order) => [
-                'type' => 'account',
-                'reference' => static::maskPublicTransactionReference($order->order_ref, 'JOHEN-AKUN-'.$order->id),
-                'product' => $order->listing?->product_name ?? 'Akun Game',
-                'game' => $order->listing?->game ?? 'Jual Beli Akun',
-                'phone' => $order->customer_phone
-                    ? static::maskPublicTransactionReference($order->customer_phone, '-')
-                    : '—',
-                'total' => (float) $order->total_price,
-                'status' => $order->status,
-                'time' => $order->created_at?->translatedFormat('d M Y, H:i').' WIB',
-                'table_time' => $order->created_at?->format('d-m-Y H:i:s'),
-                'timestamp' => $order->created_at?->getTimestamp() ?? 0,
-            ]);
-
         $recentTransactions = $recentTopups
-            ->concat($recentAccountOrders)
             ->sortByDesc('timestamp')
             ->take(10)
             ->values();
 
-        return view('check-transaction', compact('recentTopups', 'recentAccountOrders', 'recentTransactions'));
+        return view('check-transaction', compact('recentTopups', 'recentTransactions'));
     }
 
     private static function maskPublicTransactionReference(?string $reference, string $fallback): string
