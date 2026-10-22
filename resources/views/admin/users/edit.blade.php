@@ -15,9 +15,7 @@
         </h2>
 
         <div class="flex items-center gap-3 mb-6 pb-4" style="border-bottom:1px solid var(--glass-border)">
-            <div style="width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--accent),#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.85rem;font-weight:700;color:#fff;flex-shrink:0">
-                {{ substr($user->name, 0, 1) }}
-            </div>
+            <x-user-avatar :user="$user" :size="44" radius="12px" />
             <div>
                 <p class="font-semibold">{{ $user->name }}</p>
                 <p style="font-size:0.82rem;color:var(--text-muted)">{{ $user->email }}</p>

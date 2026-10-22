@@ -16,6 +16,13 @@
         'reviews.my',
         'my-inquiries'
     );
+    $isInvoicePage = request()->routeIs(
+        'orders.show',
+        'checkout.payment',
+        'payment.detail',
+        'payment.success',
+        'jual-beli-akun.payment'
+    );
 @endphp
 <!DOCTYPE html>
 <html lang="id" data-theme="dark" data-event-theme="{{ $themeEventSlug }}">
@@ -55,7 +62,7 @@
 </script>
 @include('partials.splash')
 @include('partials.floating-decoration')
-@unless($isAccountHubPage)
+@unless($isAccountHubPage || $isInvoicePage)
 <div class="dark-meteor-field" aria-hidden="true">
   @for($meteor = 0; $meteor < 40; $meteor++)
     <span style="--meteor-x:{{ (($meteor * 37 + 11) % 100) }}vw;--meteor-y:{{ (($meteor * 53 + 7) % 100) }}%;--meteor-delay:{{ -fmod($meteor * 1.73, 14) }}s;--meteor-duration:{{ 7 + fmod($meteor * 1.19, 8) }}s;--meteor-size:{{ 0.7 + ($meteor % 3) * 0.3 }}px;--meteor-drift:{{ 70 + ($meteor % 7) * 18 }}px;--meteor-opacity:{{ 0.16 + ($meteor % 5) * 0.08 }};"></span>
@@ -89,10 +96,6 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h11L22 9l-10 12L2 9l4.5-6Z"/><path d="M2 9h20M9 3 7 9l5 12 5-12-2-6"/></svg>
         <span>Top Up</span>
       </a>
-      <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="10" r="2.2"/><path d="M5.5 17c.45-2 1.75-3 3-3s2.55 1 3 3M14 9h4.5M14 13h4.5M14 17h3"/></svg>
-        <span>Jual Beli Akun</span>
-      </a>
       <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z"/><path d="m8 11 2 2 5-5M8 16h8"/></svg>
         <span>Cek Transaksi</span>
@@ -119,13 +122,7 @@
       <div class="auth-user">
         <div class="auth-dropdown">
           <button class="auth-dropdown-toggle">
-            <div class="auth-avatar">
-              @if(Auth::user()->avatar)
-                <img src="{{ media_url(Auth::user()->avatar) }}" alt="">
-              @else
-                {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
-              @endif
-            </div>
+            <x-user-avatar :user="Auth::user()" :size="32" class="auth-avatar" />
             <span class="auth-name">{{ Auth::user()->name }}</span>
             <svg class="auth-arrow" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
           </button>
@@ -168,9 +165,6 @@
   <a href="{{ route('home') }}" class="{{ request()->routeIs('home') || request()->routeIs('games.show') ? 'active' : '' }}" @if(request()->routeIs('home') || request()->routeIs('games.show')) aria-current="page" @endif>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h11L22 9l-10 12L2 9l4.5-6Z"/><path d="M2 9h20M9 3 7 9l5 12 5-12-2-6"/></svg><span>Top Up</span>
   </a>
-  <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}" @if(request()->routeIs('jual-beli-akun*')) aria-current="page" @endif>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="10" r="2"/><path d="M5 17c.5-2 2-3 3-3s2.5 1 3 3M14 9h5M14 13h5M14 17h4"/></svg><span>Jual Akun</span>
-  </a>
   <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}" @if(request()->routeIs('check.transaction')) aria-current="page" @endif>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z"/><path d="m8 11 2 2 5-5M8 16h8"/></svg><span>Cek Transaksi</span>
   </a>
@@ -199,10 +193,6 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h11L22 9l-10 12L2 9l4.5-6Z"/><path d="M2 9h20M9 3 7 9l5 12 5-12-2-6"/></svg>
         <span>Top Up</span>
       </a>
-      <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="10" r="2.2"/><path d="M5.5 17c.45-2 1.75-3 3-3s2.55 1 3 3M14 9h4.5M14 13h4.5M14 17h3"/></svg>
-        <span>Jual Beli Akun</span>
-      </a>
       <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z"/><path d="m8 11 2 2 5-5M8 16h8"/></svg>
         <span>Cek Transaksi</span>
@@ -221,13 +211,7 @@
     <div class="mobile-menu__account">
       @auth
         <a href="{{ route('profile.edit') }}" class="mobile-menu__profile">
-          <span class="mobile-menu__avatar">
-            @if(Auth::user()->avatar)
-              <img src="{{ media_url(Auth::user()->avatar) }}" alt="">
-            @else
-              {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
-            @endif
-          </span>
+          <x-user-avatar :user="Auth::user()" :size="42" class="mobile-menu__avatar" />
           <span><small>Akun saya</small><strong>{{ Auth::user()->name }}</strong></span>
         </a>
         <form method="POST" action="{{ route('logout') }}">
@@ -260,11 +244,34 @@
 @endphp
 
 <main>
+  <section class="global-search-page" id="globalSearchPage" hidden aria-live="polite">
+    <div class="global-search-shell">
+      <div class="global-search-head">
+        <div>
+          <span class="global-search-kicker">PENCARIAN PRODUK</span>
+          <h1 id="globalSearchTitle">Cari semua produk</h1>
+          <p id="globalSearchSummary">Temukan produk Top Up dan akun game dari satu pencarian.</p>
+        </div>
+        <button type="button" class="global-search-close" id="globalSearchClose" aria-label="Tutup pencarian">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m15 18-6-6 6-6"/></svg>
+          Kembali
+        </button>
+      </div>
+      <div class="global-search-state" id="globalSearchState">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+        <strong>Ketik nama game atau produk</strong>
+        <span>Contoh: Mobile Legends, Weekly Diamond Pass, atau akun Sultan.</span>
+      </div>
+      <div class="global-search-results" id="globalSearchResults"></div>
+    </div>
+  </section>
+  <div id="sitePageContent">
   @if(session('success') || session('error'))
     <div id="flash-data" style="display:none;">{{ json_encode(['success' => session('success'), 'error' => session('error')]) }}</div>
   @endif
   @yield('content')
   @include('partials.frontend-promo')
+  </div>
 </main>
 
 <!-- ===== FOOTER ===== -->

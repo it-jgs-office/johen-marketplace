@@ -47,7 +47,7 @@ class Checkout extends Model
     ];
 
     /** Status anak yang sudah selesai dan tidak akan berubah lagi. */
-    public const TERMINAL = ['success', 'failed'];
+    public const TERMINAL = ['success', 'failed', 'expired'];
 
     /**
      * URL memakai kode yang terbaca manusia (`CART-XXXX`), bukan id angka,
@@ -105,6 +105,10 @@ class Checkout extends Model
      */
     public function syncStatus(): string
     {
+        if ($this->status === 'expired') {
+            return $this->status;
+        }
+
         $counts = $this->orders()
             ->selectRaw('status, COUNT(*) as total')
             ->groupBy('status')
@@ -113,13 +117,15 @@ class Checkout extends Model
         $total = (int) $counts->sum();
         $success = (int) ($counts['success'] ?? 0);
         $failed = (int) ($counts['failed'] ?? 0);
+        $expired = (int) ($counts['expired'] ?? 0);
         $pending = (int) ($counts['pending'] ?? 0);
 
         $status = match (true) {
             $total === 0 => $this->status,
             $this->status === 'pending' && $pending === $total => 'pending',
-            ($success + $failed) < $total => 'processing',
+            ($success + $failed + $expired) < $total => 'processing',
             $success > 0 => 'success',
+            $expired === $total => 'expired',
             default => 'failed',
         };
 

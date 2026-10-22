@@ -24,7 +24,7 @@
      data-status="{{ $conv->status }}"
      data-unread="{{ $conv->admin_unread_count }}"
      onclick="openConversation({{ $conv->id }})">
-    <div class="lc-item-avatar">{{ $initial }}</div>
+    <x-user-avatar :user="$conv->user" :name="$conv->guest_name ?: 'Guest'" :size="42" radius="12px" class="lc-item-avatar" />
     <div class="lc-item-body">
         <div class="lc-item-row1">
             <span class="lc-online-dot {{ ($closed || $ended) ? 'off' : '' }}"></span>

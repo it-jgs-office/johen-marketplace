@@ -32,7 +32,7 @@ class CheckoutSettlementService
      */
     public function markPaid(Checkout $checkout): void
     {
-        if (in_array($checkout->status, ['processing', 'success'], true)) {
+        if (in_array($checkout->status, ['processing', 'success', 'failed', 'expired'], true)) {
             return;
         }
 
@@ -59,6 +59,10 @@ class CheckoutSettlementService
      */
     public function markFailed(Checkout $checkout, ?string $reason = null): void
     {
+        if (in_array($checkout->status, ['success', 'expired'], true)) {
+            return;
+        }
+
         // Order `processing` sengaja tidak disentuh: top-upnya sudah dikirim ke
         // Digiflazz, membatalkannya di sini justru berisiko membiarkan game
         // terisi tanpa ada transaksi tercatat.

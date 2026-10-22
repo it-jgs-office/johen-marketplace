@@ -73,6 +73,11 @@
   $selectedRegion = $regions->isNotEmpty() ? 'ID' : null;
   $firstProduct = $products->first();
   $topupGameIcon = topup_game_icon_asset($brand->name);
+  $productIconAsset = static fn ($product): ?string => topup_product_icon_asset(
+      $brand->name,
+      $product->product_name,
+      $product->type
+  ) ?: $topupGameIcon;
   $productDisplayName = static function (?string $name) use ($brand): string {
       $originalName = trim((string) $name);
       $brandPrefix = preg_quote(trim((string) $brand->name), '/');
@@ -220,11 +225,19 @@
     @foreach($itemGroups as $itemType => $typeItems)
       <div class="gd-group">
         <div class="gd-group-head">
-          <div class="gd-group-title">{{ $itemType }} <span class="gd-spark">✨</span></div>
+          <div class="gd-group-title">
+            {{ $itemType }}
+            @if($itemType !== 'Spesial Items')
+              <span class="gd-spark">✨</span>
+            @endif
+          </div>
         </div>
         <div class="gd-pkg-grid gd-pkg-instant" data-type="{{ Str::slug($itemType) }}" data-no-region-filter="true">
           @foreach($typeItems as $p)
-            @php $deal = $flashDeals->get($p->id); @endphp
+            @php
+              $deal = $flashDeals->get($p->id);
+              $productIcon = $productIconAsset($p);
+            @endphp
             <a href="{{ route('orders.create', $p->id) }}"
               class="gd-pkg-card{{ $deal ? ' gd-pkg-card-flash' : '' }}"
               data-id="{{ $p->id }}"
@@ -235,8 +248,8 @@
                 <span class="gd-pkg-flash"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg> FLASH -{{ rtrim(rtrim(number_format($deal->discount_percent, 0), '0'), ',') }}%</span>
               @endif
               <span class="gd-pkg-main">
-              @if($topupGameIcon)
-                <img class="gd-pkg-img" src="{{ $topupGameIcon }}" alt="{{ $brand->name }}">
+              @if($productIcon)
+                <img class="gd-pkg-img" src="{{ $productIcon }}" alt="{{ $p->product_name }}">
               @elseif($p->photo_url)
                 <img class="gd-pkg-img" src="{{ $p->photo_url }}" alt="{{ $p->product_name }}">
               @else
@@ -280,11 +293,8 @@
         $isInstant = strtolower($type) === 'instant';
       @endphp
       <div class="gd-group">
-        @if(!$isInstant || $regions->count() > 1)
         <div class="gd-group-head">
-          @if(!$isInstant)
-          <div class="gd-group-title">{{ ucwords($type) }} <span class="gd-spark">✨</span></div>
-          @endif
+          <div class="gd-group-title">{{ $isInstant ? 'Topup Instant' : ucwords($type) }}</div>
           @if($isInstant && $regions->count() > 1)
             <div class="gd-region-tabs" data-group="{{ $typeKey }}">
               <button class="gd-region-btn{{ $selectedRegion === 'ID' ? ' active' : '' }}" data-region="ID">Indonesia</button>
@@ -293,12 +303,14 @@
             </div>
           @endif
         </div>
-        @endif
         <div class="gd-pkg-grid{{ $isInstant ? ' gd-pkg-instant' : '' }}"
              data-type="{{ $typeKey }}"
              @if($isInstant) data-has-regions="true"@endif>
           @foreach($items as $p)
-            @php $deal = $flashDeals->get($p->id); @endphp
+            @php
+              $deal = $flashDeals->get($p->id);
+              $productIcon = $productIconAsset($p);
+            @endphp
             <a href="{{ route('orders.create', $p->id) }}"
               class="gd-pkg-card{{ $deal ? ' gd-pkg-card-flash' : '' }}"
                 data-id="{{ $p->id }}"
@@ -309,8 +321,8 @@
                 <span class="gd-pkg-flash"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg> FLASH -{{ rtrim(rtrim(number_format($deal->discount_percent, 0), '0'), ',') }}%</span>
               @endif
               <span class="gd-pkg-main">
-              @if($topupGameIcon)
-                <img class="gd-pkg-img" src="{{ $topupGameIcon }}" alt="{{ $brand->name }}">
+              @if($productIcon)
+                <img class="gd-pkg-img" src="{{ $productIcon }}" alt="{{ $p->product_name }}">
               @elseif($p->photo_url)
                 <img class="gd-pkg-img" src="{{ $p->photo_url }}" alt="{{ $p->product_name }}">
               @else

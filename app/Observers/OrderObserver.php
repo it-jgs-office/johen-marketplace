@@ -15,7 +15,7 @@ class OrderObserver
 
         if ($order->status === 'success') {
             app(OrderStatusMailService::class)->send($order, 'success');
-        } elseif (in_array($order->status, ['failed', 'cancelled'], true)) {
+        } elseif (in_array($order->status, ['failed', 'expired', 'cancelled'], true)) {
             app(OrderStatusMailService::class)->send($order, 'failed');
         }
     }

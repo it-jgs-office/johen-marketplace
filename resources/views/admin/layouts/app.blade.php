@@ -770,7 +770,7 @@
                         <i class="fas fa-moon" id="themeIcon"></i>
                     </button>
                     <div class="user-menu" id="userMenu" role="button" aria-haspopup="true" aria-expanded="false" tabindex="0">
-                        <div class="user-avatar">{{ substr(Auth::user()->name, 0, 1) }}</div>
+                        <x-user-avatar :user="Auth::user()" :size="36" radius="10px" class="user-avatar" />
                         <span class="user-name">{{ Auth::user()->name }}</span>
                         <div class="user-dropdown" id="userDropdown">
                             <a href="{{ route('home') }}"><i class="fas fa-store"></i> Lihat Toko</a>

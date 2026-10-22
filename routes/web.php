@@ -58,6 +58,7 @@ Route::get('/media/{path}', [MediaController::class, 'show'])
 
 Route::get('/api/products', [HomeController::class, 'getApiProducts'])->name('api.products');
 Route::get('/api/brands/search', [HomeController::class, 'searchBrands'])->name('api.brands.search');
+Route::get('/api/search', [HomeController::class, 'globalSearch'])->name('api.search');
 Route::get('/api/payment-methods', [HomeController::class, 'getPaymentMethods'])->name('api.payment-methods');
 Route::get('/api/orders/check', [HomeController::class, 'checkOrder'])->name('api.orders.check');
 Route::post('/api/account/check', [HomeController::class, 'checkAccount'])

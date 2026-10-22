@@ -67,6 +67,7 @@
 .ord-status-badge--pending{background:rgba(251,191,36,.15);color:#fbbf24}
 .ord-status-badge--processing{background:rgba(96,165,250,.15);color:#60a5fa}
 .ord-status-badge--failed{background:rgba(248,113,113,.15);color:#f87171}
+.ord-status-badge--expired{background:rgba(248,113,113,.15);color:#f87171}
 .ord-status-badge--refund{background:rgba(148,163,184,.15);color:#94a3b8}
 .ord-meta{display:flex;flex-direction:column;gap:10px;margin-top:6px}
 .ord-meta-item{font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:10px}
@@ -264,6 +265,7 @@
         <option value="processing">Diproses</option>
         <option value="pending">Pending</option>
         <option value="failed">Gagal</option>
+        <option value="expired">Expired</option>
         <option value="refund">Refund</option>
       </select>
     </div>
@@ -312,6 +314,7 @@
                   @elseif($order->status === 'pending') PENDING
                   @elseif($order->status === 'processing') DIPROSES
                   @elseif($order->status === 'failed') GAGAL
+                  @elseif($order->status === 'expired') EXPIRED
                   @elseif($order->status === 'refund') REFUND
                   @else {{ strtoupper($order->status) }}
                   @endif

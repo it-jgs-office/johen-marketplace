@@ -74,6 +74,8 @@ class DokuPaymentSyncService
                 } else {
                     app(TopupSettlementService::class)->markPaid($locked);
                 }
+            } elseif ($status === 'EXPIRED' && ($locked instanceof Checkout || $locked instanceof Order)) {
+                app(PaymentExpirationService::class)->expire($locked, 'Pembayaran DOKU kedaluwarsa.');
             } elseif ($locked instanceof Checkout) {
                 app(CheckoutSettlementService::class)->markFailed($locked, 'Pembayaran DOKU '.$status);
             } else {

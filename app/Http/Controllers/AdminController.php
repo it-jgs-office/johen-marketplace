@@ -957,12 +957,14 @@ class AdminController extends Controller
     // ---- CONTACT INQUIRIES ----
     public function contactInquiries()
     {
-        $inquiries = ContactInquiry::latest()->paginate(20);
+        $inquiries = ContactInquiry::with('user')->latest()->paginate(20);
         return view('admin.contact-inquiries.index', compact('inquiries'));
     }
 
     public function contactInquiriesShow(ContactInquiry $contactInquiry)
     {
+        $contactInquiry->load('user');
+
         return view('admin.contact-inquiries.show', ['inquiry' => $contactInquiry]);
     }
 

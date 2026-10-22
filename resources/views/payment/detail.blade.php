@@ -8,9 +8,10 @@
     'success' => ['label' => 'PEMBELIAN SUKSES', 'color' => '#10b981'],
     'processing' => ['label' => 'SEDANG DIPROSES', 'color' => '#f59e0b'],
     'failed' => ['label' => 'PEMBAYARAN GAGAL', 'color' => '#ef4444'],
+    'expired' => ['label' => 'PEMBAYARAN EXPIRED', 'color' => '#ef4444'],
     'cancelled' => ['label' => 'PESANAN DIBATALKAN', 'color' => '#ef4444'],
     'refund' => ['label' => 'REFUND', 'color' => '#94a3b8'],
-    default => ['label' => 'MENUNGGU PEMBAYARAN', 'color' => '#854DEA'],
+    default => ['label' => 'MENUNGGU PEMBAYARAN', 'color' => '#f59e0b'],
   };
   $paidType = $order->transaction?->payment_type;
   $paymentMethod = $order->payment_method ?: 'qris';
@@ -41,7 +42,7 @@
   $paymentLogo = payment_logo_asset($methodCode);
 @endphp
 
-<div class="pd-wrap">
+<div class="pd-wrap invoice-theme" id="pdInvoiceTheme" data-invoice-state="{{ $order->status === 'success' ? 'success' : (in_array($order->status, ['failed', 'expired', 'cancelled']) ? 'failed' : 'pending') }}">
 
   {{-- BREADCRUMB --}}
   <nav class="pd-breadcrumb">
@@ -367,7 +368,7 @@
 @keyframes pd-pos-signal-pulse{0%,32%,72%,100%{opacity:0}42%,60%{opacity:1}}
 @media(prefers-reduced-motion:reduce){.pd-pos-device,.pd-pos-card,.pd-pos-screen,.pd-pos-signal{animation:none}.pd-pos-card{transform:translate(-9px,10px) rotate(-7deg)}.pd-pos-signal{opacity:1}}
 .pd-card-head{text-transform:none;font-size:.84rem;color:var(--text);gap:.55rem;}
-.pd-card-head svg{color:#854DEA;}
+.pd-card-head svg{color:var(--invoice-accent);}
 
 /* detail transaksi 2 kolom */
 .pd-detail-grid{display:grid;grid-template-columns:1fr 1fr;gap:0 1.5rem;padding:.4rem 1.1rem .8rem;}
@@ -389,12 +390,12 @@
 .pd-step-dot{width:26px;height:26px;border-radius:50%;flex-shrink:0;position:relative;z-index:1;background:var(--surface);border:2px solid var(--border);transition:all .3s;display:flex;align-items:center;justify-content:center;font-family:var(--font-display);font-weight:700;font-size:.78rem;}
 .pd-step-num{color:var(--text-mute);line-height:1;}
 .pd-step[data-state="pending"] .pd-step-dot{border-color:var(--border);}
-.pd-step[data-state="active"] .pd-step-dot{border-color:#854DEA;background:#854DEA;box-shadow:0 0 0 5px rgba(133,77,234,.15);animation:pdStepPulse 1.8s infinite;}
-.pd-step[data-state="done"] .pd-step-dot{border-color:#854DEA;background:#854DEA;box-shadow:0 0 0 4px rgba(133,77,234,.12);}
+.pd-step[data-state="active"] .pd-step-dot{border-color:var(--invoice-accent);background:var(--invoice-accent);box-shadow:0 0 0 5px var(--invoice-accent-glow);animation:pdStepPulse 1.8s infinite;}
+.pd-step[data-state="done"] .pd-step-dot{border-color:var(--invoice-accent);background:var(--invoice-accent);box-shadow:0 0 0 4px var(--invoice-accent-glow);}
 .pd-step[data-state="done"] .pd-step-num,.pd-step[data-state="active"] .pd-step-num{color:#fff;}
-.pd-step[data-state="done"]::before,.pd-step[data-state="active"]::before{background:#854DEA;}
+.pd-step[data-state="done"]::before,.pd-step[data-state="active"]::before{background:var(--invoice-accent);}
 .pd-step-label{font-size:.72rem;font-weight:600;color:var(--text-dim);line-height:1.25;max-width:110px;}
-.pd-step[data-state="active"] .pd-step-label{color:#854DEA;font-weight:700;}
+.pd-step[data-state="active"] .pd-step-label{color:var(--invoice-accent);font-weight:700;}
 .pd-step[data-state="done"] .pd-step-label{color:var(--text);}
 @keyframes pdStepPulse{0%,100%{box-shadow:0 0 0 0 rgba(133,77,234,.35)}50%{box-shadow:0 0 0 7px rgba(133,77,234,0)}}
 .pd-progress-note{display:flex;align-items:center;gap:.5rem;margin:.2rem 1.1rem 1.1rem;padding:.65rem .85rem;border-radius:8px;background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.28);font-size:.74rem;font-weight:600;color:#10b981;}
@@ -688,10 +689,11 @@ function simulatePayment() {
 
 /* mapping status existing -> informasi UI (label, warna, tahap progres) */
 const STATUS_MAP = {
-    pending:    { label: 'MENUNGGU PEMBAYARAN', color: '#854DEA', step: 1 },
+    pending:    { label: 'MENUNGGU PEMBAYARAN', color: '#f59e0b', step: 1 },
     processing: { label: 'SEDANG DIPROSES',     color: '#f59e0b', step: 3 },
     success:    { label: 'PEMBELIAN SUKSES',    color: '#10b981', step: 4 },
     failed:     { label: 'PEMBAYARAN GAGAL',    color: '#ef4444', step: 0 },
+    expired:    { label: 'PEMBAYARAN EXPIRED',  color: '#ef4444', step: 0 },
     cancelled:  { label: 'PESANAN DIBATALKAN',  color: '#ef4444', step: 0 },
     refund:     { label: 'REFUND',              color: '#94a3b8', step: 0 },
 };
@@ -701,6 +703,12 @@ const pendingTerminalMarkup = document.getElementById('pdStatusIcon').innerHTML;
 
 function updateStatus(type, result) {
     const map = STATUS_MAP[type] || STATUS_MAP.pending;
+    const invoiceTheme = document.getElementById('pdInvoiceTheme');
+    if (invoiceTheme) {
+        invoiceTheme.dataset.invoiceState = type === 'success'
+            ? 'success'
+            : ['failed', 'expired', 'cancelled'].includes(type) ? 'failed' : 'pending';
+    }
     const icon = document.getElementById('pdStatusIcon');
     const label = document.getElementById('pdStatusLabel');
     const sub = document.getElementById('pdStatusSub');
@@ -742,12 +750,13 @@ function updateStatus(type, result) {
         if (methodSuccess) methodSuccess.style.display = 'flex';
         if (methodFailed) methodFailed.style.display = 'none';
         maybeShowReviewPopup('success');
-    } else if (type === 'failed' || type === 'cancelled') {
+    } else if (type === 'failed' || type === 'expired' || type === 'cancelled') {
         icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" width="44" height="44"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
         const cancelled = type === 'cancelled';
-        label.textContent = cancelled ? 'Pesanan Dibatalkan' : 'Pembayaran Gagal';
-        sub.textContent = cancelled ? 'Pesanan dibatalkan tanpa proses refund.' : 'Silakan coba lagi atau hubungi admin.';
-        pill.textContent = cancelled ? 'PESANAN DIBATALKAN' : 'PEMBAYARAN GAGAL';
+        const expired = type === 'expired';
+        label.textContent = cancelled ? 'Pesanan Dibatalkan' : expired ? 'Pembayaran Expired' : 'Pembayaran Gagal';
+        sub.textContent = cancelled ? 'Pesanan dibatalkan tanpa proses refund.' : expired ? 'Batas waktu pembayaran telah habis.' : 'Silakan coba lagi atau hubungi admin.';
+        pill.textContent = cancelled ? 'PESANAN DIBATALKAN' : expired ? 'PEMBAYARAN EXPIRED' : 'PEMBAYARAN GAGAL';
         pill.style.background = 'rgba(239,68,68,.15)';
         pill.style.color = '#ef4444';
         countdown.style.display = 'none';
@@ -756,8 +765,8 @@ function updateStatus(type, result) {
         if (methodSuccess) methodSuccess.style.display = 'none';
         if (methodFailed) {
             methodFailed.style.display = 'flex';
-            methodFailed.querySelector('.pd-failed-label').textContent = cancelled ? 'Pesanan Dibatalkan' : 'Pembayaran Gagal';
-            methodFailed.querySelector('.pd-failed-sub').textContent = cancelled ? 'Pesanan ini tidak dilanjutkan.' : 'Silakan coba lagi atau hubungi admin.';
+            methodFailed.querySelector('.pd-failed-label').textContent = cancelled ? 'Pesanan Dibatalkan' : expired ? 'Pembayaran Expired' : 'Pembayaran Gagal';
+            methodFailed.querySelector('.pd-failed-sub').textContent = cancelled ? 'Pesanan ini tidak dilanjutkan.' : expired ? 'Batas waktu pembayaran telah habis.' : 'Silakan coba lagi atau hubungi admin.';
         }
     } else {
         // pending
@@ -769,8 +778,8 @@ function updateStatus(type, result) {
         label.textContent = 'Menunggu Pembayaran';
         sub.textContent = 'Selesaikan pembayaran sebelum batas waktu habis.';
         pill.textContent = 'MENUNGGU PEMBAYARAN';
-        pill.style.background = 'rgba(133,77,234,.15)';
-        pill.style.color = '#854DEA';
+        pill.style.background = 'rgba(245,158,11,.15)';
+        pill.style.color = '#f59e0b';
     }
 
     updateDetailBadge(type, map);
@@ -791,11 +800,11 @@ function updateDetailBadge(type, map) {
     const ringkasanText = document.getElementById('pdRingkasanStatusText');
     const ringkasanDot = document.querySelector('#pdRingkasanStatus .pd-dot');
     if (ringkasanText) {
-        const nice = { pending: 'Pending', processing: 'Diproses', success: 'Success', failed: 'Gagal', cancelled: 'Dibatalkan' };
+        const nice = { pending: 'Pending', processing: 'Diproses', success: 'Success', failed: 'Gagal', expired: 'Expired', cancelled: 'Dibatalkan' };
         ringkasanText.textContent = nice[type] || type;
     }
     if (ringkasanDot) {
-        const dotClass = { pending: 'pending', processing: 'processing', success: 'success', failed: 'failed', cancelled: 'failed' };
+        const dotClass = { pending: 'pending', processing: 'processing', success: 'success', failed: 'failed', expired: 'failed', cancelled: 'failed' };
         ringkasanDot.className = 'pd-dot ' + (dotClass[type] || 'pending');
     }
 }
@@ -880,7 +889,7 @@ function startPolling() {
             .then(data => {
                 const s = data.status;
                 document.dispatchEvent(new CustomEvent('payment:updated', {detail: data}));
-                if (s === 'success' || s === 'processing' || s === 'failed' || s === 'cancelled') {
+                if (s === 'success' || s === 'processing' || s === 'failed' || s === 'expired' || s === 'cancelled') {
                     if (data.note && s === 'success') resultNote = data.note;
                     updateStatus(s);
                     if (s !== 'processing') return;

@@ -114,8 +114,13 @@
                     <td class="text-center" style="font-size:.8rem">{{ $voucher->used_count }}{{ $voucher->quota ? '/'.$voucher->quota : '' }}</td>
                     <td style="font-size:.8rem">
                         @if($voucher->user)
-                            <div>{{ $voucher->user->name }}</div>
-                            <div style="font-size:.72rem;color:var(--text-muted)">{{ $voucher->user->email }}</div>
+                            <div style="display:flex;align-items:center;gap:8px">
+                                <x-user-avatar :user="$voucher->user" :size="30" radius="8px" />
+                                <div>
+                                    <div>{{ $voucher->user->name }}</div>
+                                    <div style="font-size:.72rem;color:var(--text-muted)">{{ $voucher->user->email }}</div>
+                                </div>
+                            </div>
                         @else
                             <span class="badge badge-warning">Tamu</span>
                         @endif

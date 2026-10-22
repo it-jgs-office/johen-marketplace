@@ -127,13 +127,23 @@ document.addEventListener('DOMContentLoaded', function() {
                 <td class="lbd-cell lbd-cell--rank">
                     <span class="lbd-rank-badge lbd-rank-badge--${u.rank <= 3 ? u.rank : 'other'}">${u.rank}</span>
                 </td>
-                <td class="lbd-cell lbd-cell--name">${u.customer}</td>
+                <td class="lbd-cell lbd-cell--name"><span class="lbd-user"><span class="lb-avatar">${u.avatar_url ? `<img src="${escapeHtml(u.avatar_url)}" alt="Foto profil ${escapeHtml(u.customer)}" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>${initialOf(u.customer)}</span>` : `<span>${initialOf(u.customer)}</span>`}</span><span>${escapeHtml(u.customer)}</span></span></td>
                 <td class="lbd-cell lbd-cell--game">${u.game || 'Top Up'}</td>
                 <td class="lbd-cell lbd-cell--amount">Rp${new Intl.NumberFormat('id-ID').format(u.total_purchase)}</td>
                 <td class="lbd-cell lbd-cell--count">${u.total_transactions}x</td>
                 <td class="lbd-cell lbd-cell--time">${u.last_transaction}</td>
             </tr>
         `).join('');
+    }
+
+    function escapeHtml(value) {
+        const div = document.createElement('div');
+        div.textContent = String(value ?? '');
+        return div.innerHTML;
+    }
+
+    function initialOf(value) {
+        return escapeHtml(String(value || 'U').trim().charAt(0).toUpperCase() || 'U');
     }
 
     function renderPagination(data) {

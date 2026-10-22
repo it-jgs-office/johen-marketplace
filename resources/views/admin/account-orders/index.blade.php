@@ -74,9 +74,7 @@
                     <td style="font-size:0.82rem;font-family:monospace">{{ $order->order_ref }}</td>
                     <td>
                         <div class="flex items-center gap-2">
-                            <div style="width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--accent),#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:#fff;flex-shrink:0">
-                                {{ substr($order->customer_name ?: ($order->user->name ?? '?'), 0, 1) }}
-                            </div>
+                            <x-user-avatar :user="$order->user" :name="$order->customer_name ?: ($order->user->name ?? 'N/A')" :size="28" radius="7px" />
                             <span>{{ $order->customer_name ?: ($order->user->name ?? 'N/A') }}</span>
                         </div>
                     </td>

@@ -7,6 +7,7 @@
         <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;flex-shrink:0;border-bottom:1px solid var(--border);padding:12px 16px">
             <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
                 <a href="{{ route('lcadmin.conversations') }}" style="color:var(--accent);text-decoration:none;font-size:18px;flex-shrink:0">←</a>
+                <x-user-avatar :user="$conversation->user" :name="$conversation->user->name ?? ($conversation->guest_name ?: ($conversation->guest_email ?: 'User'))" :size="38" radius="10px" />
                 <div style="min-width:0;flex:1">
                     <h3 style="margin:0;font-weight:700;font-size:1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ $conversation->channel?->name ?? 'Live Chat' }}</h3>
                     <div style="font-size:12px;color:var(--text-dim);overflow-wrap:anywhere">

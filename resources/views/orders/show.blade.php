@@ -8,14 +8,16 @@
     'success' => ['label' => 'PEMBELIAN SUKSES', 'color' => '#10b981'],
     'processing' => ['label' => 'SEDANG DIPROSES', 'color' => '#f59e0b'],
     'failed' => ['label' => 'PEMBAYARAN GAGAL', 'color' => '#ef4444'],
+    'expired' => ['label' => 'PEMBAYARAN EXPIRED', 'color' => '#ef4444'],
+    'cancelled' => ['label' => 'PESANAN DIBATALKAN', 'color' => '#ef4444'],
     'refund' => ['label' => 'REFUND', 'color' => '#94a3b8'],
-    default => ['label' => 'MENUNGGU PEMBAYARAN', 'color' => '#854DEA'],
+    default => ['label' => 'MENUNGGU PEMBAYARAN', 'color' => '#f59e0b'],
   };
   $paymentMethod = $order->transaction?->payment_type;
   $paymentLogo = payment_logo_asset($paymentMethod);
 @endphp
 
-<div class="dt-wrap">
+<div class="dt-wrap invoice-theme" data-invoice-state="{{ $order->status === 'success' ? 'success' : (in_array($order->status, ['failed', 'expired', 'cancelled']) ? 'failed' : 'pending') }}">
   {{-- BREADCRUMB --}}
   <nav class="dt-breadcrumb">
     <a href="{{ route('orders.my') }}">Pesanan Saya</a>

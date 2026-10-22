@@ -71,7 +71,7 @@
                         <div class="lb-rank-badge lb-rank-badge--{{ $u['rank'] <= 3 ? $u['rank'] : 'other' }}">
                             {{ $u['rank'] }}
                         </div>
-                        <span class="lb-name">{{ $u['name'] }}</span>
+                        <span class="lb-user"><x-user-avatar :name="$u['name']" :src="$u['avatar'] ?? null" :size="28" /><span class="lb-name">{{ $u['name'] }}</span></span>
                         <span class="lb-amount">Rp{{ number_format($u['amount'], 0, ',', '.') }}</span>
                     </div>
                 @endforeach
@@ -94,7 +94,7 @@
                         <div class="lb-rank-badge lb-rank-badge--{{ $u['rank'] <= 3 ? $u['rank'] : 'other' }}">
                             {{ $u['rank'] }}
                         </div>
-                        <span class="lb-name">{{ $u['name'] }}</span>
+                        <span class="lb-user"><x-user-avatar :name="$u['name']" :src="$u['avatar'] ?? null" :size="28" /><span class="lb-name">{{ $u['name'] }}</span></span>
                         <span class="lb-amount">Rp{{ number_format($u['amount'], 0, ',', '.') }}</span>
                     </div>
                 @endforeach
@@ -117,7 +117,7 @@
                         <div class="lb-rank-badge lb-rank-badge--{{ $u['rank'] <= 3 ? $u['rank'] : 'other' }}">
                             {{ $u['rank'] }}
                         </div>
-                        <span class="lb-name">{{ $u['name'] }}</span>
+                        <span class="lb-user"><x-user-avatar :name="$u['name']" :src="$u['avatar'] ?? null" :size="28" /><span class="lb-name">{{ $u['name'] }}</span></span>
                         <span class="lb-amount">Rp{{ number_format($u['amount'], 0, ',', '.') }}</span>
                     </div>
                 @endforeach
@@ -211,10 +211,25 @@ document.addEventListener('DOMContentLoaded', function() {
         listEl.innerHTML = entries.map(u => `
             <div class="lb-row">
                 <div class="lb-rank-badge lb-rank-badge--${u.rank <= 3 ? u.rank : 'other'}">${u.rank}</div>
-                <span class="lb-name">${u.name}</span>
+                <span class="lb-user">
+                    <span class="lb-avatar">
+                        ${u.avatar ? `<img src="${escapeHtml(u.avatar)}" alt="Foto profil ${escapeHtml(u.name)}" onerror="this.hidden=true;this.nextElementSibling.hidden=false"><span hidden>${initialOf(u.name)}</span>` : `<span>${initialOf(u.name)}</span>`}
+                    </span>
+                    <span class="lb-name">${escapeHtml(u.name)}</span>
+                </span>
                 <span class="lb-amount">Rp${new Intl.NumberFormat('id-ID').format(u.amount)}</span>
             </div>
         `).join('');
+    }
+
+    function escapeHtml(value) {
+        const div = document.createElement('div');
+        div.textContent = String(value ?? '');
+        return div.innerHTML;
+    }
+
+    function initialOf(value) {
+        return escapeHtml(String(value || 'U').trim().charAt(0).toUpperCase() || 'U');
     }
 
     const sortSelects = {

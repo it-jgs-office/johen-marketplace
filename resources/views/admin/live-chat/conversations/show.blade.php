@@ -7,6 +7,7 @@
         <div class="card-header" style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;flex-shrink:0;border-bottom:1px solid var(--border);padding:12px 16px">
             <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0">
                 <a href="{{ route('admin.live-chat.conversations') }}" style="color:var(--purple-light);text-decoration:none;font-size:18px;flex-shrink:0">←</a>
+                <x-user-avatar :user="$conversation->isGuest() ? null : $conversation->user" :name="$conversation->isGuest() ? ($conversation->guest_name ?? 'Guest') : ($conversation->user->name ?? 'User')" :size="38" radius="10px" />
                 <div style="min-width:0;flex:1">
                     <h3 class="card-title" style="margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ $conversation->channel?->name ?? 'Live Chat' }}</h3>
                     <div style="font-size:12px;color:var(--text-dim);overflow-wrap:anywhere">

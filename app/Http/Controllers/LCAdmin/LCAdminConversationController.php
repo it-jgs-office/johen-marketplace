@@ -86,6 +86,12 @@ class LCAdminConversationController extends Controller
         
 
         $conversation->load(['user', 'channel']);
+        if ($conversation->user) {
+            $conversation->user->setAttribute(
+                'avatar_url',
+                $conversation->user->avatar ? media_url($conversation->user->avatar) : null
+            );
+        }
         $conversation->markAdminRead();
 
         $adminId = Auth::guard('admin')->id();

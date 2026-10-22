@@ -81,8 +81,13 @@
         <div class="grid grid-cols-2 gap-6 mb-6">
             <div>
                 <p style="font-size:0.78rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.25rem">Pelanggan</p>
-                <p class="font-semibold">{{ $order->user->name ?? 'N/A' }}</p>
-                <p style="font-size:0.85rem;color:var(--text-muted)">{{ $order->user->email ?? '' }}</p>
+                <div class="flex items-center gap-2">
+                    <x-user-avatar :user="$order->user" :name="$order->user->name ?? 'N/A'" :size="36" radius="9px" />
+                    <div>
+                        <p class="font-semibold">{{ $order->user->name ?? 'N/A' }}</p>
+                        <p style="font-size:0.85rem;color:var(--text-muted)">{{ $order->user->email ?? '' }}</p>
+                    </div>
+                </div>
             </div>
             <div>
                 <p style="font-size:0.78rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.25rem">Tanggal</p>

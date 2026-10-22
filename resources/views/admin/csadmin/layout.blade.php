@@ -159,7 +159,7 @@
         </div>
         <div class="lc-topbar-right">
             <div class="lc-topbar-profile" id="lcProfile" onclick="this.classList.toggle('open')">
-                <div class="lc-topbar-avatar">{{ substr($adminUser->name, 0, 1) }}</div>
+                <x-user-avatar :user="$adminUser" :size="34" radius="8px" class="lc-topbar-avatar" />
                 <span class="lc-topbar-name">{{ $adminUser->name }}</span>
                 <i class="fas fa-chevron-down lc-topbar-chevron"></i>
                 <div class="lc-topbar-dropdown">

@@ -44,6 +44,7 @@
         <option value="processing" {{ request('status') === 'processing' ? 'selected' : '' }}>Diproses</option>
         <option value="success" {{ request('status') === 'success' ? 'selected' : '' }}>Sukses</option>
         <option value="failed" {{ request('status') === 'failed' ? 'selected' : '' }}>Gagal</option>
+        <option value="expired" {{ request('status') === 'expired' ? 'selected' : '' }}>Expired</option>
         <option value="cancelled" {{ request('status') === 'cancelled' ? 'selected' : '' }}>Dibatalkan</option>
         <option value="refund" {{ request('status') === 'refund' ? 'selected' : '' }}>Refund</option>
     </select>
@@ -76,9 +77,7 @@
                     <td style="font-size:0.82rem;font-family:monospace">{{ $order->order_id }}</td>
                     <td>
                         <div class="flex items-center gap-2">
-                            <div style="width:28px;height:28px;border-radius:7px;background:linear-gradient(135deg,var(--accent),#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:#fff;flex-shrink:0">
-                                {{ substr($order->user->name ?? '?', 0, 1) }}
-                            </div>
+                            <x-user-avatar :user="$order->user" :name="$order->user->name ?? 'N/A'" :size="28" radius="7px" />
                             <span>{{ $order->user->name ?? 'N/A' }}</span>
                         </div>
                     </td>
@@ -143,6 +142,7 @@ function openOrderModal(btn) {
         pending: { bg: 'rgba(245,158,11,0.12)', color: 'var(--warning)' },
         processing: { bg: 'rgba(59,130,246,0.12)', color: 'var(--info)' },
         failed: { bg: 'rgba(239,68,68,0.12)', color: 'var(--error)' },
+        expired: { bg: 'rgba(239,68,68,0.12)', color: 'var(--error)' },
         cancelled: { bg: 'rgba(239,68,68,0.12)', color: 'var(--error)' },
     };
     const sc = statusColors[d.status] || { bg: 'rgba(134,142,161,0.12)', color: 'var(--text-dim)' };

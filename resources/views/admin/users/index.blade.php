@@ -40,9 +40,7 @@
                 <tr>
                     <td>
                         <div class="flex items-center gap-3">
-                            <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#0987F5,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#fff;flex-shrink:0">
-                                {{ substr($user->name, 0, 1) }}
-                            </div>
+                            <x-user-avatar :user="$user" :size="34" radius="10px" />
                             <span class="font-semibold">{{ $user->name }}</span>
                         </div>
                     </td>
@@ -104,9 +102,7 @@
                 <tr>
                     <td>
                         <div class="flex items-center gap-3">
-                            <div style="width:34px;height:34px;border-radius:10px;background:linear-gradient(135deg,#0987F5,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:#fff;flex-shrink:0">
-                                {{ substr($user->name, 0, 1) }}
-                            </div>
+                            <x-user-avatar :user="$user" :size="34" radius="10px" />
                             <span class="font-semibold">{{ $user->name }}</span>
                         </div>
                     </td>

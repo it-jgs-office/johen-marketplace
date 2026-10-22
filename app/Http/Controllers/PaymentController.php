@@ -54,6 +54,13 @@ class PaymentController extends Controller
 
     public function detail(Order $order)
     {
+        if ($order->status === 'pending') {
+            $this->syncFromGateway($order);
+            $order->refresh();
+            app(\App\Services\PaymentExpirationService::class)->expireIfDue($order);
+            $order->refresh();
+        }
+
         $invoiceUrl = $order->gateway_invoice_url;
         $isSimulation = (bool) config('services.payment.simulation');
         $isDemo = $isSimulation || ! $this->gateway->isConfigured() || empty($order->gateway_invoice_id);
@@ -244,10 +251,7 @@ class PaymentController extends Controller
             if (in_array($status, ['PAID', 'SETTLED'])) {
                 $this->handlePaid($order);
             } elseif ($status === 'EXPIRED') {
-                $order->update(['status' => 'failed']);
-                $orderTransaction?->update(['status' => 'failed']);
-                $order->releaseDiscounts();
-                app(\App\Services\BalanceService::class)->restorePoints($order, 'Pembayaran kedaluwarsa; Johen Point dikembalikan');
+                app(\App\Services\PaymentExpirationService::class)->expire($order);
             }
 
             return response()->json(['status' => 'ok']);
@@ -300,7 +304,11 @@ class PaymentController extends Controller
         }
 
         if (in_array($status, ['EXPIRED', 'FAILED', 'CANCELLED', 'VOIDED'], true)) {
-            $this->checkoutSettlement->markFailed($checkout, 'Pembayaran '.$status.' di gateway');
+            if ($status === 'EXPIRED') {
+                app(\App\Services\PaymentExpirationService::class)->expire($checkout);
+            } else {
+                $this->checkoutSettlement->markFailed($checkout, 'Pembayaran '.$status.' di gateway');
+            }
 
             Log::info('Checkout gagal via webhook Xendit', [
                 'checkout_ref' => $checkout->checkout_ref,
@@ -338,10 +346,14 @@ class PaymentController extends Controller
             if (in_array($status, ['SUCCEEDED', 'COMPLETED', 'PAID', 'SETTLED'])) {
                 $this->handlePaid($order);
             } elseif (in_array($status, ['FAILED', 'EXPIRED'])) {
-                $order->update(['status' => 'failed']);
-                $orderTransaction?->update(['status' => 'failed']);
-                $order->releaseDiscounts();
-                app(\App\Services\BalanceService::class)->restorePoints($order, 'Pembayaran gagal; Johen Point dikembalikan');
+                if ($status === 'EXPIRED') {
+                    app(\App\Services\PaymentExpirationService::class)->expire($order);
+                } else {
+                    $order->update(['status' => 'failed']);
+                    $orderTransaction?->update(['status' => 'failed']);
+                    $order->releaseDiscounts();
+                    app(\App\Services\BalanceService::class)->restorePoints($order, 'Pembayaran gagal; Johen Point dikembalikan');
+                }
             }
 
             return response()->json(['status' => 'ok']);
@@ -570,6 +582,8 @@ class PaymentController extends Controller
     {
         $this->syncFromGateway($order);
         $order->refresh();
+        app(\App\Services\PaymentExpirationService::class)->expireIfDue($order);
+        $order->refresh();
 
         // Fallback: order masih processing → tanyakan status final ke Digiflazz
         // (jaga-jaga webhook Digiflazz tidak sampai, misal saat testing di localhost).
@@ -624,10 +638,7 @@ class PaymentController extends Controller
             if ($status === 'SUCCESS') {
                 $this->handlePaid($order);
             } elseif ($status === 'EXPIRED') {
-                $order->update(['status' => 'failed']);
-                $order->transaction?->update(['status' => 'failed']);
-                $order->releaseDiscounts();
-                app(\App\Services\BalanceService::class)->restorePoints($order, 'Pembayaran kedaluwarsa; Johen Point dikembalikan');
+                app(\App\Services\PaymentExpirationService::class)->expire($order);
             }
 
             // FAILED pada DOKU Checkout tidak final karena pengguna dapat
@@ -658,12 +669,8 @@ class PaymentController extends Controller
                 'raw_response' => $qr,
             ]);
 
-            // DYNAMIC QR yang sudah dibayar menjadi INACTIVE di sisi Xendit.
-            if ($status === 'INACTIVE') {
-                $order->transaction?->update(['status' => 'paid']);
-                $this->handlePaid($order);
-            }
-
+            // INACTIVE juga terjadi saat QR kedaluwarsa, jadi bukan bukti pembayaran.
+            // Status lunas hanya diterima dari callback pembayaran Xendit.
             return;
         }
 
@@ -680,13 +687,9 @@ class PaymentController extends Controller
             $this->recordPayment($order, [
                 'transaction_id' => $va['id'] ?? null,
                 'payment_type' => 'Virtual Account - '.strtoupper((string) ($va['bank_code'] ?? 'VA')),
-                'status' => $status === 'INACTIVE' ? 'paid' : 'pending',
+                'status' => 'pending',
                 'raw_response' => $va,
             ]);
-
-            if ($status === 'INACTIVE') {
-                $this->handlePaid($order);
-            }
 
             return;
         }
@@ -704,13 +707,9 @@ class PaymentController extends Controller
             $this->recordPayment($order, [
                 'transaction_id' => $retail['id'] ?? null,
                 'payment_type' => 'Minimarket - '.strtoupper((string) ($retail['retail_outlet_name'] ?? 'Retail')),
-                'status' => $status === 'INACTIVE' ? 'paid' : 'pending',
+                'status' => 'pending',
                 'raw_response' => $retail,
             ]);
-
-            if ($status === 'INACTIVE') {
-                $this->handlePaid($order);
-            }
 
             return;
         }
@@ -757,10 +756,7 @@ class PaymentController extends Controller
             $order->transaction?->update(['status' => strtolower($status)]);
             $this->handlePaid($order);
         } elseif ($status === 'EXPIRED') {
-            $order->update(['status' => 'failed']);
-            $order->transaction?->update(['status' => 'failed']);
-            $order->releaseDiscounts();
-            app(\App\Services\BalanceService::class)->restorePoints($order, 'Pembayaran kedaluwarsa; Johen Point dikembalikan');
+            app(\App\Services\PaymentExpirationService::class)->expire($order);
         }
     }
 

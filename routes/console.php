@@ -36,3 +36,6 @@ Schedule::command('checkout:retry')->everyTenMinutes()->withoutOverlapping();
 
 // Keep confirming DOKU payments even after the customer closes the payment page.
 Schedule::command('doku:reconcile')->everyMinute()->withoutOverlapping();
+
+// Tutup otomatis pembayaran topup yang tidak dibayar sampai batas waktunya.
+Schedule::command('payments:expire')->everyMinute()->withoutOverlapping();

@@ -44,7 +44,7 @@
                             <span style="display:inline-block;padding:2px 10px;border-radius:6px;font-size:0.72rem;font-weight:600;background:rgba(157,92,245,0.15);color:#9d5cf5">Belum dibaca</span>
                         @endif
                     </td>
-                    <td>{{ $inq->name }}</td>
+                    <td><div style="display:flex;align-items:center;gap:8px"><x-user-avatar :user="$inq->user" :name="$inq->name" :size="30" radius="8px" /><span>{{ $inq->name }}</span></div></td>
                     <td style="font-size:0.85rem;color:var(--text-muted)">
                         <div>{{ $inq->email }}</div>
                         <div>{{ $inq->phone }}</div>

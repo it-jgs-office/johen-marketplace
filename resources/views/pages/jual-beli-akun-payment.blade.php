@@ -3,7 +3,7 @@
 @section('title', 'Pembayaran - ' . $listing->product_name . ' - ' . config('app.name'))
 
 @section('content')
-<div class="jpay-wrap">
+<div class="jpay-wrap invoice-theme" id="jpayInvoiceTheme" data-invoice-state="{{ $accountOrder->status === 'success' ? 'success' : (in_array($accountOrder->status, ['failed', 'expired', 'cancelled']) ? 'failed' : 'pending') }}">
   <div class="jpay-header">
     <div class="jpay-header-badge">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
@@ -208,7 +208,7 @@
           <div class="jpay-ringkasan-details">
             <div class="jpay-ringkasan-row">
               <span class="jpay-r-label">Pemesan</span>
-              <span class="jpay-r-value">{{ $accountOrder->customer_name }}</span>
+              <span class="jpay-r-value" style="display:inline-flex;align-items:center;gap:7px"><x-user-avatar :user="$accountOrder->user" :name="$accountOrder->customer_name" :size="26" />{{ $accountOrder->customer_name }}</span>
             </div>
             <div class="jpay-ringkasan-row">
               <span class="jpay-r-label">Email</span>
@@ -509,14 +509,20 @@
     const dot = document.getElementById('jpaySummaryDot');
     const txt = document.getElementById('jpaySummaryStatus');
     if (!dot || !txt) return;
-    dot.className = 'jpay-dot ' + (type === 'success' || type === 'processing' ? type : 'failed');
+    dot.className = 'jpay-dot ' + (type === 'success' || type === 'processing' ? type : (type === 'failed' || type === 'expired' || type === 'cancelled' ? 'failed' : 'pending'));
     txt.textContent =
       type === 'success' ? 'Selesai' :
       type === 'processing' ? 'Diproses' :
-      type === 'failed' || type === 'cancelled' ? 'Gagal' : 'Pending';
+      type === 'failed' || type === 'expired' || type === 'cancelled' ? 'Gagal' : 'Pending';
   }
 
   function updateStatus(type) {
+    const invoiceTheme = document.getElementById('jpayInvoiceTheme');
+    if (invoiceTheme) {
+      invoiceTheme.dataset.invoiceState = type === 'success'
+        ? 'success'
+        : ['failed', 'expired', 'cancelled'].includes(type) ? 'failed' : 'pending';
+    }
     const icon = document.getElementById('jpayStatusIcon');
     const label = document.getElementById('jpayStatusLabel');
     const sub = document.getElementById('jpayStatusSub');
@@ -548,11 +554,11 @@
       if (methodFailed) methodFailed.style.display = 'none';
       setSummaryStatus('success');
       maybeShowAccountReview('success');
-    } else if (type === 'failed' || type === 'cancelled') {
+    } else if (type === 'failed' || type === 'expired' || type === 'cancelled') {
       icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" width="44" height="44"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
-      label.textContent = 'Pembayaran Gagal';
-      sub.textContent = 'Pesanan dibatalkan. Silakan hubungi admin';
-      pill.textContent = 'GAGAL';
+      label.textContent = type === 'expired' ? 'Pembayaran Expired' : 'Pembayaran Gagal';
+      sub.textContent = type === 'expired' ? 'Batas waktu pembayaran telah habis.' : 'Pesanan dibatalkan. Silakan hubungi admin';
+      pill.textContent = type === 'expired' ? 'EXPIRED' : 'GAGAL';
       pill.style.background = 'rgba(248,113,113,.15)';
       pill.style.color = '#f87171';
       if (methodResult) methodResult.style.display = 'none';

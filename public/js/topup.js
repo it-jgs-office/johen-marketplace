@@ -158,51 +158,156 @@ async function fetchPaymentMethods() {
   }
 }
 
-// ============ SEARCH SUGGESTIONS ============
+// ============ GLOBAL PRODUCT SEARCH ============
 const searchInput = document.getElementById('searchInput');
 const searchSuggest = document.getElementById('searchSuggest');
+const globalSearchPage = document.getElementById('globalSearchPage');
+const globalSearchState = document.getElementById('globalSearchState');
+const globalSearchResults = document.getElementById('globalSearchResults');
+const globalSearchTitle = document.getElementById('globalSearchTitle');
+const globalSearchSummary = document.getElementById('globalSearchSummary');
+const globalSearchClose = document.getElementById('globalSearchClose');
+let globalSearchTimer;
+let globalSearchController;
+let globalSearchScrollY = 0;
 
-function bindSearch(input, suggestBox) {
-  if (!input) return;
-  let debounceTimer;
-  input.addEventListener('input', () => {
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(async () => {
-      const q = input.value.trim().toLowerCase();
-      if (!q) { if (suggestBox) suggestBox.classList.remove('show'); return; }
-      try {
-        const res = await fetch(`/api/brands/search?q=${encodeURIComponent(q)}`);
-        const matches = await res.json();
-        if (suggestBox) {
-          if (matches.length) {
-            suggestBox.innerHTML = matches.map(m =>
-              `<div class="search-suggest-item" data-brand="${m.brand}"><img class="search-suggest-thumb" src="${m.thumbnail_url || ''}" alt="" ${!m.thumbnail_url ? 'style=display:none' : ''} onerror="this.style.display='none'"> <span class="search-suggest-icon" ${m.thumbnail_url ? 'style=display:none' : ''}>${m.icon || '🎮'}</span> ${m.brand}</div>`
-            ).join('');
-          } else {
-            suggestBox.innerHTML = `<div class="search-suggest-empty">Tidak ada game ditemukan untuk "${q}"</div>`;
-          }
-          suggestBox.classList.add('show');
-          suggestBox.querySelectorAll('.search-suggest-item').forEach(item => {
-            item.addEventListener('click', () => {
-              const brand = item.dataset.brand;
-              suggestBox.classList.remove('show');
-              input.value = '';
-              window.location.href = '/games/' + encodeURIComponent(brand);
-            });
-          });
-        }
-      } catch (e) {
-        if (suggestBox) suggestBox.classList.remove('show');
-      }
-    }, 200);
+function escapeSearchHtml(value) {
+  return String(value ?? '').replace(/[&<>'"]/g, character => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#039;', '"': '&quot;'
+  })[character]);
+}
+
+function formatSearchPrice(value) {
+  return 'Rp ' + new Intl.NumberFormat('id-ID', {maximumFractionDigits: 0}).format(Number(value) || 0);
+}
+
+function openGlobalSearch() {
+  if (!globalSearchPage || document.body.classList.contains('global-search-open')) return;
+  globalSearchScrollY = window.scrollY;
+  document.body.classList.add('global-search-open');
+  globalSearchPage.hidden = false;
+  if (searchSuggest) searchSuggest.classList.remove('show');
+  window.scrollTo(0, 0);
+}
+
+function closeGlobalSearch() {
+  if (!globalSearchPage) return;
+  clearTimeout(globalSearchTimer);
+  if (globalSearchController) globalSearchController.abort();
+  document.body.classList.remove('global-search-open');
+  globalSearchPage.hidden = true;
+  globalSearchResults.innerHTML = '';
+  if (searchInput) searchInput.value = '';
+  window.scrollTo(0, globalSearchScrollY);
+}
+
+function renderGlobalSearchState(title, description, loading = false) {
+  globalSearchResults.innerHTML = '';
+  globalSearchState.hidden = false;
+  globalSearchState.classList.toggle('is-loading', loading);
+  globalSearchState.innerHTML = `
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+    <strong>${escapeSearchHtml(title)}</strong>
+    <span>${escapeSearchHtml(description)}</span>`;
+}
+
+function searchResultCard(item, compact = false) {
+  const image = item.image_url
+    ? `<img src="${escapeSearchHtml(item.image_url)}" alt="" loading="lazy" onerror="this.parentElement.textContent='${item.type === 'account' ? 'A' : 'T'}'">`
+    : (item.type === 'account' ? 'A' : 'T');
+  const description = compact || !item.description
+    ? ''
+    : `<span class="global-search-card-description">${escapeSearchHtml(item.description)}</span>`;
+
+  return `
+    <a class="global-search-card${compact ? ' is-compact' : ''}" data-type="${escapeSearchHtml(item.type)}" href="${escapeSearchHtml(item.url)}">
+      <span class="global-search-card-image">${image}</span>
+      <span class="global-search-card-copy">
+        <span class="global-search-card-type">${item.type === 'account' ? 'Jual Akun' : 'Top Up'}</span>
+        <span class="global-search-card-title">${escapeSearchHtml(item.title)}</span>
+        ${description}
+        <span class="global-search-card-meta">${escapeSearchHtml(item.meta)}</span>
+      </span>
+      <strong class="global-search-card-price">${formatSearchPrice(item.price)}</strong>
+    </a>`;
+}
+
+function searchResultGroup(title, description, items, compact = false) {
+  if (!items.length) return '';
+
+  return `
+    <section class="global-search-group">
+      <div class="global-search-group-head">
+        <h2>${escapeSearchHtml(title)} <span>${items.length}</span></h2>
+        ${description ? `<p>${escapeSearchHtml(description)}</p>` : ''}
+      </div>
+      <div class="global-search-grid">${items.map(item => searchResultCard(item, compact)).join('')}</div>
+    </section>`;
+}
+
+function renderGlobalSearchResults(data, query) {
+  const topups = Array.isArray(data.topups) ? data.topups : [];
+  const accounts = Array.isArray(data.accounts) ? data.accounts : [];
+  globalSearchState.hidden = true;
+  globalSearchTitle.textContent = data.fallback ? 'Produk tidak ditemukan' : `Hasil untuk “${query}”`;
+  globalSearchSummary.textContent = data.fallback
+    ? 'Coba kata lain atau lihat akun game yang masih tersedia.'
+    : `${topups.length + accounts.length} produk sesuai pencarian kamu.`;
+
+  if (!topups.length && !accounts.length) {
+    renderGlobalSearchState('Belum ada produk tersedia', 'Coba lagi beberapa saat atau gunakan kata kunci lain.');
+    return;
+  }
+
+  globalSearchResults.innerHTML = `${data.fallback ? '<p class="global-search-fallback">Tidak ada produk yang cocok. Berikut beberapa akun game yang bisa kamu lihat.</p>' : ''}
+    ${searchResultGroup('Produk Top Up', 'Top up instan sesuai kata kunci', topups)}
+    ${searchResultGroup(data.fallback ? 'Rekomendasi Jual Akun' : 'Produk Jual Akun', data.fallback ? 'Pilihan singkat akun yang tersedia' : 'Akun game sesuai judul atau deskripsi', accounts, data.fallback)}`;
+}
+
+async function runGlobalSearch(query) {
+  if (globalSearchController) globalSearchController.abort();
+  globalSearchController = new AbortController();
+  renderGlobalSearchState('Mencari produk...', 'Memeriksa seluruh produk Top Up dan Jual Akun.', true);
+
+  try {
+    const response = await fetch(`/api/search?q=${encodeURIComponent(query)}`, {
+      signal: globalSearchController.signal,
+      headers: {'Accept': 'application/json'}
+    });
+    if (!response.ok) throw new Error('Search unavailable');
+    renderGlobalSearchResults(await response.json(), query);
+  } catch (error) {
+    if (error.name !== 'AbortError') {
+      renderGlobalSearchState('Pencarian belum dapat dimuat', 'Silakan coba ketik ulang kata kunci.');
+    }
+  }
+}
+
+if (searchInput) {
+  searchInput.addEventListener('focus', openGlobalSearch);
+  searchInput.addEventListener('click', openGlobalSearch);
+  searchInput.addEventListener('input', () => {
+    openGlobalSearch();
+    clearTimeout(globalSearchTimer);
+    const query = searchInput.value.trim();
+    if (!query) {
+      globalSearchTitle.textContent = 'Cari semua produk';
+      globalSearchSummary.textContent = 'Temukan produk Top Up dan akun game dari satu pencarian.';
+      renderGlobalSearchState('Ketik nama game atau produk', 'Contoh: Mobile Legends, Weekly Diamond Pass, atau akun Sultan.');
+      return;
+    }
+    globalSearchTimer = setTimeout(() => runGlobalSearch(query), 250);
+  });
+  searchInput.addEventListener('keydown', event => {
+    if (event.key === 'Enter') {
+      const firstResult = globalSearchResults.querySelector('.global-search-card');
+      if (firstResult) window.location.href = firstResult.href;
+    }
   });
 }
-bindSearch(searchInput, searchSuggest);
-bindSearch(document.getElementById('mobileSearchInput'), null);
-document.addEventListener('click', (e) => {
-  if (searchSuggest && !e.target.closest('.search-wrap') && !e.target.closest('.mobile-search-wrap')) {
-    searchSuggest.classList.remove('show');
-  }
+if (globalSearchClose) globalSearchClose.addEventListener('click', closeGlobalSearch);
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && document.body.classList.contains('global-search-open')) closeGlobalSearch();
 });
 
 function getBrandIcon(brand) {

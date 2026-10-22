@@ -418,6 +418,7 @@ class PaymentGatewayService
         $order->update([
             'gateway_invoice_id' => $result['qr_id'],
             'qr_string' => $result['qr_string'],
+            'gateway_extra' => ['expired_date' => now()->addHour()->toIso8601String()],
         ]);
 
         return true;
@@ -454,6 +455,7 @@ class PaymentGatewayService
                 'bank_code' => $resolved['bank_code'],
                 'expected_amount' => $result['expected_amount'],
                 'label' => $resolved['label'] ?? null,
+                'expired_date' => now()->addHour()->toIso8601String(),
             ],
         ]);
 
@@ -506,6 +508,7 @@ class PaymentGatewayService
                 'channel_code' => $result['channel_code'],
                 'is_redirect_required' => $result['is_redirect_required'],
                 'actions' => $result['actions'] ?? null,
+                'expired_date' => now()->addHour()->toIso8601String(),
             ],
         ]);
 
@@ -536,6 +539,7 @@ class PaymentGatewayService
                 'retail_outlet_name' => $resolved['retail_outlet_name'],
                 'expected_amount' => $result['expected_amount'],
                 'label' => $resolved['label'] ?? null,
+                'expired_date' => now()->addHour()->toIso8601String(),
             ],
         ]);
 
@@ -581,6 +585,7 @@ class PaymentGatewayService
         $order->update([
             'gateway_invoice_id' => $result['id'],
             'gateway_invoice_url' => $result['invoice_url'],
+            'gateway_extra' => ['expired_date' => now()->addDay()->toIso8601String()],
         ]);
 
         return true;

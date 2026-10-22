@@ -160,9 +160,7 @@
                             <td style="padding:0.7rem 1rem;font-size:0.82rem;font-family:monospace">{{ $order->order_id }}</td>
                             <td style="padding:0.7rem 1rem;font-size:0.85rem">
                                 <div class="flex items-center gap-2">
-                                    <div style="width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,var(--accent),#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:#fff;flex-shrink:0">
-                                        {{ substr($order->user->name ?? '?', 0, 1) }}
-                                    </div>
+                                    <x-user-avatar :user="$order->user" :name="$order->user->name ?? 'N/A'" :size="26" radius="6px" />
                                     <span>{{ $order->user->name ?? 'N/A' }}</span>
                                 </div>
                             </td>
@@ -215,9 +213,7 @@
                             <td style="padding:0.7rem 1rem;font-size:0.82rem;font-family:monospace">{{ $aorder->order_ref }}</td>
                             <td style="padding:0.7rem 1rem;font-size:0.85rem">
                                 <div class="flex items-center gap-2">
-                                    <div style="width:26px;height:26px;border-radius:6px;background:linear-gradient(135deg,#8b5cf6,#8b5cf6);display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:700;color:#fff;flex-shrink:0">
-                                        {{ substr($aorder->customer_name ?: ($aorder->user->name ?? '?'), 0, 1) }}
-                                    </div>
+                                    <x-user-avatar :user="$aorder->user" :name="$aorder->customer_name ?: ($aorder->user->name ?? 'N/A')" :size="26" radius="6px" />
                                     <span>{{ $aorder->customer_name ?: ($aorder->user->name ?? 'N/A') }}</span>
                                 </div>
                             </td>

@@ -324,6 +324,7 @@
     display: flex; align-items: center; justify-content: center;
     font-weight: 700; font-size: 14px; color: #fff; flex-shrink: 0;
 }
+.lc-header-avatar img { display:block; width:100%; height:100%; border-radius:inherit; object-fit:cover; }
 .lc-header-info { display: flex; flex-direction: column; gap: 1px; }
 .lc-header-name { font-weight: 700; font-size: 14px; color: #F5F7FB; }
 .lc-header-meta { font-size: 12px; color: #8FA8C4; display: flex; align-items: center; gap: 6px; }
@@ -852,11 +853,7 @@
             </div>
             <div class="lc-topbar-right">
                 <div class="lc-topbar-profile" id="lcProfile" onclick="this.classList.toggle('open')">
-                    @if($adminPhoto)
-                        <img src="{{ $adminPhoto }}" alt="{{ $adminUser->name }}" class="lc-topbar-avatar">
-                    @else
-                        <div class="lc-topbar-avatar">{{ substr($adminUser->name, 0, 1) }}</div>
-                    @endif
+                    <x-user-avatar :user="$adminUser" :src="$adminPhoto" :size="34" radius="8px" class="lc-topbar-avatar" />
                     <span class="lc-topbar-name">{{ $adminUser->name }}</span>
                     <i class="fas fa-chevron-down lc-topbar-chevron"></i>
                     <div class="lc-topbar-dropdown">
@@ -1198,7 +1195,20 @@ async function loadMessages(id) {
         const conv = data.conversation;
         const msgs = data.messages;
         const dispName = conv.user?.name || conv.guest_name || conv.guest_email || 'User';
-        document.getElementById('rAvatar').textContent = dispName.charAt(0);
+        const headerAvatar = document.getElementById('rAvatar');
+        headerAvatar.textContent = '';
+        if (conv.user?.avatar_url) {
+            const avatarImage = document.createElement('img');
+            avatarImage.src = conv.user.avatar_url;
+            avatarImage.alt = `Foto profil ${dispName}`;
+            avatarImage.addEventListener('error', function () {
+                avatarImage.remove();
+                headerAvatar.textContent = dispName.charAt(0).toUpperCase();
+            });
+            headerAvatar.appendChild(avatarImage);
+        } else {
+            headerAvatar.textContent = dispName.charAt(0).toUpperCase();
+        }
         document.getElementById('rName').textContent = dispName;
         const channelName = conv.channel?.name || '';
         const onlineHtml = conv.status === 'open' ? '<span class="online-dot"></span> Online' : '<span style="color:#6F89A7">Offline</span>';

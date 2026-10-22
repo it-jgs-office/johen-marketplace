@@ -37,9 +37,14 @@ $paymentLabels = [
         <div class="grid grid-cols-2 gap-6 mb-6">
             <div>
                 <p style="font-size:0.78rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.25rem">Pemesan</p>
-                <p class="font-semibold">{{ $accountOrder->customer_name }}</p>
-                <p style="font-size:0.85rem;color:var(--text-muted)">{{ $accountOrder->customer_email }}</p>
-                <p style="font-size:0.85rem;color:var(--text-muted)">{{ $accountOrder->customer_phone }}</p>
+                <div class="flex items-center gap-2">
+                    <x-user-avatar :user="$accountOrder->user" :name="$accountOrder->customer_name" :size="38" radius="9px" />
+                    <div>
+                        <p class="font-semibold">{{ $accountOrder->customer_name }}</p>
+                        <p style="font-size:0.85rem;color:var(--text-muted)">{{ $accountOrder->customer_email }}</p>
+                        <p style="font-size:0.85rem;color:var(--text-muted)">{{ $accountOrder->customer_phone }}</p>
+                    </div>
+                </div>
             </div>
             <div>
                 <p style="font-size:0.78rem;color:var(--text-dim);font-weight:600;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:0.25rem">Tanggal</p>

@@ -65,6 +65,7 @@
                         $timeRange = $schedule ? substr($schedule->start_time, 0, 5) . ' — ' . substr($schedule->end_time, 0, 5) : '—';
                     @endphp
                     <div class="lc-op-row">
+                        <x-user-avatar :user="$op->user" :name="$op->name ?? $op->user->name ?? 'N/A'" :size="26" radius="7px" />
                         <span class="lc-op-name">{{ $op->name ?? $op->user->name ?? 'N/A' }}</span>
                         <span class="lc-op-time">{{ $timeRange }}</span>
                     </div>

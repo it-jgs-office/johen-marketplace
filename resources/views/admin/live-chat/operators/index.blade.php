@@ -29,9 +29,7 @@
                 <tr>
                     <td>
                         <div style="display:flex;align-items:center;gap:10px">
-                            <div style="width:36px;height:36px;border-radius:10px;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px;flex-shrink:0">
-                                {{ substr($op->user->name ?? 'N', 0, 1) }}
-                            </div>
+                            <x-user-avatar :user="$op->user" :name="$op->user->name ?? 'N/A'" :size="36" radius="10px" />
                             <div>
                                 <div style="font-weight:600;font-size:13px;color:var(--text)">{{ $op->user->name ?? 'N/A' }}</div>
                                 <div style="font-size:11px;color:var(--text-mute)">{{ $op->user->email ?? '' }}</div>

@@ -331,6 +331,100 @@ class HomeController extends Controller
         return response()->json($brands);
     }
 
+    public function globalSearch(Request $request)
+    {
+        $query = trim((string) $request->input('q', ''));
+
+        if ($query === '') {
+            return response()->json(['topups' => [], 'accounts' => [], 'fallback' => false]);
+        }
+
+        $matchingBrands = Brand::query()
+            ->where('is_active', true)
+            ->where('catalog_group', 'game')
+            ->where(function ($builder) use ($query) {
+                $builder->where('name', 'like', "%{$query}%")
+                    ->orWhere('description', 'like', "%{$query}%");
+            })
+            ->pluck('name');
+
+        $products = $this->activeGameProductsQuery()
+            ->where(function ($builder) use ($query, $matchingBrands) {
+                $builder->where('product_name', 'like', "%{$query}%")
+                    ->orWhere('brand', 'like', "%{$query}%");
+
+                if ($matchingBrands->isNotEmpty()) {
+                    $builder->orWhereIn('brand', $matchingBrands);
+                }
+            })
+            ->orderBy('brand')
+            ->orderBy('selling_price')
+            ->limit(24)
+            ->get();
+
+        $brands = Brand::query()
+            ->whereIn('name', $products->pluck('brand')->unique())
+            ->get()
+            ->keyBy(fn (Brand $brand) => mb_strtolower($brand->name));
+
+        $topups = $products->map(function (Product $product) use ($brands) {
+            $brand = $brands->get(mb_strtolower($product->brand));
+            $description = $brand?->description
+                ?: "Top Up {$product->product_name} untuk {$product->brand} dengan proses instan.";
+
+            return [
+                'id' => $product->id,
+                'type' => 'topup',
+                'title' => $product->product_name,
+                'description' => Str::limit(strip_tags((string) $description), 140),
+                'meta' => $product->brand,
+                'price' => (float) $product->selling_price,
+                'image_url' => $product->photo_url
+                    ?: topup_product_icon_asset($product->brand, $product->product_name, $product->type)
+                    ?: $brand?->thumbnail_url,
+                'url' => route('games.show', ['brand' => $product->brand]).'?product='.$product->id,
+            ];
+        })->values();
+
+        $availableAccounts = app(JbaApiClient::class)
+            ->listings()
+            ->where('is_sold', false)
+            ->values();
+        $needle = mb_strtolower($query);
+        $accountMatches = $availableAccounts
+            ->filter(function (AccountListing $listing) use ($needle) {
+                $haystack = mb_strtolower(implode(' ', [
+                    $listing->product_name,
+                    $listing->specifications,
+                    $listing->game,
+                ]));
+
+                return str_contains($haystack, $needle);
+            })
+            ->take(24)
+            ->values();
+
+        $fallback = $topups->isEmpty() && $accountMatches->isEmpty();
+        $accounts = ($fallback ? $availableAccounts->take(6) : $accountMatches)
+            ->map(fn (AccountListing $listing) => [
+                'id' => $listing->id,
+                'type' => 'account',
+                'title' => $listing->product_name,
+                'description' => Str::limit(strip_tags((string) $listing->specifications), 140),
+                'meta' => $listing->game,
+                'price' => (float) $listing->price,
+                'image_url' => $listing->photo_url ?: $listing->thumbnail_url,
+                'url' => route('jual-beli-akun.detail', $listing->id),
+            ])
+            ->values();
+
+        return response()->json([
+            'topups' => $topups,
+            'accounts' => $accounts,
+            'fallback' => $fallback,
+        ]);
+    }
+
     /** Game yang benar-benar bisa dibeli: aktif, bersumber dari katalog Games Digiflazz, dan punya produk aktif. */
     private function activeGameBrandsQuery(): \Illuminate\Database\Eloquent\Builder
     {
@@ -514,6 +608,7 @@ class HomeController extends Controller
             'orders.user_id',
             'orders.email',
             DB::raw('MAX(COALESCE(users.name, orders.customer_name, orders.email, "Guest")) as name'),
+            DB::raw('MAX(users.avatar) as avatar'),
             DB::raw('SUM(orders.price) as total_amount'),
             DB::raw('COUNT(orders.id) as total_count')
         )
@@ -543,7 +638,12 @@ class HomeController extends Controller
                 ->orderByDesc($orderBy)
                 ->limit(10)
                 ->get()
-                ->map(fn ($item, $i) => ['rank' => $i + 1, 'name' => $item->name, 'amount' => (int) $item->total_amount])
+                ->map(fn ($item, $i) => [
+                    'rank' => $i + 1,
+                    'name' => $item->name,
+                    'avatar' => $item->avatar ? media_url($item->avatar) : null,
+                    'amount' => (int) $item->total_amount,
+                ])
                 ->toArray();
         };
 
@@ -605,6 +705,7 @@ class HomeController extends Controller
             'orders.user_id',
             'orders.email',
             'users.name as account_name',
+            DB::raw('MAX(users.avatar) as avatar'),
             DB::raw('MAX(COALESCE(users.name, orders.customer_name, orders.email, "Guest")) as customer'),
             'orders.brand as game',
             DB::raw('SUM(orders.price) as total_purchase'),
@@ -645,6 +746,7 @@ class HomeController extends Controller
             ->map(fn ($item, $i) => [
                 'rank' => $i + 1,
                 'customer' => $item->customer,
+                'avatar_url' => $item->avatar ? media_url($item->avatar) : null,
                 'game' => $item->game,
                 'total_purchase' => (int) $item->total_purchase,
                 'total_transactions' => (int) $item->total_transactions,
@@ -1043,7 +1145,7 @@ class HomeController extends Controller
     {
         $all = static::getTestimonials();
 
-        $reviews = Review::where('status', 'approved')
+        $reviews = Review::with('user')->where('status', 'approved')
             ->whereNotNull('comment')
             ->latest()
             ->limit(12)
@@ -1056,6 +1158,7 @@ class HomeController extends Controller
 
                 return [
                     'name' => $name,
+                    'avatar_url' => $r->user?->avatar ? media_url($r->user->avatar) : null,
                     'game' => $r->game ? $gamePrefix.$r->game : rtrim($gamePrefix, ' -'),
                     'avatar' => '🙂',
                     'rating' => (int) $r->rating,

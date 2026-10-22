@@ -40,7 +40,8 @@
                     <td><span class="badge badge-info">{{ $channel->conversations->count() }}</span></td>
                     <td>
                         @forelse($channel->operators as $op)
-                        <span class="badge {{ $op->is_active ? 'badge-success' : 'badge-neutral' }}" style="margin:2px">
+                        <span class="badge {{ $op->is_active ? 'badge-success' : 'badge-neutral' }}" style="display:inline-flex;align-items:center;gap:5px;margin:2px">
+                            <x-user-avatar :user="$op->user" :name="$op->user->name ?? 'N/A'" :size="20" />
                             {{ $op->user->name ?? 'N/A' }}
                         </span>
                         @empty

@@ -40,7 +40,9 @@
             : data.payment_status === 'SUCCESS' ? 'Pembayaran telah diterima'
             : data.status === 'failed' ? 'Transaksi gagal' : 'Pembayaran telah diterima';
         if (data.status !== 'pending') {
-            panel.querySelector('p').textContent = data.status === 'failed'
+            panel.querySelector('p').textContent = data.status === 'expired'
+                ? 'Batas waktu pembayaran telah habis. Jangan lanjutkan pembayaran.'
+                : data.status === 'failed'
                 ? 'Lihat status pesanan untuk rincian. Hubungi CS jika pembayaran sudah dilakukan.'
                 : 'Tidak perlu membayar lagi. Ikuti perkembangan pesanan pada halaman ini.';
         }

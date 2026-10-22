@@ -75,7 +75,7 @@ class DokuNotificationController extends Controller
                 if ($status === 'SUCCESS') {
                     $this->checkoutSettlement->markPaid($checkout);
                 } elseif ($status === 'EXPIRED') {
-                    $this->checkoutSettlement->markFailed($checkout, 'Pembayaran kedaluwarsa di DOKU');
+                    app(\App\Services\PaymentExpirationService::class)->expire($checkout, 'Pembayaran DOKU kedaluwarsa.');
                 }
 
                 return response()->json(['status' => 'ok']);
@@ -111,10 +111,7 @@ class DokuNotificationController extends Controller
                 if ($status === 'SUCCESS') {
                     $this->topupSettlement->markPaid($order);
                 } elseif ($status === 'EXPIRED' && $order->status === 'pending') {
-                    $order->update(['status' => 'failed']);
-                    $order->transaction?->update(['status' => 'failed']);
-                    $order->releaseDiscounts();
-                    app(\App\Services\BalanceService::class)->restorePoints($order, 'Pembayaran kedaluwarsa; Johen Point dikembalikan');
+                    app(\App\Services\PaymentExpirationService::class)->expire($order, 'Pembayaran DOKU kedaluwarsa.');
                 }
 
                 return response()->json(['status' => 'ok']);

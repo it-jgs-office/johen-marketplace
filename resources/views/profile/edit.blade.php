@@ -27,13 +27,7 @@
                 <div class="account-summary-grid">
                     <header class="account-hero">
                         <div class="account-hero-main">
-                            <div class="account-avatar" aria-hidden="true">
-                                @if($profileAvatarUrl)
-                                    <img src="{{ $profileAvatarUrl }}" alt="">
-                                @else
-                                    {{ strtoupper(substr($user->name, 0, 1)) }}
-                                @endif
-                            </div>
+                            <x-user-avatar :user="$user" :size="72" radius="18px" class="account-avatar" />
                             <div class="account-identity">
                                 <div class="account-eyebrow">Profil Saya</div>
                                 <h2>{{ $user->name }}</h2>

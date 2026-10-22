@@ -14,7 +14,7 @@
     <div class="grid grid-cols-2 gap-4 mb-6">
         <div>
             <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.25rem">Nama</div>
-            <div class="font-semibold">{{ $inquiry->name }}</div>
+            <div style="display:flex;align-items:center;gap:8px"><x-user-avatar :user="$inquiry->user" :name="$inquiry->name" :size="34" radius="9px" /><span class="font-semibold">{{ $inquiry->name }}</span></div>
         </div>
         <div>
             <div style="font-size:0.75rem;color:var(--text-dim);margin-bottom:0.25rem">Kategori</div>

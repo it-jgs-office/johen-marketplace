@@ -487,7 +487,7 @@ window.__loadMoreReset();
                 </div>
                 <p class="home-testi-quote">{{ $testimonial['quote'] }}</p>
                 <div class="home-testi-user">
-                  <img class="home-testi-avatar" src="{{ asset('assets/icon/icon-testimoni.png') }}" alt="Foto profil {{ $testimonial['name'] }}" loading="lazy">
+                  <x-user-avatar :name="$testimonial['name']" :src="$testimonial['avatar_url'] ?? null" :size="37" class="home-testi-avatar" />
                   <div>
                     <div class="home-testi-name">{{ $testimonial['name'] }}</div>
                     <div class="home-testi-game">Pembeli terverifikasi</div>

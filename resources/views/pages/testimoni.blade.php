@@ -34,7 +34,7 @@
       </div>
       <p class="home-testi-quote">{{ $t['quote'] }}</p>
       <div class="home-testi-user">
-        <img class="home-testi-avatar" src="{{ asset('assets/icon/icon-testimoni.png') }}" alt="" loading="lazy">
+        <x-user-avatar :name="$t['name']" :src="$t['avatar_url'] ?? null" :size="37" class="home-testi-avatar" />
         <div class="testi-page-user-copy">
           <div class="home-testi-name">{{ $t['name'] }}</div>
           <div class="home-testi-game">Pembeli terverifikasi</div>

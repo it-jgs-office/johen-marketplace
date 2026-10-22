@@ -150,9 +150,7 @@
                 <tr>
                     <td data-label="User">
                         <div style="display:flex;align-items:center;gap:8px">
-                            <div style="width:32px;height:32px;border-radius:8px;background:var(--accent);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:11px;flex-shrink:0">
-                                {{ $conv->isGuest() ? 'G' : substr($conv->user->name ?? 'U', 0, 1) }}
-                            </div>
+                            <x-user-avatar :user="$conv->isGuest() ? null : $conv->user" :name="$conv->isGuest() ? ($conv->guest_name ?? 'Guest') : ($conv->user->name ?? 'User')" :size="32" radius="8px" />
                             <div>
                                 <div style="font-weight:600;font-size:13px;color:var(--text)">{{ $conv->isGuest() ? ($conv->guest_name ?? 'Guest') : ($conv->user->name ?? 'User') }}</div>
                                 <div style="font-size:11px;color:var(--text-mute)">{{ $conv->isGuest() ? 'Pengunjung' : ($conv->user->email ?? '') }}</div>

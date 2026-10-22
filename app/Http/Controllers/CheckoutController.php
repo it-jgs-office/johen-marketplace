@@ -308,6 +308,13 @@ class CheckoutController extends Controller
     {
         $this->ensureOwned($checkout);
 
+        if ($checkout->status === 'pending') {
+            $this->syncFromGateway($checkout);
+            $checkout->refresh();
+            app(\App\Services\PaymentExpirationService::class)->expireIfDue($checkout);
+            $checkout->refresh();
+        }
+
         $isSimulation = (bool) config('services.payment.simulation');
         $isDemo = $isSimulation || ! $this->gateway->isConfigured() || empty($checkout->gateway_invoice_id);
 
@@ -332,6 +339,8 @@ class CheckoutController extends Controller
         // secara langsung supaya halaman tidak bergantung pada webhook saja.
         if ($checkout->status === 'pending') {
             $this->syncFromGateway($checkout);
+            $checkout->refresh();
+            app(\App\Services\PaymentExpirationService::class)->expireIfDue($checkout);
             $checkout->refresh();
         }
 
@@ -399,7 +408,7 @@ class CheckoutController extends Controller
             if ($status === 'SUCCESS') {
                 $this->checkoutSettlement->markPaid($checkout);
             } elseif ($status === 'EXPIRED') {
-                $this->checkoutSettlement->markFailed($checkout, 'Pembayaran kedaluwarsa di DOKU');
+                app(\App\Services\PaymentExpirationService::class)->expire($checkout);
             }
 
             // Status FAILED pada DOKU Checkout bukan final: pelanggan masih
@@ -421,14 +430,18 @@ class CheckoutController extends Controller
 
         $status = strtoupper((string) ($data['status'] ?? ''));
 
-        // QR dinamis & VA/retail jadi INACTIVE setelah dibayar.
-        $paid = in_array($status, ['PAID', 'SETTLED', 'SUCCEEDED', 'COMPLETED', 'CAPTURED', 'INACTIVE'], true)
+        // INACTIVE pada QR/VA/retail juga bisa berarti kedaluwarsa, bukan bukti lunas.
+        $paid = in_array($status, ['PAID', 'SETTLED', 'SUCCEEDED', 'COMPLETED', 'CAPTURED'], true)
             && ! in_array($status, ['EXPIRED', 'FAILED', 'CANCELLED'], true);
 
         if ($paid) {
             $this->checkoutSettlement->markPaid($checkout);
         } elseif (in_array($status, ['EXPIRED', 'FAILED', 'CANCELLED'], true)) {
-            $this->checkoutSettlement->markFailed($checkout, 'Pembayaran '.$status.' di gateway');
+            if ($status === 'EXPIRED') {
+                app(\App\Services\PaymentExpirationService::class)->expire($checkout);
+            } else {
+                $this->checkoutSettlement->markFailed($checkout, 'Pembayaran '.$status.' di gateway');
+            }
         }
     }
 

@@ -358,7 +358,10 @@
 @php $admin = Auth::guard('admin')->user(); @endphp
 
 <div class="dash-greeting">
-    <h1>Selamat datang, {{ $admin->name }}</h1>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+        <x-user-avatar :user="$admin" :size="42" radius="11px" />
+        <h1>Selamat datang, {{ $admin->name }}</h1>
+    </div>
     <p>Berikut ringkasan aktivitas live chat hari ini.</p>
     @php $channels = $admin->assignedChannels; @endphp
     @if($channels->count() > 0)
@@ -434,7 +437,7 @@
         @if($recentConversations->count() > 0)
             @foreach($recentConversations as $conv)
             <a href="{{ route('lcadmin.conversations') }}?open={{ $conv->id }}" class="dash-recent-item">
-                <div class="dash-recent-avatar">{{ substr($conv->user->name ?? 'U', 0, 1) }}</div>
+                <x-user-avatar :user="$conv->user" :name="$conv->user->name ?? 'User'" :size="40" radius="10px" class="dash-recent-avatar" />
                 <div class="dash-recent-body">
                     <div class="dash-recent-name">{{ $conv->user->name ?? 'User' }}</div>
                     <div class="dash-recent-msg">{{ $conv->lastMessage?->message ?? $conv->channel->name ?? '—' }}</div>

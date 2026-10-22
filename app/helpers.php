@@ -157,12 +157,13 @@ if (! function_exists('topup_game_icon_asset')) {
         $gameName = mb_strtolower(trim((string) $gameName));
 
         $icons = [
-            'mobile legends' => 'diamond-ml.webp',
-            'magic chess' => 'diamond-magicchess.webp',
-            'free fire' => 'diamond-ff.webp',
-            'call of duty' => 'cp-codm.webp',
-            'codm' => 'cp-codm.webp',
-            'pubg' => 'uc-pubg.webp',
+            'mobile legends' => 'mobile-legends/diamond.webp',
+            'magic chess' => 'magic-chess/diamond-magicchess.webp',
+            'free fire' => 'free-fire/diamond-ff.webp',
+            'call of duty' => 'call-of-duty-mobile/cp-codm.webp',
+            'codm' => 'call-of-duty-mobile/cp-codm.webp',
+            'pubg' => 'pubg-mobile/uc-pubg.webp',
+            'valorant' => 'valorant/valorant-points.webp',
         ];
 
         foreach ($icons as $name => $file) {
@@ -172,5 +173,64 @@ if (! function_exists('topup_game_icon_asset')) {
         }
 
         return null;
+    }
+}
+
+if (! function_exists('topup_product_icon_asset')) {
+    function topup_product_icon_asset(
+        ?string $gameName,
+        ?string $productName,
+        ?string $productType = null
+    ): ?string {
+        $gameName = mb_strtolower(trim((string) $gameName));
+
+        $product = mb_strtolower(trim((string) $productName).' '.trim((string) $productType));
+
+        $gameProductIcons = [];
+        $gameFolder = null;
+
+        if (str_contains($gameName, 'mobile legends')) {
+            $gameFolder = 'mobile-legends';
+            $gameProductIcons = [
+                'weekly-diamond-pass.png' => ['weekly diamond pass', 'weekly pass', 'wdp'],
+                'twilight-pass.webp' => ['twilight'],
+                'limited-elite-bundle.png' => ['limited elite bundle', 'elite bundle'],
+                'recharge-bonus.webp' => ['2x recharge', 'recharge bonus', 'double diamond', 'first topup'],
+                'top-up-global.png' => ['top up global', 'topup global'],
+            ];
+        } elseif (str_contains($gameName, 'free fire')) {
+            $gameFolder = 'free-fire';
+            $gameProductIcons = [
+                'membership-weekly-lite.png' => ['weekly lite', 'mingguan lite'],
+                'membership-monthly.png' => ['monthly', 'bulanan'],
+                'membership-weekly.png' => ['weekly', 'mingguan', 'membership'],
+            ];
+        } elseif (str_contains($gameName, 'magic chess')) {
+            $gameFolder = 'magic-chess';
+            $gameProductIcons = [
+                'weekly-card.png' => ['weekly card'],
+                'membership.png' => ['membership', 'battle bounty', 'lukas'],
+            ];
+        } elseif (str_contains($gameName, 'pubg')) {
+            $gameFolder = 'pubg-mobile';
+            $gameProductIcons = [
+                'elite-pass-plus.webp' => ['elite pass plus'],
+                'royale-pass.webp' => ['royale pass', 'elite pass'],
+                'weekly-deal-pack-1.webp' => ['weekly deal pack 1'],
+                'weekly-deal-pack-2.webp' => ['weekly deal pack 2'],
+                'weekly-mythic-emblem.webp' => ['weekly mythic emblem'],
+                'prime-plus.webp' => ['prime plus', 'membership'],
+            ];
+        }
+
+        foreach ($gameProductIcons as $file => $keywords) {
+            foreach ($keywords as $keyword) {
+                if (str_contains($product, $keyword)) {
+                    return pwa_asset('assets/icon-topup/'.$gameFolder.'/'.$file);
+                }
+            }
+        }
+
+        return topup_game_icon_asset($gameName);
     }
 }

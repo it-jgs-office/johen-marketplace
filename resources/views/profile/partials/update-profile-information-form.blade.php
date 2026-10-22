@@ -19,7 +19,7 @@
 
             <div class="account-photo-editor">
                 <div class="account-photo-preview" aria-hidden="true">
-                    <img id="profilePhotoPreview" src="{{ $profileAvatarUrl ?: '' }}" data-original-src="{{ $profileAvatarUrl ?: '' }}" alt="" @if(!$profileAvatarUrl) hidden @endif>
+                    <img id="profilePhotoPreview" src="{{ $profileAvatarUrl ?: '' }}" data-original-src="{{ $profileAvatarUrl ?: '' }}" alt="Foto profil {{ $user->name }}" onerror="this.hidden=true;document.getElementById('profilePhotoFallback').hidden=false" @if(!$profileAvatarUrl) hidden @endif>
                     <span id="profilePhotoFallback" @if($profileAvatarUrl) hidden @endif>{{ strtoupper(substr($user->name, 0, 1)) }}</span>
                 </div>
                 <div class="account-photo-copy">

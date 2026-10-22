@@ -29,7 +29,9 @@
         'success' => ['label' => 'PEMBAYARAN SUKSES', 'color' => '#10b981'],
         'processing' => ['label' => 'SEDANG DIPROSES', 'color' => '#f59e0b'],
         'failed' => ['label' => 'PEMBAYARAN GAGAL', 'color' => '#ef4444'],
-        default => ['label' => 'MENUNGGU PEMBAYARAN', 'color' => '#854DEA'],
+        'expired' => ['label' => 'PEMBAYARAN EXPIRED', 'color' => '#ef4444'],
+        'cancelled' => ['label' => 'PESANAN DIBATALKAN', 'color' => '#ef4444'],
+        default => ['label' => 'MENUNGGU PEMBAYARAN', 'color' => '#f59e0b'],
     };
     $successCount = $orders->where('status', 'success')->count();
     $failedCount = $orders->where('status', 'failed')->count();
@@ -76,7 +78,7 @@
 }
 </style>
 
-<div class="pd-wrap">
+<div class="pd-wrap invoice-theme" id="ckpInvoiceTheme" data-invoice-state="{{ $checkout->status === 'success' ? 'success' : (in_array($checkout->status, ['failed', 'expired', 'cancelled']) ? 'failed' : 'pending') }}">
 
     <nav class="pd-breadcrumb">
         <a href="{{ route('cart.index') }}">Keranjang</a>
@@ -227,7 +229,7 @@
                 <div class="ckp-items" id="ckpItems">
                     @foreach($orders as $order)
                         <div class="ckp-item" data-order="{{ $order->order_id }}">
-                            <span class="pd-dot {{ $order->status === 'success' ? 'success' : ($order->status === 'failed' ? 'failed' : ($order->status === 'processing' ? 'processing' : 'pending')) }}" data-role="dot"></span>
+                            <span class="pd-dot {{ $order->status === 'success' ? 'success' : (in_array($order->status, ['failed', 'expired'], true) ? 'failed' : ($order->status === 'processing' ? 'processing' : 'pending')) }}" data-role="dot"></span>
                             <div class="ckp-item-main">
                                 <div class="ckp-item-name">{{ $order->product_name }} <span style="color:var(--text-mute);">&times;{{ $order->quantity }}</span></div>
                                 <div class="ckp-item-meta">{{ $order->brand }} &middot; User ID {{ $order->customer_number }}@if($order->effective_zone_id) &middot; Zone {{ $order->effective_zone_id }}@endif</div>
@@ -326,13 +328,15 @@
     var progress = document.getElementById('ckpProgress');
 
     var STATUS_MAP = {
-        pending:    { label: 'MENUNGGU PEMBAYARAN', color: '#854DEA', sub: 'Selesaikan pembayaran sebelum batas waktu habis.', icon: '<svg class="spin-slow" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" width="44" height="44"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>' },
+        pending:    { label: 'MENUNGGU PEMBAYARAN', color: '#f59e0b', sub: 'Selesaikan pembayaran sebelum batas waktu habis.', icon: '<svg class="spin-slow" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" width="44" height="44"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>' },
         processing: { label: 'SEDANG DIPROSES',     color: '#f59e0b', sub: 'Pembayaran diterima, item sedang dikirim ke game.', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5" width="44" height="44"><path d="M12 6v6l4 2"/></svg>' },
         success:    { label: 'PEMBAYARAN SUKSES',    color: '#10b981', sub: 'Semua item sudah masuk ke akun kamu.', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" width="44" height="44"><path d="M20 6L9 17l-5-5"/></svg>' },
         failed:     { label: 'PEMBAYARAN GAGAL',    color: '#ef4444', sub: 'Silakan coba lagi atau hubungi admin.', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" width="44" height="44"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' },
+        expired:    { label: 'PEMBAYARAN EXPIRED',  color: '#ef4444', sub: 'Batas waktu pembayaran telah habis.', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" width="44" height="44"><circle cx="12" cy="12" r="10"/><path d="M12 7v6"/><path d="M12 17h.01"/></svg>' },
+        cancelled:  { label: 'PESANAN DIBATALKAN', color: '#ef4444', sub: 'Pesanan ini telah dibatalkan.', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" width="44" height="44"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' },
     };
 
-    var DOT_CLASS = { pending: 'pending', processing: 'processing', success: 'success', failed: 'failed' };
+    var DOT_CLASS = { pending: 'pending', processing: 'processing', success: 'success', failed: 'failed', expired: 'failed', cancelled: 'failed' };
 
     function refreshBadge(el, status, color) {
         el.style.background = color + '20';
@@ -370,6 +374,12 @@
             document.querySelector('.pd-method').hidden = status !== 'pending';
         }
         var map = STATUS_MAP[status] || STATUS_MAP.pending;
+        var invoiceTheme = document.getElementById('ckpInvoiceTheme');
+        if (invoiceTheme) {
+            invoiceTheme.dataset.invoiceState = status === 'success'
+                ? 'success'
+                : ['failed', 'expired', 'cancelled'].indexOf(status) !== -1 ? 'failed' : 'pending';
+        }
         statusIcon.innerHTML = map.icon;
         statusLabel.textContent = map.label;
         statusSub.textContent = map.sub;
@@ -396,7 +406,7 @@
                 .then(function (data) {
                     updateStatus(data.status, data);
                     document.dispatchEvent(new CustomEvent('payment:updated', {detail: data}));
-                    if (data.status === 'success' || data.status === 'failed') return;
+                    if (data.status === 'success' || data.status === 'failed' || data.status === 'expired' || data.status === 'cancelled') return;
                     setTimeout(check, document.hidden ? 15000 : 3000);
                 })
                 .catch(function () {

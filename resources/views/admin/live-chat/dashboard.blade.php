@@ -196,7 +196,7 @@
                 <div class="lc-recent">
                     @forelse($recentConversations as $conv)
                     <a href="{{ route('admin.live-chat.conversations.show', $conv) }}" class="lc-recent-item">
-                        <div class="lc-recent-avatar">{{ substr($conv->channel->name, 0, 2) }}</div>
+                        <x-user-avatar :user="$conv->isGuest() ? null : $conv->user" :name="$conv->isGuest() ? ($conv->guest_name ?? 'Guest') : ($conv->user->name ?? 'User')" :size="38" radius="10px" class="lc-recent-avatar" />
                         <div class="lc-recent-main">
                             <div class="lc-recent-top">
                                 <span class="lc-recent-name">{{ $conv->isGuest() ? ($conv->guest_name ?? 'Guest') : ($conv->user->name ?? 'User') }}</span>

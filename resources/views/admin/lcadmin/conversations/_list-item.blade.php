@@ -11,7 +11,7 @@
      data-last="{{ $conv->last_message_at ? $conv->last_message_at->timestamp : 0 }}"
      onclick="openConversation({{ $conv->id }})"
      id="conv-{{ $conv->id }}">
-    <div class="lc-item-avatar">{{ substr($lcContactName, 0, 1) }}</div>
+    <x-user-avatar :user="$conv->user" :name="$lcContactName" :size="42" radius="12px" class="lc-item-avatar" />
     <div class="lc-item-body">
         <div class="lc-item-row1">
             <span class="lc-online-dot"></span>

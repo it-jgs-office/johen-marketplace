@@ -12,6 +12,7 @@
         'pending' => ['label' => 'Menunggu', 'class' => 'pending'],
         'refund' => ['label' => 'Refund', 'class' => 'refund'],
         'failed' => ['label' => 'Gagal', 'class' => 'failed'],
+        'expired' => ['label' => 'Expired', 'class' => 'failed'],
         'cancelled' => ['label' => 'Dibatalkan', 'class' => 'failed'],
     ];
 @endphp
@@ -515,7 +516,8 @@ const STATUS_MAP = {
     processing: { cls: 'status-pill processing', label: 'Diproses' },
     pending: { cls: 'status-pill pending', label: 'Pending' },
     refund: { cls: 'status-pill refund', label: 'Refund' },
-    failed: { cls: 'status-pill failed', label: 'Gagal' }
+    failed: { cls: 'status-pill failed', label: 'Gagal' },
+    expired: { cls: 'status-pill failed', label: 'Expired' }
 };
 
 function escapeTransactionHtml(value) {
