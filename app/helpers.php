@@ -123,13 +123,16 @@ if (! function_exists('payment_logo_asset')) {
         $code = strtolower(trim((string) $code));
         $logos = [
             'qris' => 'qris.webp',
+            'gopay' => 'gopay.webp',
             'dana' => 'dana.webp',
             'ovo' => 'ovo.webp',
             'linkaja' => 'LinkAja.webp',
             'bca' => 'bca.webp',
             'bca_va' => 'bca.webp',
+            'bri_va' => 'bri.webp',
             'bni' => 'bni.webp',
             'bni_va' => 'bni.webp',
+            'cimb_va' => 'cimb.webp',
             'mandiri' => 'mandiri.webp',
             'mandiri_va' => 'mandiri.webp',
             'permata' => 'permata-bank.webp',
@@ -169,6 +172,14 @@ if (! function_exists('topup_game_icon_asset')) {
         foreach ($icons as $name => $file) {
             if (str_contains($gameName, $name)) {
                 return pwa_asset('assets/icon-topup/'.$file);
+            }
+        }
+
+        $gameFolder = \Illuminate\Support\Str::slug($gameName);
+        foreach (['webp', 'png', 'jpg', 'jpeg'] as $extension) {
+            $file = 'assets/icon-topup/'.$gameFolder.'/item.'.$extension;
+            if (is_file(public_path($file))) {
+                return pwa_asset($file);
             }
         }
 
@@ -231,6 +242,27 @@ if (! function_exists('topup_product_icon_asset')) {
             }
         }
 
-        return topup_game_icon_asset($gameName);
+        $gameIcon = topup_game_icon_asset($gameName);
+        if ($gameIcon) {
+            return $gameIcon;
+        }
+
+        $currencyIcons = [
+            'token.svg' => ['token', 'goldstar', 'fmp', 'tft coin', 'wild core', 'lattice', 'aeos'],
+            'diamond.svg' => ['diamond'],
+            'coin.svg' => ['coin', 'gold', 'silver', 'cash', 'credit', 'kredit', 'points', ' point', ' rp', ' vp', ' cp', ' ic', ' jc', 'w-gold', 'bitgold', 'zeny', 'ingot'],
+            'crystal.svg' => ['crystal', 'gem', 'ruby', 'rubi', 'jade', 'quartz', 'lunite', 'monochrome', 'platinum', 'opal', 'aurion', 'citrine', 'prismite', 'flower', 'memory', 'spiral', 'tanium', 'bead', 'frost star'],
+            'voucher.svg' => ['voucher', 'coupon', 'ticket', 'pass', 'membership', 'pack', 'set rb', 'key', 'candy', 'candies', 'cake'],
+        ];
+
+        foreach ($currencyIcons as $file => $keywords) {
+            foreach ($keywords as $keyword) {
+                if (str_contains($product, $keyword)) {
+                    return pwa_asset('assets/icon-topup/common/'.$file);
+                }
+            }
+        }
+
+        return pwa_asset('assets/icon-topup/common/item.svg');
     }
 }

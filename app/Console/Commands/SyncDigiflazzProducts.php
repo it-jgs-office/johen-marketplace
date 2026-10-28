@@ -11,7 +11,7 @@ class SyncDigiflazzProducts extends Command
 
     protected $description = 'Sync products from Digiflazz price list';
 
-    public function handle(DigiflazzService $digiflazz): void
+    public function handle(DigiflazzService $digiflazz): int
     {
         $force = (bool) $this->option('force');
 
@@ -21,8 +21,12 @@ class SyncDigiflazzProducts extends Command
 
         if ($result['success']) {
             $this->info($result['message']);
-        } else {
-            $this->error($result['message']);
+
+            return self::SUCCESS;
         }
+
+        $this->error($result['message']);
+
+        return self::FAILURE;
     }
 }

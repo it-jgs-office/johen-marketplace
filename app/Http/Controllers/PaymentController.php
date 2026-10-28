@@ -595,6 +595,11 @@ class PaymentController extends Controller
 
     private function syncFromGateway(Order $order): void
     {
+        app(\App\Services\MidtransPaymentService::class)->sync($order);
+    }
+
+    private function syncFromLegacyGateway(Order $order): void
+    {
         if (data_get($order->gateway_extra, 'integration') === 'direct'
             && data_get($order->gateway_extra, 'provider') === 'doku') {
             app(\App\Services\DokuPaymentSyncService::class)->sync($order);

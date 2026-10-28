@@ -27,7 +27,7 @@
     <p>Dengan menggunakan layanan kami, anda menyetujui syarat dan ketentuan berikut:</p>
 
     <h3>Layanan</h3>
-    <p>Kami menyediakan layanan top up game, jasa joki, dan jual beli akun game. Seluruh layanan dilakukan sesuai dengan ketentuan yang berlaku dari masing-masing platform game. Harga setiap produk/jasa tercantum pada halaman produk sebelum Anda melakukan checkout.</p>
+    <p>Kami menyediakan layanan top up game, jasa joki, dan stock akun game. Seluruh layanan dilakukan sesuai dengan ketentuan yang berlaku dari masing-masing platform game. Harga setiap produk/jasa tercantum pada halaman produk sebelum Anda melakukan checkout.</p>
 
     <h3>Kewajiban Pengguna</h3>
     <p>Pengguna wajib memberikan data yang benar dan valid saat melakukan transaksi. Kesalahan data menjadi tanggung jawab pengguna sepenuhnya.</p>

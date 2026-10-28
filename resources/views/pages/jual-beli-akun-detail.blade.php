@@ -15,7 +15,7 @@
   $isYoutubeVideo = filled($listing->youtube_video_id);
 @endphp
 
-@section('title', $listing->product_name . ' - Jual Beli Akun - ' . config('app.name'))
+@section('title', $listing->product_name . ' - Stock Akun - ' . config('app.name'))
 
 @push('styles')
 @if($jbaDetailBackground)
@@ -110,8 +110,11 @@
     </div>
 
     <div class="jba-detail-info">
-      <div class="jba-detail-game">{{ $listing->game }}</div>
+      <div class="jba-detail-game" data-game-label="{{ $gameSlug ?? 'other' }}">{{ $listing->game }}</div>
       <h1 class="jba-detail-title">{{ $listing->product_name }}</h1>
+      @if(filled($listing->id_game))
+        <div class="jba-detail-id-game">ID Game: {{ $listing->id_game }}</div>
+      @endif
       @if($listing->owner_name)
         <div class="jba-detail-owner">{{ $listing->owner_name }}</div>
       @endif
@@ -136,10 +139,14 @@
             Produk ini sudah terjual
           </div>
         @else
-          <a href="{{ route('jual-beli-akun.checkout', $listing) }}" class="jba-btn jba-btn-primary">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-            Pesan Sekarang
-          </a>
+          <form method="POST" action="{{ route('cart.store') }}" class="jba-cart-form">
+            @csrf
+            <input type="hidden" name="listing_id" value="{{ $listing->id }}">
+            <button type="submit" class="jba-btn jba-btn-primary">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+              Tambah ke Keranjang
+            </button>
+          </form>
           @if($listing->whatsapp)
           <a href="https://wa.me/{{ $listing->whatsapp }}?text=Halo%20saya%20tertarik%20dengan%20{{ urlencode($listing->product_name) }}" target="_blank" class="jba-btn jba-btn-wa">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
@@ -203,7 +210,7 @@
           @endif
         </div>
         <div class="jba-card-body">
-          <div class="jba-card-game">{{ $item->game }}</div>
+          <div class="jba-card-game" data-game-label="{{ $gameSlug ?? 'other' }}">{{ $item->game }}</div>
           <h3 class="jba-card-title">{{ $item->product_name }}</h3>
           @if($item->owner_name)
             <div class="jba-card-owner">{{ $item->owner_name }}</div>
@@ -549,19 +556,52 @@
   box-shadow: 0 16px 36px rgba(1, 13, 38, .3);
   backdrop-filter: blur(10px);
 }
-.jba-detail-game {
-  font-size: .8rem;
-  color: var(--jba-accent);
-  font-weight: 600;
+.jba-detail-game,
+.jba-card-game {
+  --game-label-color: var(--jba-accent);
+  display: inline-flex;
+  width: max-content;
+  max-width: 100%;
+  align-items: center;
+  padding: .22rem .48rem;
+  border: 1px solid color-mix(in srgb, var(--game-label-color) 38%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--game-label-color) 14%, transparent);
+  color: var(--game-label-color);
+  font-size: .6rem;
+  font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: .03em;
-  margin-bottom: .3rem;
+  letter-spacing: .055em;
+  line-height: 1.2;
+  margin-bottom: .4rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
+.jba-detail-game[data-game-label="mlbb"], .jba-card-game[data-game-label="mlbb"]{--game-label-color:#38bdf8}
+.jba-detail-game[data-game-label="pubg"], .jba-card-game[data-game-label="pubg"]{--game-label-color:#f59e0b}
+.jba-detail-game[data-game-label="efootball"], .jba-card-game[data-game-label="efootball"]{--game-label-color:#3b82f6}
+.jba-detail-game[data-game-label="fcm"], .jba-card-game[data-game-label="fcm"]{--game-label-color:#60a5fa}
+.jba-detail-game[data-game-label="ff"], .jba-card-game[data-game-label="ff"]{--game-label-color:#fb7185}
+.jba-detail-game[data-game-label="roblox"], .jba-card-game[data-game-label="roblox"]{--game-label-color:#a3a3a3}
+.jba-detail-game[data-game-label="valorant"], .jba-card-game[data-game-label="valorant"]{--game-label-color:#ff4655}
+[data-theme="light"] .jba-detail-game[data-game-label="mlbb"], [data-theme="light"] .jba-card-game[data-game-label="mlbb"]{--game-label-color:#0369a1}
+[data-theme="light"] .jba-detail-game[data-game-label="pubg"], [data-theme="light"] .jba-card-game[data-game-label="pubg"]{--game-label-color:#b45309}
+[data-theme="light"] .jba-detail-game[data-game-label="efootball"], [data-theme="light"] .jba-card-game[data-game-label="efootball"]{--game-label-color:#1d4ed8}
+[data-theme="light"] .jba-detail-game[data-game-label="fcm"], [data-theme="light"] .jba-card-game[data-game-label="fcm"]{--game-label-color:#1d4ed8}
+[data-theme="light"] .jba-detail-game[data-game-label="ff"], [data-theme="light"] .jba-card-game[data-game-label="ff"]{--game-label-color:#be123c}
+[data-theme="light"] .jba-detail-game[data-game-label="roblox"], [data-theme="light"] .jba-card-game[data-game-label="roblox"]{--game-label-color:#475569}
+[data-theme="light"] .jba-detail-game[data-game-label="valorant"], [data-theme="light"] .jba-card-game[data-game-label="valorant"]{--game-label-color:#be123c}
 .jba-detail-title {
   font-size: 1.5rem;
   font-weight: 800;
   margin-bottom: .2rem;
   line-height: 1.2;
+}
+.jba-detail-id-game {
+  font-size: .86rem;
+  color: var(--text-dim);
+  margin-bottom: .2rem;
 }
 .jba-detail-owner {
   font-size: .92rem;
@@ -583,9 +623,9 @@
   opacity: .65;
 }
 .jba-detail-price {
-  font-size: 1.6rem;
+  font-size: 2rem;
   font-weight: 800;
-  color: var(--jba-accent);
+  color: #60a5fa;
 }
 .jba-detail-specs {
   margin-bottom: 1.5rem;
@@ -607,6 +647,8 @@
   gap: .75rem;
   flex-wrap: wrap;
 }
+.jba-detail-actions form { display: contents; }
+.jba-cart-fly{position:fixed;z-index:999;display:grid;width:34px;height:34px;place-items:center;border-radius:50%;background:var(--jba-accent);color:#fff;box-shadow:0 8px 20px color-mix(in srgb,var(--jba-accent) 45%,transparent);pointer-events:none;transition:transform .65s cubic-bezier(.25,.8,.25,1),opacity .65s ease}.jba-cart-form.is-added .jba-btn{animation:jbaCartAdded .55s ease}.jba-cart-form.is-added .jba-btn::after{content:'✓';margin-left:.15rem}@keyframes jbaCartAdded{50%{transform:scale(.94)}}@media(prefers-reduced-motion:reduce){.jba-cart-fly,.jba-cart-form.is-added .jba-btn{transition:none;animation:none}}
 @media (max-width: 640px) {
   .jba-detail-gallery { padding: .75rem; border-radius: 14px; }
   .jba-detail-info { padding: 1rem; border-radius: 14px; }
@@ -897,15 +939,6 @@
 .jba-card-body {
   padding: .75rem 1rem;
 }
-.jba-card-game {
-  font-size: .6rem;
-  color: var(--jba-accent);
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-  margin-bottom: .15rem;
-  opacity: .7;
-}
 .jba-card-title {
   font-size: .85rem;
   font-weight: 600;
@@ -942,9 +975,9 @@
   flex-wrap: wrap;
 }
 .jba-card-price {
-  font-size: .92rem;
+  font-size: 1.02rem;
   font-weight: 700;
-  color: var(--jba-accent);
+  color: #60a5fa;
 }
 .jba-card-save {
   display: inline-flex;
@@ -1070,6 +1103,80 @@ function showVideo(btn) {
   /* auto-show video if it's the first/primary media */
   var firstThumb = document.querySelector('.jba-thumb--video.active-video');
   if (firstThumb) showVideo(firstThumb);
+})();
+
+(function () {
+  const form = document.querySelector('.jba-cart-form');
+  if (!form) return;
+
+  const button = form.querySelector('button[type="submit"]');
+  const csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
+
+  function flyToCart() {
+    const target = document.querySelector('.nav-cart-btn');
+    if (!target || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const from = button.getBoundingClientRect();
+    const to = target.getBoundingClientRect();
+    const token = document.createElement('span');
+    token.className = 'jba-cart-fly';
+    token.textContent = '✓';
+    token.style.left = (from.left + from.width / 2 - 17) + 'px';
+    token.style.top = (from.top + from.height / 2 - 17) + 'px';
+    document.body.appendChild(token);
+
+    requestAnimationFrame(function () {
+      token.style.transform = 'translate(' + (to.left + to.width / 2 - from.left - from.width / 2) + 'px,' + (to.top + to.height / 2 - from.top - from.height / 2) + 'px) scale(.35)';
+      token.style.opacity = '0';
+    });
+    window.setTimeout(function () { token.remove(); }, 700);
+  }
+
+  form.addEventListener('submit', async function (event) {
+    event.preventDefault();
+    if (button.disabled) return;
+
+    button.disabled = true;
+    const original = button.textContent.trim();
+    button.textContent = 'Menambahkan...';
+
+    try {
+      const response = await fetch(form.action, {
+        method: 'POST',
+        headers: {
+          'X-CSRF-TOKEN': csrf,
+          'X-Requested-With': 'XMLHttpRequest',
+          'Accept': 'application/json'
+        },
+        body: new FormData(form),
+        credentials: 'same-origin'
+      });
+
+      if (response.redirected || response.status === 401 || response.status === 419) {
+        window.location.href = response.url || @json(route('login'));
+        return;
+      }
+
+      const data = await response.json();
+      if (!data.success) throw new Error(data.message || 'Akun tidak dapat ditambahkan.');
+
+      if (typeof applyCartState === 'function') applyCartState(data.state);
+      else if (typeof setCartBadge === 'function') setCartBadge(data.count);
+      form.classList.add('is-added');
+      button.textContent = 'Ditambahkan';
+      flyToCart();
+      if (typeof showToast === 'function') showToast(data.message || 'Masuk ke keranjang');
+      window.setTimeout(function () {
+        form.classList.remove('is-added');
+        button.textContent = original;
+      }, 1500);
+    } catch (error) {
+      button.textContent = original;
+      if (typeof showToast === 'function') showToast(error.message || 'Gagal menambah ke keranjang', true);
+    } finally {
+      window.setTimeout(function () { button.disabled = false; }, 250);
+    }
+  });
 })();
 </script>
 @endpush

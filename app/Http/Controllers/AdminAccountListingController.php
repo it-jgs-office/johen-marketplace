@@ -291,7 +291,7 @@ class AdminAccountListingController extends Controller
             return redirect()->route('admin.account-listings')->with('success', $successMessage);
         }
 
-        $errors = $result['json']['errors'] ?? ['api' => [$result['json']['message'] ?? 'API Jual Beli Akun tidak dapat dihubungi.']];
+        $errors = $result['json']['errors'] ?? ['api' => [$result['json']['message'] ?? 'API Stock Akun tidak dapat dihubungi.']];
         if ($request->expectsJson() || $request->ajax()) {
             return response()->json(['errors' => $errors, 'message' => $result['json']['message'] ?? 'Data gagal disimpan.'], $result['status'] ?: 502);
         }

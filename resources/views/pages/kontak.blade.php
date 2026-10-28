@@ -41,7 +41,7 @@
           <select id="category" name="category">
             <option value="">Pilih kategori</option>
             <option value="topup" {{ old('category') === 'topup' ? 'selected' : '' }}>Top Up</option>
-            <option value="jual-beli-akun" {{ old('category') === 'jual-beli-akun' ? 'selected' : '' }}>Jual Beli Akun</option>
+            <option value="jual-beli-akun" {{ old('category') === 'jual-beli-akun' ? 'selected' : '' }}>Stock Akun</option>
             <option value="pembayaran" {{ old('category') === 'pembayaran' ? 'selected' : '' }}>Pembayaran</option>
             <option value="keluhan" {{ old('category') === 'keluhan' ? 'selected' : '' }}>Keluhan</option>
             <option value="saran" {{ old('category') === 'saran' ? 'selected' : '' }}>Saran</option>

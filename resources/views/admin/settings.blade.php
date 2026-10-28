@@ -209,7 +209,7 @@
             <div class="card-glass p-4">
                 <h3 class="font-semibold mb-3 flex items-center gap-2" style="font-size:0.9rem">
                     <i class="fas fa-qrcode" style="color:#8b5cf6;font-size:0.85rem"></i>
-                    <span>QRIS Pembayaran (Jual Beli Akun)</span>
+                    <span>QRIS Pembayaran (Stock Akun)</span>
                 </h3>
                 <p style="color:var(--text-dim);font-size:0.72rem;margin-bottom:0.75rem">
                     Gambar QRIS statis milikmu. Pelanggan scan & bayar sesuai nominal otomatis, admin konfirmasi manual di menu Pesanan Akun.
@@ -266,9 +266,9 @@
         <div class="card-glass p-4">
             <h3 class="font-semibold mb-3 flex items-center gap-2" style="font-size:0.9rem">
                 <i class="fas fa-image" style="color:#f59e0b;font-size:0.85rem"></i>
-                <span>Hero Banner (Jual Beli Akun)</span>
+                <span>Hero Banner (Stock Akun)</span>
             </h3>
-            <p style="color:var(--text-dim);font-size:0.72rem;margin-bottom:0.75rem">Slider halaman Jual Beli Akun. Maks 3 banner. Rekomendasi 1920 × 750 px (rasio 64:25).</p>
+            <p style="color:var(--text-dim);font-size:0.72rem;margin-bottom:0.75rem">Slider halaman Stock Akun. Maks 3 banner. Rekomendasi 1920 × 750 px (rasio 64:25).</p>
             @php
                 $jbaBannerLabels = ['Banner 1 (Utama)', 'Banner 2', 'Banner 3'];
                 $jbaBannerKeys = ['jba_hero_banner', 'jba_hero_banner_2', 'jba_hero_banner_3'];
@@ -296,7 +296,7 @@
                 <i class="fas fa-tags" style="color:#f59e0b;font-size:0.85rem"></i>
                 <span>Banner Grup Harga Mobile Legends</span>
             </h3>
-            <p style="color:var(--text-dim);font-size:0.72rem;margin-bottom:0.75rem">Foto banner untuk filter pengelompokan budget (Budget Pelajar, UMR, Sultan, Financial Freedom) di halaman Jual Beli Akun &mdash; Mobile Legends.</p>
+            <p style="color:var(--text-dim);font-size:0.72rem;margin-bottom:0.75rem">Foto banner untuk filter pengelompokan budget (Budget Pelajar, UMR, Sultan, Financial Freedom) di halaman Stock Akun &mdash; Mobile Legends.</p>
             @php
                 $jbaBudgetLabels = [
                     'jba_budget_pelajar_banner' => 'Budget Pelajar (300rb - 1.999jt)',
@@ -326,7 +326,7 @@
         <div class="card-glass p-4">
             <h3 class="font-semibold mb-3 flex items-center gap-2" style="font-size:0.9rem">
                 <i class="fas fa-gamepad" style="color:#f59e0b;font-size:0.85rem"></i>
-                <span>Header Banner Halaman Game (Jual Beli Akun)</span>
+                <span>Header Banner Halaman Game (Stock Akun)</span>
             </h3>
             <p style="color:var(--text-dim);font-size:0.72rem;margin-bottom:0.75rem">Banner di bagian paling atas halaman game (/jual-beli-akun/mlbb, /pubg, dst). Teks nama game &amp; tombol Kembali tampil di atas banner.</p>
             @php

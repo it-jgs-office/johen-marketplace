@@ -66,58 +66,101 @@
             <span class="jco-section-num">2</span>
             <div>
               <h2 class="jco-section-title">Metode Pembayaran</h2>
-              <p class="jco-section-desc">Pilih cara pembayaran yang kamu inginkan.</p>
+              <p class="jco-section-desc">Semua metode diproses aman melalui {{ $gatewayName }}.</p>
             </div>
           </div>
 
           @php
               $categories = [
-                  'doku' => 'Pembayaran Aman DOKU',
                   'qris' => 'QRIS',
                   'ewallet' => 'E-Wallet',
                   'paylater' => 'PayLater',
-                  'va' => 'Virtual Account',
+                  'va' => 'Virtual Account / Bank',
                   'convenience_store' => 'Convenience Store',
               ];
               $groupedPay = collect($paymentMethods)->groupBy('category');
+              $selectedPayment = old('payment_method', $paymentMethods->first()?->code);
+              $channelMinAmount = fn ($category) => in_array($category, ['qris', 'ewallet'], true) ? 1000 : 10000;
           @endphp
-          @foreach($categories as $catKey => $catLabel)
-            @php $catMethods = $groupedPay->get($catKey, collect()); @endphp
-            @if($catMethods->isNotEmpty())
-            <div class="jco-pay-group">
-              <div class="jco-pay-group-label">{{ $catLabel }}</div>
-              <div class="jco-payment-grid">
-                @foreach($catMethods as $pm)
-                <label class="jco-pay-opt">
-                  <input type="radio" name="payment_method" value="{{ $pm->code }}" {{ old('payment_method', $paymentMethods->first()?->code) === $pm->code ? 'checked' : '' }} required>
-                  <div class="jco-pay-card">
-                    @if(payment_logo_asset($pm->code))
-                      <img src="{{ payment_logo_asset($pm->code) }}" alt="{{ $pm->name }}" class="jco-pay-img">
-                    @elseif($pm->icon)
-                      <span class="jco-pay-icon">{{ $pm->icon }}</span>
-                    @else
-                      <span class="jco-pay-initial">{{ strtoupper(substr($pm->name, 0, 2)) }}</span>
+          <div class="gd-pay-group gd-pay-group--cards jco-topup-pay" id="jcoPayGroup">
+            @foreach($categories as $catKey => $catLabel)
+              @php $catMethods = $groupedPay->get($catKey, collect()); @endphp
+              @continue($catMethods->isEmpty())
+              <div class="gd-pay-category" data-category="{{ $catKey }}">
+                <button type="button" class="gd-pay-cat-head">
+                  <span class="gd-pay-cat-label">{{ $catLabel }}</span>
+                  <svg class="gd-pay-cat-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+                </button>
+                @php($previewLogos = $catMethods->map(fn ($pm) => payment_logo_asset($pm->code))->filter()->values())
+                <div class="gd-pay-cat-preview{{ $previewLogos->count() > 3 ? ' is-marquee' : '' }}" aria-hidden="true">
+                  <div class="gd-pay-cat-preview-track">
+                    @foreach($previewLogos as $previewLogo)
+                      <span class="gd-pay-cat-preview-logo"><img src="{{ $previewLogo }}" alt=""></span>
+                    @endforeach
+                    @if($previewLogos->count() > 3)
+                      @foreach($previewLogos as $previewLogo)
+                        <span class="gd-pay-cat-preview-logo"><img src="{{ $previewLogo }}" alt=""></span>
+                      @endforeach
                     @endif
-                    <span class="jco-pay-name">{{ $pm->name }}</span>
-                    <div class="jco-pay-check">
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-                    </div>
                   </div>
-                </label>
-                @endforeach
+                </div>
+                <div class="gd-pay-cat-body">
+                  <div class="gd-pay-card-grid">
+                    @foreach($catMethods as $pm)
+                      @php($isSelected = $selectedPayment === $pm->code)
+                      <label class="gd-pay-row jco-pay-row{{ $isSelected ? ' selected' : '' }}" data-provider="{{ $pm->gateway_provider }}" data-gateway-code="{{ $pm->gateway_code }}">
+                        <input class="jco-pay-radio-input" type="radio" name="payment_method" value="{{ $pm->code }}" {{ $isSelected ? 'checked' : '' }} required>
+                        <span class="gd-pay-row-head">
+                          <span class="gd-pay-icon">
+                            @if(payment_logo_asset($pm->code))
+                              <img src="{{ payment_logo_asset($pm->code) }}" alt="{{ $pm->name }}" class="pay-badge-img">
+                            @else
+                              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                            @endif
+                          </span>
+                          <span class="gd-pay-label">
+                            <span class="gd-pay-t">{{ $pm->name }}</span>
+                            <span class="gd-pay-card-amount">Rp {{ number_format($listing->price, 0, ',', '.') }}</span>
+                            @php($pmMin = $channelMinAmount($catKey))
+                            @if($pmMin > 1000)
+                              <span class="gd-pay-min">min. Rp {{ number_format($pmMin, 0, ',', '.') }}</span>
+                            @endif
+                          </span>
+                          <span class="gd-pay-radio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+                        </span>
+                      </label>
+                    @endforeach
+                  </div>
+                </div>
               </div>
-            </div>
+            @endforeach
+            @if($paymentMethods->isEmpty())
+              <div class="jco-pay-empty">Metode pembayaran tidak tersedia</div>
             @endif
-          @endforeach
-          @if($paymentMethods->isEmpty())
-            <div class="jco-pay-empty">Metode pembayaran tidak tersedia</div>
-          @endif
+          </div>
           @error('payment_method')<span class="jco-error">{{ $message }}</span>@enderror
           @auth
-          <label class="jco-point-option">
-            <span><strong style="display:flex;align-items:center;gap:.45rem"><x-johen-point-icon size="22" /> Gunakan Johen Point</strong><small>Tersedia {{ number_format($pointBalance, 0, ',', '.') }} JP · 1 JP = Rp1</small><input class="jco-point-amount" type="number" name="points_amount" value="{{ old('points_amount', (int) min($pointBalance, $listing->price)) }}" min="1" max="{{ (int) $pointBalance }}" aria-label="Jumlah Johen Point" {{ $pointBalance < 1 ? 'disabled' : '' }}></span>
-            <input type="checkbox" name="use_points" value="1" {{ old('use_points') ? 'checked' : '' }} {{ $pointBalance < 1 ? 'disabled' : '' }}>
-          </label>
+          <div class="gd-pay-points">
+            <label for="jcoUsePoints" class="gd-pay-points-main">
+              <span class="gd-pay-icon gd-pay-points-icon"><x-johen-point-icon size="30" /></span>
+              <span class="gd-pay-points-copy">
+                <span class="gd-pay-points-name">Gunakan Johen Point</span>
+                <span class="gd-pay-points-balance">Potong total pembayaran dengan point</span>
+              </span>
+            </label>
+            <div class="gd-pay-points-control">
+              <label for="jcoPointAmount">Jumlah digunakan</label>
+              <div class="gd-pay-points-input-wrap">
+                <input id="jcoPointAmount" class="gd-pay-points-amount" type="number" name="points_amount" value="{{ old('points_amount', (int) min($pointBalance, $listing->price)) }}" min="1" max="{{ (int) $pointBalance }}" {{ $pointBalance < 1 ? 'disabled' : '' }}>
+                <span>JP</span>
+              </div>
+            </div>
+            <label for="jcoUsePoints" class="gd-pay-points-choice">
+              <input id="jcoUsePoints" class="gd-pay-points-checkbox" type="checkbox" name="use_points" value="1" {{ old('use_points') ? 'checked' : '' }} {{ $pointBalance < 1 ? 'disabled' : '' }}>
+              <span class="gd-pay-points-action">Maks. {{ number_format($pointBalance, 0, ',', '.') }} JP</span>
+              <span class="gd-pay-radio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+            </label>
+          </div>
           @endauth
         </div>
 
@@ -209,11 +252,33 @@
 
 <style>
 .jco-page {
+  --gd-panel: color-mix(in srgb, var(--surface) 90%, #07577f);
+  --gd-panel-raised: color-mix(in srgb, var(--surface-2) 84%, #0c6b98);
+  --gd-field: color-mix(in srgb, var(--bg-soft) 88%, #063d60);
+  --gd-border: color-mix(in srgb, #57d6ff 24%, var(--border));
+  --gd-signal: #57d6ff;
   width: 100%;
   max-width: var(--layout-max);
   margin: 0 auto;
   padding: 1.5rem var(--layout-gutter) 4rem;
 }
+[data-theme="light"] .jco-page {
+  --gd-panel: #f8fbff;
+  --gd-panel-raised: #eef6ff;
+  --gd-field: #ffffff;
+  --gd-border: #bfdbfe;
+  --gd-signal: #2563eb;
+}
+.jco-topup-pay .jco-pay-row { cursor: pointer; }
+.jco-topup-pay .jco-pay-radio-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+[data-theme="light"] .jco-topup-pay .gd-pay-card-amount { color: #1d4ed8; }
+[data-theme="light"] .jco-topup-pay .gd-pay-row.selected .gd-pay-t { color: #0f2f66; }
 
 /* Header */
 .jco-header {
@@ -242,6 +307,17 @@
   gap: 2rem;
   align-items: start;
 }
+.jco-layout > *,
+.jco-form,
+.jco-section,
+.jco-topup-pay,
+.jco-topup-pay .gd-pay-category,
+.jco-topup-pay .gd-pay-cat-preview,
+.jco-topup-pay .gd-pay-cat-body,
+.jco-topup-pay .gd-pay-card-grid {
+  min-width: 0;
+  max-width: 100%;
+}
 @media (max-width: 900px) {
   .jco-layout { grid-template-columns: 1fr; }
   .jco-summary-side { order: -1; }
@@ -261,6 +337,7 @@
   gap: .85rem;
   margin-bottom: 1.25rem;
 }
+.jco-section-header > div { min-width: 0; }
 .jco-section-num {
   flex-shrink: 0;
   width: 30px;
@@ -284,6 +361,20 @@
   font-size: .78rem;
   color: var(--text-dim, #999);
   margin: .15rem 0 0;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 600px) {
+  .jco-page { padding: 1rem .75rem 3rem; }
+  .jco-header { margin-bottom: 1.25rem; }
+  .jco-section { padding: 1rem .8rem; border-radius: 14px; }
+  .jco-section-header { gap: .65rem; margin-bottom: 1rem; }
+  .jco-section-num { width: 28px; height: 28px; }
+  .jco-section-title { font-size: .94rem; }
+  .jco-section-desc { font-size: .7rem; line-height: 1.45; }
+  .jco-topup-pay { padding: .4rem; }
+  .jco-topup-pay .gd-pay-cat-head { padding: .75rem .8rem; }
+  .jco-topup-pay .gd-pay-cat-body { padding: .45rem; }
+  .jco-topup-pay .gd-pay-card-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .45rem; }
 }
 
 /* Fields */
@@ -665,6 +756,21 @@
 @push('scripts')
 <script>
 (function() {
+  const payGroup = document.getElementById('jcoPayGroup');
+  payGroup?.addEventListener('click', function(event) {
+    const categoryHead = event.target.closest('.gd-pay-cat-head');
+    if (!categoryHead) return;
+    categoryHead.closest('.gd-pay-category')?.classList.toggle('open');
+  });
+
+  document.querySelectorAll('.jco-pay-radio-input').forEach(function(input) {
+    input.addEventListener('change', function() {
+      document.querySelectorAll('.jco-pay-row').forEach(function(row) {
+        row.classList.toggle('selected', row.contains(input));
+      });
+    });
+  });
+
   function applyThemeToPaymentImgs() {
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     document.querySelectorAll('.jco-pay-themeable').forEach(function(img) {

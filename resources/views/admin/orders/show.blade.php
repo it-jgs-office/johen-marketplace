@@ -59,7 +59,7 @@
     }
 @endphp
 <div style="max-width:1100px;margin:0 auto">
-    <a href="{{ route('admin.orders') }}" class="btn btn-ghost mb-4" style="padding-left:0">
+    <a href="{{ route($isJoki ? 'admin.orders.joki' : 'admin.orders.topup') }}" class="btn btn-ghost mb-4" style="padding-left:0">
         <i class="fas fa-arrow-left mr-1"></i> Kembali
     </a>
 

@@ -12,14 +12,14 @@
   <div class="testi-page-filters">
     <a href="{{ route('testimoni') }}" class="testi-filter-btn {{ !$activeLayanan ? 'active' : '' }}">Semua</a>
     <a href="{{ route('testimoni', ['layanan' => 'topup']) }}" class="testi-filter-btn {{ $activeLayanan === 'topup' ? 'active' : '' }}">Top Up</a>
-    <a href="{{ route('testimoni', ['layanan' => 'jual-beli-akun']) }}" class="testi-filter-btn {{ $activeLayanan === 'jual-beli-akun' ? 'active' : '' }}">Jual Beli Akun</a>
+    <a href="{{ route('testimoni', ['layanan' => 'jual-beli-akun']) }}" class="testi-filter-btn {{ $activeLayanan === 'jual-beli-akun' ? 'active' : '' }}">Stock Akun</a>
     <a href="{{ route('testimoni', ['layanan' => 'joki']) }}" class="testi-filter-btn {{ $activeLayanan === 'joki' ? 'active' : '' }}">Joki MLBB</a>
   </div>
 
   <div class="testi-page-grid">
     @foreach($testimonials as $t)
     @php
-      $testiGame = preg_replace('/^(Top Up|Joki Rank|Jual Akun)\s*-\s*/i', '', $t['game']);
+      $testiGame = preg_replace('/^(Top Up|Joki Rank|Jual Akun|Stock Akun)\s*-\s*/i', '', $t['game']);
       $testiRating = max(0, min(5, (int) ($t['rating'] ?? 5)));
     @endphp
     <article class="home-testi-card testi-page-card">
@@ -34,7 +34,7 @@
       </div>
       <p class="home-testi-quote">{{ $t['quote'] }}</p>
       <div class="home-testi-user">
-        <x-user-avatar :name="$t['name']" :src="$t['avatar_url'] ?? null" :size="37" class="home-testi-avatar" />
+        <img class="home-testi-avatar" src="{{ asset('assets/icon/icon-testimoni.png') }}" alt="Foto profil {{ $t['name'] }}" loading="lazy">
         <div class="testi-page-user-copy">
           <div class="home-testi-name">{{ $t['name'] }}</div>
           <div class="home-testi-game">Pembeli terverifikasi</div>
@@ -65,7 +65,7 @@
 .testi-page-card .home-testi-rating{margin-right:0;}
 .testi-page-card .home-testi-quote{flex:1;}
 .testi-page-user-copy{min-width:0;}
-.testi-page-time{margin:0 0 0 3.05rem;padding-top:.55rem;border-top:1px solid color-mix(in srgb,var(--border) 82%,transparent);color:var(--text-mute);font-size:.62rem;line-height:1.3;}
+.testi-page-time{position:relative;z-index:1;margin:0 0 0 3.05rem;padding-top:.55rem;border-top:1px solid rgba(104,125,153,.2);color:#6b7b90;font-size:.62rem;line-height:1.3;}
 
 @media (max-width: 640px) {
   .testi-page{padding:2rem max(.65rem,var(--layout-gutter)) 3rem}

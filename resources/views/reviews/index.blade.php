@@ -22,7 +22,7 @@
     @forelse($reviews as $review)
       @php
         $isAccount = $review->service_type === 'jual-beli-akun';
-        $serviceLabel = $isAccount ? 'Jual Beli Akun' : 'Top Up';
+        $serviceLabel = $isAccount ? 'Stock Akun' : 'Top Up';
         $rating = max(1, min(5, (int) $review->rating));
       @endphp
       <article class="my-review-card">

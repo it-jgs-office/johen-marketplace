@@ -157,7 +157,7 @@ $paymentLabels = [
               <div class="aco-meta">
                 <span class="aco-meta-item">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/></svg>
-                  <strong>{{ $listing->game ?? ($order->payment_method ?: 'Jual Beli Akun') }}</strong>
+                  <strong>{{ $listing->game ?? ($order->payment_method ?: 'Stock Akun') }}</strong>
                 </span>
                 <span class="aco-meta-item">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M22 9H2"/></svg>

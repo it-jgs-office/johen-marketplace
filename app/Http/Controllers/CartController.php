@@ -23,8 +23,6 @@ class CartController extends Controller
             'items' => $summary['items'],
             'subtotal' => $summary['subtotal'],
             'totalQty' => $summary['total_qty'],
-            // Jumlah seluruh item di keranjang, termasuk yang stoknya habis,
-            // supaya angkanya sama dengan badge di navbar.
             'count' => $this->cart->countItems(Auth::id()),
             'unavailable' => $summary['unavailable'],
         ]);
@@ -33,40 +31,14 @@ class CartController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'product_id' => 'required|integer|exists:products,id',
-            'quantity' => 'nullable|integer|min:1|max:'.CartService::MAX_QTY,
+            'listing_id' => 'required|integer|min:1',
         ], [], [
-            'product_id' => 'produk',
+            'listing_id' => 'akun',
         ]);
 
         [$ok, $message, $count] = $this->cart->add(
             Auth::id(),
-            (int) $request->product_id,
-            (int) ($request->quantity ?? 1)
-        );
-
-        if ($request->wantsJson()) {
-            return response()->json([
-                'success' => $ok,
-                'message' => $message,
-                'count' => $count,
-                'state' => $this->cart->state(Auth::id()),
-            ], $ok ? 200 : 422);
-        }
-
-        return back()->with($ok ? 'success' : 'error', $message);
-    }
-
-    public function update(Request $request, int $item)
-    {
-        $request->validate([
-            'quantity' => 'required|integer|min:1|max:'.CartService::MAX_QTY,
-        ]);
-
-        [$ok, $message, $count] = $this->cart->updateQuantity(
-            Auth::id(),
-            $item,
-            (int) $request->quantity
+            (int) $request->listing_id,
         );
 
         if ($request->wantsJson()) {

@@ -14,7 +14,7 @@
 <div class="card-glass p-4 mb-5" style="display:flex;align-items:flex-start;gap:.75rem">
     <i class="fas fa-info-circle" style="color:var(--accent);margin-top:0.2rem"></i>
     <div style="font-size:0.82rem;color:var(--text-muted);line-height:1.6">
-        Banner ini tampil di halaman <b>Jual Beli Akun</b> tepat di atas teks "Jual Beli Akun Game".
+        Banner ini tampil di halaman <b>Stock Akun</b> tepat di atas teks "Stock Akun Game".
         Banner hanya tampil jika berstatus <b>Aktif</b>. Gunakan jadwal (mulai/selesai) untuk promo berjangka.
         Jika lebih dari satu banner aktif, semuanya ditampilkan berurutan sesuai kolom <b>Urutan</b>.
     </div>
@@ -91,7 +91,7 @@
                     <td colspan="7">
                         <div class="empty-state">
                             <i class="fas fa-fire"></i>
-                            <p>Belum ada banner flash sale. Tambahkan banner untuk halaman Jual Beli Akun.</p>
+                            <p>Belum ada banner flash sale. Tambahkan banner untuk halaman Stock Akun.</p>
                         </div>
                     </td>
                 </tr>

@@ -73,6 +73,7 @@ class CheckoutController extends Controller
             'totalQty' => $summary['total_qty'],
             'brandGroups' => $this->cart->brandGroups(Auth::id()),
             'paymentMethods' => $paymentMethods,
+            'gatewayName' => $this->gateway->providerLabel(),
             'minAmounts' => self::MIN_AMOUNT,
             'accounts' => (array) old('accounts', []),
             'pointBalance' => app(BalanceService::class)->balanceFor(Auth::id()),
@@ -283,7 +284,7 @@ class CheckoutController extends Controller
                     if (! $charged) {
                         throw new \RuntimeException(
                             ($this->gateway->lastChargeError()
-                                ?: 'Halaman pembayaran DOKU gagal dibuat. Silakan coba lagi.')
+                                ?: 'Halaman pembayaran Midtrans gagal dibuat. Silakan coba lagi.')
                             .' (checkout: '.$checkout->checkout_ref.')'
                         );
                     }
@@ -386,6 +387,11 @@ class CheckoutController extends Controller
      * Baca status charge langsung dari Xendit (cadangan kalau webhook telat).
      */
     protected function syncFromGateway(Checkout $checkout): void
+    {
+        app(\App\Services\MidtransPaymentService::class)->sync($checkout);
+    }
+
+    protected function syncFromLegacyGateway(Checkout $checkout): void
     {
         if (data_get($checkout->gateway_extra, 'integration') === 'direct'
             && data_get($checkout->gateway_extra, 'provider') === 'doku') {

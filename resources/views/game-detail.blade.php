@@ -4,23 +4,9 @@
   $pageType = $brand->service_type === 'joki' ? 'Joki' : 'Top Up';
   $brandName = mb_strtolower($brand->name);
   $isValorant = str_starts_with($brandName, 'valorant');
-  $categoryBackgrounds = [
-    'mobile legends' => 'assets/backround/bg-ml.jpg',
-    'pubg' => 'assets/backround/bg-pubg.png',
-    'efootball' => 'assets/backround/bg-efootball.png',
-    'fc mobile' => 'assets/backround/bg-fcmobile.png',
-    'free fire' => 'assets/backround/bg-ff.png',
-    'roblox' => 'assets/backround/bg-roblox.png',
-    'valorant' => 'assets/backround/bg-valo.png',
-  ];
-  $defaultCategoryBackground = null;
-  foreach ($categoryBackgrounds as $gameName => $path) {
-    if (str_contains($brandName, $gameName)) {
-      $defaultCategoryBackground = pwa_asset($path);
-      break;
-    }
-  }
-  $detailBackground = $brand->detail_bg_url ?: $defaultCategoryBackground;
+  $usesServerId = $isMobileLegends || str_starts_with($brandName, 'magic chess');
+  $defaultDetailBackground = pwa_asset('assets/backround/default-sampul.png');
+  $detailBackground = $brand->detail_bg_url ?: $defaultDetailBackground;
   $detailBackgroundPosition = $brand->detail_bg_url ? ($brand->detail_bg_position ?: 'center') : 'center';
 @endphp
 @section('title', $brand->name . ' — ' . $pageType . ' ' . $brand->name)
@@ -87,22 +73,19 @@
   };
   // Mapping eksplisit channel code -> kategori. Tidak bergantung pada kolom
   // `category` di DB (jika data hosting kategori-nya kosong/salah, grouping
-  // tetap benar). Pastikan channel code sesuai Xendit.
+  // tetap benar). Daftar ini hanya berisi channel Midtrans yang lolos filter gateway.
   $channelCategory = function (string $code): string {
       $code = strtolower($code);
-      if ($code === 'doku_checkout') return 'doku';
       if (in_array($code, ['qris'], true)) return 'qris';
-      if ($code === 'doku_wallet') return 'ewallet';
       if ($code === 'akulaku') return 'paylater';
       if (str_ends_with($code, '_va')) return 'va';
       if (in_array($code, ['alfamart', 'indomaret'], true)) return 'convenience_store';
       return 'ewallet';
   };
-  // Minimal nominal per kategori channel Xendit (IDR): QRIS & e-wallet = 1.000,
-  // Virtual Account & minimarket = 10.000 (error "expectedAmount above 10000" bila kurang).
+  // Minimal nominal per kategori channel Midtrans (IDR).
   $channelMinAmount = function (string $cat): int {
       return match ($cat) {
-          'qris', 'ewallet', 'doku' => 1000,
+          'qris', 'ewallet' => 1000,
           default => 10000,
       };
   };
@@ -114,12 +97,13 @@
           'title' => $m->name,
           'category' => $cat,
           'photo' => payment_logo_asset($m->code),
+          'provider' => $m->gateway_provider,
+          'gateway_code' => $m->gateway_code,
           'fee' => 0,
           'min_amount' => $channelMinAmount($cat),
       ];
   })->values();
   $categories = [
-      'doku' => 'Pembayaran Aman DOKU',
       'qris' => 'QRIS',
       'ewallet' => 'E-Wallet',
       'paylater' => 'PayLater',
@@ -133,18 +117,19 @@
 <!-- ===== BANNER (background only) ===== -->
 <section class="game-hero">
   <div class="game-hero-bg"@if($detailBackground) style="background-image:url('{{ $detailBackground }}');background-position:{{ $detailBackgroundPosition }}"@endif></div>
-  <div class="game-hero-overlay"></div>
 </section>
 
 <!-- ===== THUMBNAIL (overlap banner + content) ===== -->
 <div class="gd-header-wrap">
   <div class="gd-header-inner">
     <div class="gd-thumb">
+      <div class="gd-thumb-surface">
       @if($brand->thumbnail_url)
         <img src="{{ $brand->thumbnail_url }}" alt="{{ $brand->name }}">
       @else
         <span style="font-size:2.5rem">{{ $brand->icon ?? '🎮' }}</span>
       @endif
+      </div>
     </div>
     <div class="gd-header-meta">
       <h1>{{ $brand->name }}</h1>
@@ -179,7 +164,7 @@
     </p>
     <div class="gd-empty-actions" style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-top:1.5rem">
       <a class="btn btn-solid" href="{{ route('kontak') }}">Hubungi Customer Service</a>
-      <a class="btn btn-outline" href="{{ route('jual-beli-akun') }}">Lihat Jual Beli Akun</a>
+      <a class="btn btn-outline" href="{{ route('jual-beli-akun') }}">Lihat Stock Akun</a>
     </div>
   </div>
   @else
@@ -197,11 +182,11 @@
               <input type="text" id="userId" placeholder="{{ $isValorant ? 'NamaPemain#TAG' : '12345678' }}" autocomplete="off" @if($isValorant) inputmode="text" autocapitalize="off" @endif aria-describedby="accountLockNotice">
               <div class="gd-field-error" id="userIdError">{{ $isValorant ? 'Riot ID wajib diisi dengan format NamaPemain#TAG.' : 'User ID wajib diisi.' }}</div>
             </div>
-            @if($brand->requires_zone_id || $isMobileLegends)
+            @if($brand->requires_zone_id || $usesServerId)
             <div class="gd-field">
-              <label for="zoneId">{{ $isMobileLegends ? 'Server' : 'Zone ID' }}</label>
+              <label for="zoneId">{{ $usesServerId ? 'Server ID' : 'Zone ID' }}</label>
               <input type="text" id="zoneId" placeholder="1234" autocomplete="off" aria-describedby="accountLockNotice">
-              <div class="gd-field-error" id="zoneIdError">{{ $isMobileLegends ? 'Server wajib diisi.' : 'Zone ID wajib diisi.' }}</div>
+              <div class="gd-field-error" id="zoneIdError">{{ $usesServerId ? 'Server ID wajib diisi.' : 'Zone ID wajib diisi.' }}</div>
             </div>
             @endif
           </div>
@@ -390,22 +375,40 @@
 
   <!-- ===== STEP 5: Pembayaran ===== -->
   <div class="gd-step" id="paymentStep">
-    <div class="gd-step-head"><div class="gd-step-num">5</div><div class="gd-step-title">Pilih Pembayaran</div></div>
-    <div class="gd-pay-group" id="payGroup">
+    <div class="gd-step-head"><div class="gd-step-num">5</div><div><div class="gd-step-title">Pilih Pembayaran</div><div class="gd-step-subtitle">Diproses aman melalui {{ $gatewayName }}</div></div></div>
+    <div class="gd-pay-group gd-pay-group--cards" id="payGroup">
       @if($paymentMethods->isEmpty())
         <p class="gd-summary-empty">Metode pembayaran belum tersedia. Silakan hubungi CS.</p>
       @endif
       @foreach($categories as $catKey => $catLabel)
         @php $catMethods = $groupedPay->get($catKey, collect()); @endphp
         @continue($catMethods->isEmpty())
-        <div class="gd-pay-category open" data-category="{{ $catKey }}">
+        <div class="gd-pay-category" data-category="{{ $catKey }}">
           <button type="button" class="gd-pay-cat-head">
             <span class="gd-pay-cat-label">{{ $catLabel }}</span>
             <svg class="gd-pay-cat-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
           </button>
+          @php($previewLogos = $catMethods->map(fn($pm) => payment_logo_asset($pm->code))->filter()->values())
+          <div class="gd-pay-cat-preview{{ $previewLogos->count() > 3 ? ' is-marquee' : '' }}" aria-hidden="true">
+            <div class="gd-pay-cat-preview-track">
+              @foreach($previewLogos as $previewLogo)
+                <span class="gd-pay-cat-preview-logo">
+                  <img src="{{ $previewLogo }}" alt="">
+                </span>
+              @endforeach
+              @if($previewLogos->count() > 3)
+                @foreach($previewLogos as $previewLogo)
+                  <span class="gd-pay-cat-preview-logo">
+                    <img src="{{ $previewLogo }}" alt="">
+                  </span>
+                @endforeach
+              @endif
+            </div>
+          </div>
           <div class="gd-pay-cat-body">
+            <div class="gd-pay-card-grid">
             @foreach($catMethods as $pm)
-              <div class="gd-pay-row" data-key="{{ $pm->code }}" data-category="{{ $catKey }}">
+              <div class="gd-pay-row" data-key="{{ $pm->code }}" data-category="{{ $catKey }}" data-provider="{{ $pm->gateway_provider }}" data-gateway-code="{{ $pm->gateway_code }}">
                 <button type="button" class="gd-pay-row-head">
                   <span class="gd-pay-icon">
                     @if(payment_logo_asset($pm->code))
@@ -416,6 +419,7 @@
                   </span>
                   <span class="gd-pay-label">
                     <span class="gd-pay-t">{{ $pm->name }}</span>
+                    <span class="gd-pay-card-amount" data-pay-amount></span>
                     @php($pmMin = $channelMinAmount($channelCategory($pm->code)))
                     @if($pmMin > 1000)
                       <span class="gd-pay-min">min. Rp {{ number_format($pmMin, 0, ',', '.') }}</span>
@@ -425,21 +429,29 @@
                 </button>
               </div>
             @endforeach
+            </div>
           </div>
         </div>
       @endforeach
       @auth
         <div class="gd-pay-points">
           <label for="usePointsInput" class="gd-pay-points-main">
-            <span class="gd-pay-icon gd-pay-points-icon"><x-johen-point-icon size="22" /></span>
-            <span class="gd-pay-label">
-              <span class="gd-pay-t">Gunakan Johen Point</span>
-              <span class="gd-pay-min">Tersedia {{ number_format($pointBalance, 0, ',', '.') }} JP</span>
+            <span class="gd-pay-icon gd-pay-points-icon"><x-johen-point-icon size="30" /></span>
+            <span class="gd-pay-points-copy">
+              <span class="gd-pay-points-name">Gunakan Johen Point</span>
+              <span class="gd-pay-points-balance">Potong total pembayaran dengan point</span>
             </span>
           </label>
-          <input id="pointAmountInput" class="gd-pay-points-amount" type="number" value="{{ (int) $pointBalance }}" min="1" max="{{ (int) $pointBalance }}" aria-label="Jumlah Johen Point" {{ $pointBalance < 1 ? 'disabled' : '' }}>
-          <label for="usePointsInput" class="gd-pay-points-choice" aria-label="Gunakan Johen Point">
+          <div class="gd-pay-points-control">
+            <label for="pointAmountInput">Jumlah digunakan</label>
+            <div class="gd-pay-points-input-wrap">
+              <input id="pointAmountInput" class="gd-pay-points-amount" type="number" value="{{ (int) $pointBalance }}" min="1" max="{{ (int) $pointBalance }}" aria-label="Jumlah Johen Point" {{ $pointBalance < 1 ? 'disabled' : '' }}>
+              <span>JP</span>
+            </div>
+          </div>
+          <label for="usePointsInput" class="gd-pay-points-choice">
             <input id="usePointsInput" class="gd-pay-points-checkbox" type="checkbox" {{ $pointBalance < 1 ? 'disabled' : '' }}>
+            <span class="gd-pay-points-action">Maks. {{ number_format($pointBalance, 0, ',', '.') }} JP</span>
             <span class="gd-pay-radio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
           </label>
         </div>
@@ -510,17 +522,9 @@
           <div class="gd-summary-line"><span>Biaya Layanan</span><strong id="sumFeeDesktop">Rp 0</strong></div>
           <div class="gd-summary-total"><span>Total Pembayaran</span><span id="sumTotalDesktop">Rp 0</span></div>
         </div>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin-top:1rem;">
-          <button class="btn btn-outline btn-full" id="addToCartBtn" type="button">Keranjang</button>
+        <div style="margin-top:1rem;">
           <button class="btn btn-solid btn-full" id="orderNowBtn">Pesan Sekarang</button>
         </div>
-        {{-- Angka realtime jumlah item di keranjang; disembunyikan saat keranjang kosong. --}}
-        @php($cartCount = auth()->check() ? app(\App\Services\CartService::class)->countItems(auth()->id()) : 0)
-        <p class="gd-cart-note" data-role="cart-note" @if($cartCount < 1) hidden @endif>
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-          <span>Di keranjang: <b data-role="cart-summary-qty">{{ $cartCount }}</b> item</span>
-          <a href="{{ route('cart.index') }}">Lihat</a>
-        </p>
       </div>
     </div>
   </div>
@@ -562,9 +566,6 @@
       <span class="gd-mobile-bar-label">Total Pembayaran</span>
       <strong class="gd-mobile-bar-total" id="mobileSumTotal">Rp 0</strong>
     </div>
-    <button class="btn btn-outline gd-mobile-bar-btn gd-mobile-bar-btn--cart" id="addToCartBtnMobile" type="button" aria-label="Tambah ke keranjang">
-      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-    </button>
     <button class="btn btn-solid gd-mobile-bar-btn" id="orderNowBtnMobile">Pesan Sekarang</button>
   </div>
 </div>
@@ -606,7 +607,7 @@ function scrollToOrderStep(stepId) {
 
 const brandName = @json($brand->name);
 const isMobileLegends = @json($isMobileLegends);
-const accountCheckEnabled = true;
+const accountCheckEnabled = @json($accountCheckEnabled);
 const paymentMethods = @json($payData);
 const pointBalance = @json((int) $pointBalance);
 const usePointsInput = document.getElementById('usePointsInput');
@@ -819,7 +820,13 @@ function showAccountValid(nickname, region) {
     if (userIdOk) {
         userIdOk.className = 'gd-field-ok gd-account-result show';
         userIdOk.textContent = '';
-        userIdOk.append('Akun kamu adalah ');
+
+        const introEl = document.createElement('span');
+        introEl.className = 'gd-account-result-intro';
+        introEl.textContent = 'Akun kamu adalah';
+
+        const identityEl = document.createElement('span');
+        identityEl.className = 'gd-account-result-identity';
 
         const nicknameEl = document.createElement('strong');
         nicknameEl.textContent = detectedNickname || 'Valid';
@@ -828,20 +835,26 @@ function showAccountValid(nickname, region) {
         checkEl.className = 'gd-account-result-check';
         checkEl.textContent = '✓';
 
-        userIdOk.append(nicknameEl, checkEl);
+        identityEl.append(nicknameEl, checkEl);
+        userIdOk.append(introEl, identityEl);
 
         if (detectedRegion) {
-            userIdOk.append(' dari ');
+            const regionGroup = document.createElement('span');
+            regionGroup.className = 'gd-account-result-region';
+            regionGroup.append('dari ');
+
             const regionEl = document.createElement('strong');
             regionEl.textContent = detectedRegion;
-            userIdOk.append(regionEl);
+            regionGroup.append(regionEl);
 
             if (detectedRegion === 'Indonesia') {
                 const flagEl = document.createElement('span');
                 flagEl.className = 'gd-account-result-flag';
                 flagEl.textContent = '🇮🇩';
-                userIdOk.append(flagEl);
+                regionGroup.append(flagEl);
             }
+
+            userIdOk.append(regionGroup);
         }
     }
     togglePayLock();
@@ -960,8 +973,18 @@ function computePayTotal() {
     return usePointsInput && usePointsInput.checked ? Math.max(0, total - Math.min(total, pointBalance, Math.max(0, requested))) : total;
 }
 
+function updatePaymentCardAmounts() {
+    const total = computePayTotal();
+    $$('.gd-pay-row').forEach(row => {
+        const amount = $('[data-pay-amount]', row);
+        if (!amount) return;
+        const method = paymentMethods.find(m => m.key === row.dataset.key);
+        amount.textContent = selectedPkg ? rupiah(total + (method?.fee || 0)) : '';
+    });
+}
+
 /* Sembunyikan metode yang nominalnya di bawah minimal channel (VA & minimarket min Rp 10.000,
-   QRIS & e-wallet min Rp 1.000; dikonfirmasi dari error Xendit "expectedAmount above 10000.00").
+   QRIS & e-wallet min Rp 1.000).
    Metode tetap tampil agar pengguna tahu batasannya, tapi dinonaktifkan (abu-abu). */
 function ensureValidPayMethod() {
     const total = computePayTotal();
@@ -997,6 +1020,7 @@ function ensureValidPayMethod() {
 function updateSummary() {
     ensureValidPayMethod();
     syncPromoState();
+    updatePaymentCardAmounts();
 
     const empty = !selectedPkg;
     // mobile accordion
@@ -1110,77 +1134,6 @@ async function handleOrder(btn) {
 
 $('#orderNowBtn').addEventListener('click', function() { handleOrder(this); });
 $('#orderNowBtnMobile').addEventListener('click', function() { handleOrder(this); });
-
-
-/* ---------- tambah ke keranjang ---------- */
-const cartStoreUrl = @json(route('cart.store'));
-const cartLoginUrl = @json(route('login'));
-const isAuthed = @json(auth()->check());
-let cartBusy = false;
-
-async function addToCart(btn, isMobile) {
-    if (cartBusy) return;
-
-    if (!selectedPkg) { showToast('Pilih nominal dulu ya', false); return; }
-    if (!isAuthed) { window.location.href = cartLoginUrl; return; }
-
-    cartBusy = true;
-    const label = isMobile ? btn.innerHTML : btn.textContent;
-
-    if (!isMobile) btn.textContent = 'Menyimpan...';
-    btn.disabled = true;
-
-    const fd = new FormData();
-    fd.append('product_id', selectedPkg.id);
-    fd.append('quantity', qty);
-
-    try {
-        const res = await fetch(cartStoreUrl, {
-            method: 'POST',
-            headers: {
-                'X-CSRF-TOKEN': (document.querySelector('meta[name="csrf-token"]') || {}).content || '',
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            },
-            body: fd
-        });
-
-        if (res.status === 401 || res.status === 419) { window.location.href = cartLoginUrl; return; }
-
-        const data = await res.json();
-
-        if (data.success) {
-            // Satu payload state memperbarui badge header sekaligus catatan
-            // "Di keranjang: N item" di halaman ini.
-            if (typeof applyCartState === 'function') applyCartState(data.state);
-            else setCartBadge(data.count);
-            showToast(data.message || 'Masuk ke keranjang');
-
-            // Umpan balik singkat tanpa mengubah layout tombol.
-            if (!isMobile) btn.textContent = 'Ditambahkan';
-            setTimeout(function() {
-                if (isMobile) btn.innerHTML = label;
-                else btn.textContent = 'Keranjang';
-            }, 1400);
-            return;
-        }
-
-        showToast(data.message || 'Gagal menambah ke keranjang', false);
-    } catch(e) {
-        showToast('Gagal menambah ke keranjang: ' + e.message, false);
-    } finally {
-        btn.disabled = false;
-        cartBusy = false;
-        if (isMobile) btn.innerHTML = label;
-    }
-}
-
-const addToCartBtn = $('#addToCartBtn');
-if (addToCartBtn) addToCartBtn.addEventListener('click', function() { addToCart(this, false); });
-
-// Mobile bar hanya dirender kalau halaman punya produk.
-const addToCartBtnMobile = $('#addToCartBtnMobile');
-if (addToCartBtnMobile) addToCartBtnMobile.addEventListener('click', function() { addToCart(this, true); });
 
 
 /* ---------- promo ---------- */

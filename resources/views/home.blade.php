@@ -53,7 +53,7 @@
 <section class="stock-showcase" id="stock-akun" aria-labelledby="stockShowcaseTitle" data-stock-showcase>
   <div class="stock-showcase-heading">
     <div>
-      <span class="stock-showcase-eyebrow">JUAL BELI AKUN</span>
+      <span class="stock-showcase-eyebrow">STOCK AKUN</span>
       <h2 id="stockShowcaseTitle"><a data-stock-heading href="{{ route('jual-beli-akun.game', $latestAccountStock->first()['slug']) }}">STOCK AKUN TERBARU</a></h2>
     </div>
     <a class="stock-showcase-all" data-stock-all href="{{ route('jual-beli-akun.game', $latestAccountStock->first()['slug']) }}">
@@ -466,6 +466,56 @@ window.__loadMoreReset();
 </script>
 @endpush
 
+@if($latestArticles->isNotEmpty())
+@push('styles')
+<link rel="stylesheet" href="{{ pwa_asset('css/articles.css') }}&f={{ filemtime(public_path('css/articles.css')) }}">
+<style>
+.home-journal{width:100%;max-width:var(--layout-max);margin:0 auto;padding:4.5rem var(--layout-gutter) 1rem}.home-journal__head{display:flex;align-items:end;justify-content:space-between;gap:1rem;margin-bottom:1.35rem}.home-journal__head h2{margin:.45rem 0 0;font-family:'Sora',sans-serif;font-size:clamp(1.55rem,3vw,2.3rem);letter-spacing:-.04em}.home-journal__head>a{color:var(--accent);font-size:.78rem;font-weight:800;text-decoration:none}.home-journal__grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.2rem}.home-journal__card{overflow:hidden;border:1px solid var(--border);border-radius:18px;background:var(--surface);transition:transform .25s ease,border-color .25s ease}.home-journal__card:hover{transform:translateY(-4px);border-color:var(--primary)}.home-journal__image{display:block;aspect-ratio:16/9;overflow:hidden;background:linear-gradient(135deg,#10295b,#07142e)}.home-journal__image img{width:100%;height:100%;object-fit:cover;transition:transform .35s ease}.home-journal__card:hover img{transform:scale(1.04)}.home-journal__image span{height:100%;display:grid;place-content:center;color:#fff;font-family:'Sora',sans-serif;font-size:3.5rem;font-weight:800}.home-journal__body{padding:1.1rem 1.2rem 1.25rem}.home-journal__body small{color:var(--accent);font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em}.home-journal__body h3{margin:.55rem 0 .65rem}.home-journal__body h3 a{color:var(--text);font-family:'Sora',sans-serif;font-size:1rem;line-height:1.45;text-decoration:none}.home-journal__body p{display:-webkit-box;margin:0;color:var(--text-dim);font-size:.78rem;line-height:1.6;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}@media(max-width:1320px){.home-journal{padding-right:clamp(.75rem,1.35vw,1.2rem);padding-left:clamp(.75rem,1.35vw,1.2rem)}}@media(max-width:760px){.home-journal{width:100%;padding-top:3rem}.home-journal__grid{grid-template-columns:1fr}.home-journal__head{align-items:flex-start}.home-journal__head>a{margin-top:.45rem;white-space:nowrap}}@media(max-width:640px){.home-journal{padding-right:.85rem;padding-left:.85rem}}
+/* Johen Journal: hierarchy and responsive article cards */
+.home-journal{max-width:var(--layout-max);padding-top:clamp(3rem,5vw,4.75rem);padding-bottom:2.2rem}
+@media(min-width:761px){.home-journal{padding-right:var(--layout-gutter);padding-left:var(--layout-gutter)}}
+.home-journal__head{align-items:center;margin-bottom:1.5rem;padding-bottom:1rem;border-bottom:1px solid color-mix(in srgb,var(--accent) 18%,var(--border))}
+.home-journal__head>div{min-width:0}
+.home-journal__head h2{max-width:620px;margin-top:.35rem;font-size:clamp(1.6rem,3vw,2.45rem);line-height:1.12}
+.home-journal__head>a{display:inline-flex;min-height:38px;align-items:center;justify-content:center;padding:.55rem .82rem;border:1px solid color-mix(in srgb,var(--accent) 38%,var(--border));border-radius:999px;background:color-mix(in srgb,var(--accent) 9%,transparent);color:var(--accent);white-space:nowrap;transition:background .2s ease,border-color .2s ease,transform .2s ease}
+.home-journal__head>a:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent);transform:translateX(2px)}
+.home-journal__head>a:focus-visible,.home-journal__card a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+.home-journal__grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(.75rem,1.2vw,1rem)}
+.home-journal__card{display:flex;min-width:0;min-height:100%;flex-direction:column;border-color:color-mix(in srgb,var(--accent) 12%,var(--border));box-shadow:0 14px 30px -26px rgba(0,0,0,.85)}
+.home-journal__card:hover{box-shadow:0 22px 36px -28px rgba(0,0,0,.95)}
+.home-journal__image{position:relative;aspect-ratio:16/8;border-bottom:1px solid color-mix(in srgb,var(--accent) 15%,var(--border))}
+.home-journal__image::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(1,16,43,.26));pointer-events:none}
+.home-journal__body{display:flex;min-width:0;flex:1;flex-direction:column;padding:.85rem .9rem .95rem}
+.home-journal__body small{display:block;line-height:1.2}
+.home-journal__body h3{margin:.5rem 0 .55rem}
+.home-journal__body h3 a{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;font-size:.92rem;line-height:1.4}
+.home-journal__body p{-webkit-line-clamp:2;font-size:.74rem;line-height:1.55}
+@media(max-width:960px){.home-journal__grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:640px){.home-journal{padding-top:2.8rem;padding-bottom:1.4rem}.home-journal__head{flex-direction:column;align-items:stretch;gap:.8rem;margin-bottom:1.1rem;padding-bottom:.85rem}.home-journal__head h2{font-size:1.55rem}.home-journal__head>a{width:100%;min-height:42px}.home-journal__grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem}.home-journal__card{border-radius:13px}.home-journal__image{aspect-ratio:16/9}.home-journal__body{padding:.7rem}.home-journal__body small{font-size:.56rem;letter-spacing:.045em}.home-journal__body h3{margin:.38rem 0 0}.home-journal__body h3 a{font-size:.78rem;line-height:1.35}.home-journal__body p{display:none}}
+</style>
+@endpush
+<section class="home-journal" aria-labelledby="homeJournalTitle">
+  <div class="home-journal__head">
+    <div><span class="article-kicker">JOHEN JOURNAL</span><h2 id="homeJournalTitle">Wawasan untuk gamer</h2></div>
+    <a href="{{ route('articles.index') }}">Semua artikel &rarr;</a>
+  </div>
+  <div class="home-journal__grid">
+    @foreach($latestArticles as $article)
+      <article class="home-journal__card">
+        <a href="{{ route('articles.show', $article->slug) }}" class="home-journal__image" tabindex="-1">
+          @if($article->image_url)<img src="{{ $article->image_url }}" alt="" loading="lazy">@else<span>J</span>@endif
+        </a>
+        <div class="home-journal__body">
+          <small>{{ $article->reading_time }} menit baca</small>
+          <h3><a href="{{ route('articles.show', $article->slug) }}">{{ $article->title }}</a></h3>
+          <p>{{ $article->excerpt ?: \Illuminate\Support\Str::limit(strip_tags($article->content), 115) }}</p>
+        </div>
+      </article>
+    @endforeach
+  </div>
+</section>
+@endif
+
 <!-- ===== TESTIMONIALS ===== -->
 <section class="testi-section home-testi-section">
   <h2>APA KATA MEREKA?</h2>
@@ -473,30 +523,28 @@ window.__loadMoreReset();
   <div class="home-testi-wall" aria-label="Testimoni pelanggan Johen Gaming">
     <div class="home-testi-lane-wrap">
       <div class="home-testi-lane" id="testiTrack">
-        @foreach([false, true] as $duplicate)
-          <div class="home-testi-lane-group" @if($duplicate) aria-hidden="true" @endif>
-            @foreach($homeTestimonials as $testimonial)
-              <article class="home-testi-card">
-                <div class="home-testi-card-head">
-                  <div class="home-testi-brand">
-                    <span>{{ preg_replace('/^Top Up\s*-\s*/', '', $testimonial['game']) }}</span>
-                  </div>
-                  <div class="home-testi-rating" aria-label="Rating {{ $testimonial['rating'] }} dari 5">
-                    <span aria-hidden="true">★★★★★</span><span>{{ number_format((float) $testimonial['rating'], 1) }}</span>
-                  </div>
+        <div class="home-testi-lane-group">
+          @foreach($homeTestimonials as $testimonial)
+            <article class="home-testi-card">
+              <div class="home-testi-card-head">
+                <div class="home-testi-brand">
+                  <span>{{ preg_replace('/^Top Up\s*-\s*/', '', $testimonial['game']) }}</span>
                 </div>
-                <p class="home-testi-quote">{{ $testimonial['quote'] }}</p>
-                <div class="home-testi-user">
-                  <x-user-avatar :name="$testimonial['name']" :src="$testimonial['avatar_url'] ?? null" :size="37" class="home-testi-avatar" />
-                  <div>
-                    <div class="home-testi-name">{{ $testimonial['name'] }}</div>
-                    <div class="home-testi-game">Pembeli terverifikasi</div>
-                  </div>
+                <div class="home-testi-rating" aria-label="Rating {{ $testimonial['rating'] }} dari 5">
+                  <span aria-hidden="true">★★★★★</span><span>{{ number_format((float) $testimonial['rating'], 1) }}</span>
                 </div>
-              </article>
-            @endforeach
-          </div>
-        @endforeach
+              </div>
+              <p class="home-testi-quote">{{ $testimonial['quote'] }}</p>
+              <div class="home-testi-user">
+                <x-user-avatar :name="$testimonial['name']" :src="$testimonial['avatar_url'] ?? null" :size="37" class="home-testi-avatar" />
+                <div>
+                  <div class="home-testi-name">{{ $testimonial['name'] }}</div>
+                  <div class="home-testi-game">Pembeli terverifikasi</div>
+                </div>
+              </div>
+            </article>
+          @endforeach
+        </div>
       </div>
     </div>
   </div>

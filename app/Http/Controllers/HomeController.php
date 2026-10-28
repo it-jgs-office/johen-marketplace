@@ -17,6 +17,7 @@ use App\Models\SiteSetting;
 use App\Services\GameAccountService;
 use App\Services\DokuService;
 use App\Services\JbaApiClient;
+use App\Services\ArticleApiClient;
 use App\Services\PaymentGatewayService;
 use App\Services\XenditService;
 use Carbon\Carbon;
@@ -265,7 +266,9 @@ class HomeController extends Controller
             ->take(6)
             ->values();
 
-        return view('home', compact('brands', 'flashDeals', 'latestAccountStock', 'popularTopupGames', 'homeTestimonials'));
+        $latestArticles = app(ArticleApiClient::class)->latest(4);
+
+        return view('home', compact('brands', 'flashDeals', 'latestAccountStock', 'popularTopupGames', 'homeTestimonials', 'latestArticles'));
     }
 
     public function getApiProducts(Request $request)
@@ -290,6 +293,7 @@ class HomeController extends Controller
         abort_unless($brand->is_active && $brand->catalog_group === 'game', 404);
 
         $isMobileLegends = str_starts_with(mb_strtolower($brand->name), 'mobile legends');
+        $accountCheckEnabled = app(GameAccountService::class)->supportsRealtimeCheck($brand->name);
 
         $products = $this->activeGameProductsQuery()
             ->whereRaw('LOWER(brand) = ?', [mb_strtolower($brand->name)])
@@ -313,12 +317,13 @@ class HomeController extends Controller
         $paymentMethods = PaymentMethod::where('is_active', true)->get();
 
         $paymentMethods = app(PaymentGatewayService::class)->filterAvailableMethods($paymentMethods);
+        $gatewayName = app(PaymentGatewayService::class)->providerLabel();
 
         $pointBalance = Auth::guard('web')->check()
             ? app(\App\Services\BalanceService::class)->balanceFor(Auth::guard('web')->id())
             : 0;
 
-        return view('game-detail', compact('brand', 'products', 'paymentMethods', 'flashDeals', 'isMobileLegends', 'pointBalance'));
+        return view('game-detail', compact('brand', 'products', 'paymentMethods', 'gatewayName', 'flashDeals', 'isMobileLegends', 'accountCheckEnabled', 'pointBalance'));
     }
 
     public function searchBrands(Request $request)
@@ -550,12 +555,35 @@ class HomeController extends Controller
                 'timestamp' => $order->created_at?->getTimestamp() ?? 0,
             ]);
 
+        $recentAccountOrders = AccountOrder::query()
+            ->with('listing:id,product_name,game')
+            ->select(['id', 'account_listing_id', 'order_ref', 'customer_phone', 'total_price', 'status', 'created_at'])
+            ->latest('created_at')
+            ->latest('id')
+            ->limit(10)
+            ->get()
+            ->map(fn (AccountOrder $order) => [
+                'type' => 'account',
+                'reference' => static::maskPublicTransactionReference($order->order_ref, 'JOHEN-AKUN-'.$order->id),
+                'product' => $order->listing?->product_name ?: 'Stock Akun',
+                'game' => $order->listing?->game ?: 'Stock Akun',
+                'phone' => $order->customer_phone
+                    ? static::maskPublicTransactionReference($order->customer_phone, '-')
+                    : '—',
+                'total' => (float) $order->total_price,
+                'status' => $order->status,
+                'time' => $order->created_at?->translatedFormat('d M Y, H:i').' WIB',
+                'table_time' => $order->created_at?->format('d-m-Y H:i:s'),
+                'timestamp' => $order->created_at?->getTimestamp() ?? 0,
+            ]);
+
         $recentTransactions = $recentTopups
+            ->concat($recentAccountOrders)
             ->sortByDesc('timestamp')
             ->take(10)
             ->values();
 
-        return view('check-transaction', compact('recentTopups', 'recentTransactions'));
+        return view('check-transaction', compact('recentTopups', 'recentAccountOrders', 'recentTransactions'));
     }
 
     private static function maskPublicTransactionReference(?string $reference, string $fallback): string
@@ -775,7 +803,7 @@ class HomeController extends Controller
     }
 
     /**
-     * Pesanan Saya untuk pembelian akun (Jual Beli Akun).
+     * Pesanan Saya untuk pembelian akun (Stock Akun).
      */
     public function jualBeliAkunOrders()
     {
@@ -826,10 +854,11 @@ class HomeController extends Controller
         $paymentMethods = PaymentMethod::where('is_active', true)->get();
 
         $paymentMethods = app(PaymentGatewayService::class)->filterAvailableMethods($paymentMethods);
+        $gatewayName = app(PaymentGatewayService::class)->providerLabel();
 
         $pointBalance = auth()->check() ? app(\App\Services\BalanceService::class)->balanceFor(auth()->id()) : 0;
 
-        return view('pages.jual-beli-akun-checkout', compact('listing', 'paymentMethods', 'pointBalance'));
+        return view('pages.jual-beli-akun-checkout', compact('listing', 'paymentMethods', 'gatewayName', 'pointBalance'));
     }
 
     public function jualBeliAkunEmailTest(Request $request)
@@ -954,22 +983,15 @@ class HomeController extends Controller
             ]);
 
             if (! $charged) {
-                // QRIS: fallback ke QR statis (gambar QR milik toko).
-                if ($method === 'qris' && ! $gateway->isDoku()) {
-                    Log::warning('QRIS dynamic account order gagal, fallback statis', [
-                        'order_ref' => $order->order_ref,
-                    ]);
-                } else {
-                    $message = $gateway->lastChargeError()
-                        ?: 'Halaman pembayaran DOKU gagal dibuat. Silakan coba lagi.';
+                $message = $gateway->lastChargeError()
+                    ?: 'Halaman pembayaran Midtrans gagal dibuat. Silakan coba lagi.';
 
-                    app(\App\Services\BalanceService::class)->restorePoints($order, 'Pembuatan pembayaran gagal; Johen Point dikembalikan');
-                    $order->delete();
+                app(\App\Services\BalanceService::class)->restorePoints($order, 'Pembuatan pembayaran gagal; Johen Point dikembalikan');
+                $order->delete();
 
-                    return redirect()->route('jual-beli-akun.checkout', $listing)
-                        ->with('error', $message)
-                        ->withInput();
-                }
+                return redirect()->route('jual-beli-akun.checkout', $listing)
+                    ->with('error', $message)
+                    ->withInput();
             }
         }
 
@@ -1059,6 +1081,24 @@ class HomeController extends Controller
      * Saat lunas → sukses otomatis + listing ditandai terjual.
      */
     public function jualBeliAkunPaymentStatus(AccountOrder $accountOrder)
+    {
+        if ($accountOrder->status === 'processing' && ! $accountOrder->credentials_email_sent_at) {
+            app(\App\Services\AccountDeliveryService::class)->deliver($accountOrder);
+            $accountOrder->refresh();
+        }
+
+        if ($accountOrder->status === 'pending') {
+            app(\App\Services\MidtransPaymentService::class)->sync($accountOrder);
+            $accountOrder->refresh();
+        }
+
+        return response()->json([
+            'status' => $accountOrder->status,
+            'payment_status' => data_get($accountOrder->gateway_extra, 'payment_status', 'PENDING'),
+        ])->header('Cache-Control', 'no-store, private');
+    }
+
+    public function jualBeliAkunPaymentStatusLegacy(AccountOrder $accountOrder)
     {
         if ($accountOrder->status === 'processing' && ! $accountOrder->credentials_email_sent_at) {
             app(\App\Services\AccountDeliveryService::class)->deliver($accountOrder);
@@ -1172,9 +1212,9 @@ class HomeController extends Controller
             ['name' => 'User Steam Wallet', 'game' => 'Top Up - Steam Wallet', 'avatar' => '🕹️', 'rating' => 5, 'layanan' => 'topup', 'quote' => 'Saldo Steam masuk dalam hitungan menit. Harganya bersahabat, prosesnya juga transparan dengan bukti pengisian yang dikirim.', 'date' => $fmt((clone $now)->subDays(4))],
             ['name' => 'User Call of Duty', 'game' => 'Top Up - Call of Duty Mobile', 'avatar' => '🔫', 'rating' => 4, 'layanan' => 'topup', 'quote' => 'CP CODM langsung nambah setelah bayar. Proses cepat tanpa ribet, selalu jadi andalan buat top up mingguan.', 'date' => $fmt((clone $now)->subWeek())],
             ['name' => 'User Mobile Legends', 'game' => 'Joki Rank Mobile Legends', 'avatar' => '🏆', 'rating' => 5, 'layanan' => 'joki', 'quote' => 'Jasa joki rank MLBB profesional banget. Dari Legend ke Mythic dalam 3 hari, aman, fast respon, dan harganya worth it!', 'date' => $fmt((clone $now)->subWeeks(2))],
-            ['name' => 'User Free Fire', 'game' => 'Jual Akun - Free Fire', 'avatar' => '🙂', 'rating' => 5, 'layanan' => 'jual-beli-akun', 'quote' => 'Beli akun Free Fire di sini aman dan terpercaya. Akun sesuai deskripsi, harga reasonable, dan proses transaksinya jelas. Recommended buat yang cari akun second.', 'date' => $fmt((clone $now)->subDays(3))],
-            ['name' => 'User Mobile Legends', 'game' => 'Jual Akun - Mobile Legends', 'avatar' => '😄', 'rating' => 5, 'layanan' => 'jual-beli-akun', 'quote' => 'Jual akun MLBB saya laku dalam 2 hari. Admin fast respon dan membantu proses negosiasi dengan pembeli. Sangat membantu!', 'date' => $fmt((clone $now)->subDays(6))],
-            ['name' => 'User PUBG Mobile', 'game' => 'Jual Akun - PUBG Mobile', 'avatar' => '🎮', 'rating' => 5, 'layanan' => 'jual-beli-akun', 'quote' => 'Pengalaman jual akun PUBG pertama kali dan ternyata gampang. Admin menjelaskan prosedur dengan jelas. Pembayaran cepat cair.', 'date' => $fmt((clone $now)->subDays(10))],
+            ['name' => 'User Free Fire', 'game' => 'Stock Akun - Free Fire', 'avatar' => '🙂', 'rating' => 5, 'layanan' => 'jual-beli-akun', 'quote' => 'Beli akun Free Fire di sini aman dan terpercaya. Akun sesuai deskripsi, harga reasonable, dan proses transaksinya jelas. Recommended buat yang cari akun second.', 'date' => $fmt((clone $now)->subDays(3))],
+            ['name' => 'User Mobile Legends', 'game' => 'Stock Akun - Mobile Legends', 'avatar' => '😄', 'rating' => 5, 'layanan' => 'jual-beli-akun', 'quote' => 'Stock akun MLBB saya laku dalam 2 hari. Admin fast respon dan membantu proses negosiasi dengan pembeli. Sangat membantu!', 'date' => $fmt((clone $now)->subDays(6))],
+            ['name' => 'User PUBG Mobile', 'game' => 'Stock Akun - PUBG Mobile', 'avatar' => '🎮', 'rating' => 5, 'layanan' => 'jual-beli-akun', 'quote' => 'Pengalaman stock akun PUBG pertama kali dan ternyata gampang. Admin menjelaskan prosedur dengan jelas. Pembayaran cepat cair.', 'date' => $fmt((clone $now)->subDays(10))],
         ];
     }
 
@@ -1191,7 +1231,7 @@ class HomeController extends Controller
                 $name = $r->user?->name
                     ?: ($r->email ? str($r->email)->before('@')->toString() : 'User '.($r->game ?: 'Johen'));
                 $serviceType = $r->service_type ?: 'topup';
-                $gamePrefix = $serviceType === 'jual-beli-akun' ? 'Jual Akun - ' : 'Top Up - ';
+                $gamePrefix = $serviceType === 'jual-beli-akun' ? 'Stock Akun - ' : 'Top Up - ';
 
                 return [
                     'name' => $name,

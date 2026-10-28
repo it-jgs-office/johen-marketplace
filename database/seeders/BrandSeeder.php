@@ -40,6 +40,10 @@ class BrandSeeder extends Seeder
 
         $this->seedTopupCardImages();
         $this->seedTopupCharacterImages();
+
+        Brand::query()
+            ->whereRaw('LOWER(name) = ?', ['magic chess'])
+            ->update(['requires_zone_id' => true]);
     }
 
     /**

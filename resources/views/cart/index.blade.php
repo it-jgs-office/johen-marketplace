@@ -1,351 +1,63 @@
 @extends('layouts.topup')
 
-@section('title', 'Keranjang Saya - ' . config('app.name'))
+@section('title', 'Keranjang Akun - ' . config('app.name'))
 
 @section('content')
 <style>
-.cart-page{width:100%;max-width:var(--layout-max);margin:0 auto;padding:2.5rem var(--layout-gutter) 5rem;}
-
-.cart-head{display:flex;align-items:center;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1.75rem;}
-.cart-head h1{font-family:var(--font-display);font-size:1.6rem;font-weight:800;color:var(--text);}
-.cart-head p{font-size:.85rem;color:var(--text-mute);margin-top:.25rem;}
-.cart-clear{background:none;border:none;color:var(--text-mute);font-size:.8rem;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:3px;}
-.cart-clear:hover{color:#f87171;}
-
-.cart-list{display:flex;flex-direction:column;gap:.9rem;margin-bottom:1.5rem;}
-
-.cart-item{display:flex;gap:1rem;align-items:center;padding:1rem 1.1rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);}
-.cart-item.cart-item-out{opacity:.55;}
-
-.cart-thumb{width:58px;height:58px;flex-shrink:0;border-radius:var(--radius-sm);background:var(--bg-soft);border:1px solid var(--border);overflow:hidden;display:flex;align-items:center;justify-content:center;}
-.cart-thumb img{width:100%;height:100%;object-fit:contain;}
-
-.cart-body{flex:1;min-width:0;}
-.cart-brand{font-size:.7rem;color:var(--text-mute);text-transform:uppercase;letter-spacing:.04em;}
-.cart-name{font-weight:600;color:var(--text);font-size:.95rem;margin-top:.1rem;line-height:1.3;}
-.cart-note{font-size:.75rem;color:var(--text-mute);margin-top:.25rem;}
-.cart-note.cart-note-warn{color:#fbbf24;}
-
-.cart-side{display:flex;align-items:center;gap:1rem;flex-shrink:0;}
-.cart-price{font-family:var(--font-display);font-weight:700;color:var(--text);font-size:1rem;white-space:nowrap;}
-.cart-old{display:block;font-size:.7rem;color:var(--text-mute);text-decoration:line-through;}
-
-.cart-qty{display:flex;align-items:center;gap:.15rem;background:var(--bg-soft);border:1px solid var(--border);border-radius:999px;padding:.15rem;}
-.cart-qty button{width:26px;height:26px;border-radius:50%;border:none;background:transparent;color:var(--text-dim);font-size:1rem;cursor:pointer;line-height:1;}
-.cart-qty button:hover:not(:disabled){background:var(--purple);color:#fff;}
-.cart-qty button:disabled{opacity:.35;cursor:not-allowed;}
-.cart-qty span{min-width:26px;text-align:center;font-size:.85rem;font-weight:600;color:var(--text);}
-
-.cart-remove{background:none;border:none;color:var(--text-mute);cursor:pointer;font-size:.72rem;text-decoration:underline;text-underline-offset:3px;font-family:inherit;padding:.2rem;}
-.cart-remove:hover{color:#f87171;}
-
-.cart-foot{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-md);padding:1.25rem 1.4rem;}
-.cart-line{display:flex;justify-content:space-between;font-size:.87rem;color:var(--text-dim);padding:.4rem 0;}
-.cart-line strong{color:var(--text);font-weight:600;}
-.cart-total{display:flex;justify-content:space-between;align-items:center;border-top:1px solid var(--border);margin-top:.7rem;padding-top:.9rem;}
-.cart-total span{font-weight:700;font-size:.9rem;color:var(--text);}
-.cart-total strong{font-family:var(--font-display);font-weight:800;font-size:1.35rem;color:var(--gold);}
-
-.cart-warn{display:flex;gap:.5rem;align-items:flex-start;font-size:.78rem;color:#fbbf24;background:color-mix(in srgb,#fbbf24 10%,transparent);border:1px solid color-mix(in srgb,#fbbf24 25%,transparent);border-radius:var(--radius-sm);padding:.6rem .8rem;margin-top:1rem;}
-
-.cart-empty{text-align:center;padding:4rem 1.5rem;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);}
-.cart-empty-icon{font-size:2.6rem;margin-bottom:.75rem;}
-.cart-empty h2{font-family:var(--font-display);font-size:1.2rem;font-weight:700;color:var(--text);margin-bottom:.4rem;}
-.cart-empty p{color:var(--text-mute);font-size:.87rem;margin-bottom:1.5rem;}
-
-/* Aturan display di atas lebih kuat daripada atribut hidden bawaan browser. */
-.cart-warn[hidden],.cart-old[hidden],.cart-note[hidden]{display:none;}
-
-/* Tombol lanjut checkout aktif/nonaktif mengikuti state keranjang. */
-.btn-disabled{opacity:.5;cursor:not-allowed;}
-
-@media(max-width:640px){
-    .cart-item{flex-wrap:wrap;}
-    .cart-body{flex:1 1 100%;order:2;}
-    .cart-side{flex:1 1 100%;order:3;justify-content:space-between;}
-}
+.cart-page{width:100%;max-width:var(--layout-max);margin:0 auto;padding:clamp(1.5rem,3vw,3rem) var(--layout-gutter) 5rem}.cart-head{display:flex;align-items:flex-end;justify-content:space-between;gap:1rem;margin-bottom:1.5rem;padding-bottom:1.1rem;border-bottom:1px solid var(--border)}.cart-eyebrow{display:block;color:var(--accent);font-size:.68rem;font-weight:800;letter-spacing:.12em}.cart-head h1{margin:.35rem 0 0;font-family:var(--font-display);font-size:clamp(1.65rem,3vw,2.25rem);letter-spacing:-.04em}.cart-head p{margin:.35rem 0 0;color:var(--text-mute);font-size:.86rem}.cart-count{display:inline-grid;min-width:2.2rem;min-height:2.2rem;place-items:center;border:1px solid color-mix(in srgb,var(--accent) 38%,var(--border));border-radius:999px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent);font-size:.78rem;font-weight:800}.cart-clear,.cart-remove{border:0;background:none;color:var(--text-mute);font:inherit;font-size:.8rem;cursor:pointer;text-decoration:underline;text-underline-offset:3px}.cart-clear:hover,.cart-remove:hover{color:#f87171}.cart-layout{display:grid;grid-template-columns:minmax(0,1fr) minmax(245px,300px);gap:1.25rem;align-items:start}.cart-list{display:grid;gap:.8rem}.cart-item{display:grid;grid-template-columns:82px minmax(0,1fr) auto;align-items:center;gap:1rem;padding:.9rem;border:1px solid color-mix(in srgb,var(--accent) 14%,var(--border));border-radius:18px;background:linear-gradient(110deg,color-mix(in srgb,var(--surface) 95%,var(--accent) 5%),var(--surface));box-shadow:0 14px 28px -26px rgba(0,0,0,.9);transition:transform .2s ease,border-color .2s ease}.cart-item:hover{transform:translateY(-2px);border-color:color-mix(in srgb,var(--accent) 45%,var(--border))}.cart-item.cart-item-out{opacity:.58}.cart-thumb{width:82px;height:82px;overflow:hidden;border:1px solid var(--border);border-radius:13px;background:var(--bg-soft)}.cart-thumb img{width:100%;height:100%;object-fit:cover}.cart-body{min-width:0}.cart-brand{color:var(--accent);font-size:.67rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase}.cart-name{margin-top:.3rem;font-size:.96rem;font-weight:700;line-height:1.4}.cart-note{margin-top:.4rem;color:#fbbf24;font-size:.75rem;line-height:1.45}.cart-side{display:grid;justify-items:end;gap:.55rem}.cart-price{font-family:var(--font-display);font-size:1rem;font-weight:800;white-space:nowrap}.cart-actions{display:flex;align-items:center;gap:.7rem}.cart-actions .btn{min-height:36px;padding:.55rem .8rem;font-size:.74rem}.cart-summary{position:sticky;top:88px;padding:1.15rem;border:1px solid color-mix(in srgb,var(--accent) 26%,var(--border));border-radius:18px;background:linear-gradient(145deg,color-mix(in srgb,var(--surface) 89%,var(--accent) 11%),var(--surface));box-shadow:0 20px 35px -30px rgba(0,0,0,.9)}.cart-summary-label{color:var(--text-mute);font-size:.72rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}.cart-summary-total{margin:.35rem 0 .9rem;color:var(--accent);font-family:var(--font-display);font-size:1.5rem;font-weight:800}.cart-summary-line{display:flex;justify-content:space-between;gap:1rem;padding:.7rem 0;border-top:1px solid var(--border);color:var(--text-dim);font-size:.8rem}.cart-summary-line strong{color:var(--text);font-weight:700}.cart-summary-note{margin:1rem 0 0;color:var(--text-mute);font-size:.72rem;line-height:1.55}.cart-empty{max-width:620px;margin:2rem auto;text-align:center;padding:clamp(2.5rem,7vw,4.5rem) 1.5rem;border:1px solid color-mix(in srgb,var(--accent) 22%,var(--border));border-radius:22px;background:radial-gradient(circle at 50% 0,color-mix(in srgb,var(--accent) 13%,transparent),transparent 45%),var(--surface)}.cart-empty-icon{display:grid;width:58px;height:58px;margin:0 auto 1rem;place-items:center;border-radius:18px;background:color-mix(in srgb,var(--accent) 15%,transparent);font-size:1.7rem}.cart-empty h2{margin-bottom:.45rem;font-family:var(--font-display);font-size:1.3rem}.cart-empty p{max-width:330px;margin:0 auto 1.4rem;color:var(--text-mute);font-size:.86rem;line-height:1.55}@media(max-width:760px){.cart-page{padding-bottom:calc(var(--mobile-nav-height,68px) + 2rem)}.cart-head{align-items:center}.cart-layout{grid-template-columns:1fr}.cart-summary{position:static;order:-1}.cart-item{grid-template-columns:70px minmax(0,1fr);gap:.8rem}.cart-thumb{width:70px;height:70px}.cart-side{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding-top:.75rem;border-top:1px solid var(--border)}.cart-actions{gap:1rem}.cart-summary-total{font-size:1.35rem}}@media(max-width:420px){.cart-head{align-items:flex-start;flex-direction:column}.cart-count{position:absolute;right:0;top:.2rem}.cart-head>div{position:relative;width:100%;padding-right:3rem}.cart-actions .btn{padding:.55rem .65rem}.cart-name{font-size:.9rem}}@media(prefers-reduced-motion:reduce){.cart-item{transition:none}}
 </style>
 
 <div class="cart-page">
-    @if(session('error'))
-        <div class="cart-warn" style="margin-bottom:1rem;">{{ session('error') }}</div>
-    @endif
+  @if(session('error'))<p class="cart-note" style="margin-bottom:1rem">{{ session('error') }}</p>@endif
 
-    {{-- Kedua blok ini selalu dirender supaya halaman bisa langsung berganti ke
-         tampilan "keranjang kosong" tanpa reload setelah item terakhir dihapus. --}}
-    <div class="cart-empty" data-role="cart-empty" @if(! $items->isEmpty()) hidden @endif>
-        <div class="cart-empty-icon">&#128722;</div>
-        <h2>Keranjang kamu masih kosong</h2>
-        <p>Pilih nominal di halaman game lalu tekan &ldquo;Tambah ke Keranjang&rdquo;.</p>
-        <a href="{{ route('home') }}#topup" class="btn btn-solid">Mulai Top Up</a>
+  @if($items->isEmpty())
+    <div class="cart-empty">
+      <div class="cart-empty-icon">&#128722;</div>
+      <h2>Keranjang akunmu masih kosong</h2>
+      <p>Pilih akun game yang ingin dibeli, lalu tambahkan ke keranjang.</p>
+      <a href="{{ route('jual-beli-akun') }}" class="btn btn-solid">Cari Stock Akun</a>
+    </div>
+  @else
+    <div class="cart-head">
+      <div>
+        <span class="cart-eyebrow">STOCK AKUN</span>
+        <h1>Keranjang Akun</h1>
+        <p>Siap checkout akun pilihanmu.</p>
+        <span class="cart-count" aria-label="{{ $count }} akun di keranjang">{{ $count }}</span>
+      </div>
+      <form method="POST" action="{{ route('cart.clear') }}">@csrf<button type="submit" class="cart-clear">Kosongkan keranjang</button></form>
     </div>
 
-    <div data-role="cart-filled" @if($items->isEmpty()) hidden @endif>
-        <div class="cart-head">
-            <div>
-                <h1>Keranjang Saya</h1>
-                <p><span data-role="cart-summary-qty">{{ $count }}</span> item di keranjang</p>
+    <div class="cart-layout">
+      <div class="cart-list">
+        @foreach($items as $item)
+          @php($listing = $item->listing)
+          <article class="cart-item {{ $item->unavailable ? 'cart-item-out' : '' }}">
+            <div class="cart-thumb">@if($listing?->photo_url)<img src="{{ $listing->photo_url }}" alt="{{ $listing->product_name }}" loading="lazy">@endif</div>
+            <div class="cart-body">
+              <div class="cart-brand">{{ $listing?->game ?? 'Akun tidak tersedia' }}</div>
+              <div class="cart-name">{{ $listing?->product_name ?? 'Listing tidak ditemukan' }}</div>
+              @if($item->unavailable)<div class="cart-note">Akun ini sudah tidak tersedia. Hapus dari keranjang.</div>@endif
             </div>
-            <form method="POST" action="{{ route('cart.clear') }}" class="js-clear-form">
-                @csrf
-                <button type="submit" class="cart-clear">Kosongkan</button>
-            </form>
-        </div>
-
-        <div class="cart-list" id="cartList">
-            @foreach($items as $item)
-                @php
-                    $unit = $item->line_total > 0 && $item->quantity > 0
-                        ? (int) round($item->line_total / $item->quantity)
-                        : (int) $item->product->selling_price;
-                    $maxQty = \App\Services\CartService::MAX_QTY;
-                    $qtyLimit = (int) $item->product->stock > 0
-                        ? min($maxQty, (int) $item->product->stock)
-                        : $maxQty;
-                @endphp
-                <div class="cart-item {{ $item->unavailable ? 'cart-item-out' : '' }}" data-item="{{ $item->id }}" data-max="{{ $item->product->stock }}">
-                    <div class="cart-thumb">
-                        @if($item->product->photo_url)
-                            <img src="{{ $item->product->photo_url }}" alt="{{ $item->product->product_name }}" loading="lazy">
-                        @endif
-                    </div>
-
-                    <div class="cart-body">
-                        <div class="cart-brand">{{ $item->product->brand }}</div>
-                        <div class="cart-name">{{ $item->product->product_name }}</div>
-                        <div class="cart-note cart-note-warn" data-role="row-out-note" @if(! $item->unavailable) hidden @endif>Stok habis &mdash; hapus dulu sebelum checkout.</div>
-                        <div class="cart-note" data-role="row-flash-note" @if($item->unavailable || ! $item->flash_deal) hidden @endif>&#9889; Harga flash aktif, Lock saat checkout.</div>
-                    </div>
-
-                    <div class="cart-side">
-                        @if(! $item->unavailable)
-                            <div class="cart-qty">
-                                <button type="button" data-act="dec" aria-label="Kurangi">&minus;</button>
-                                <span data-role="qty">{{ $item->quantity }}</span>
-                                <button type="button" data-act="inc" aria-label="Tambah" @if($item->quantity >= $qtyLimit) disabled @endif>+</button>
-                            </div>
-                        @endif
-
-                        <div class="cart-price">
-                            <span data-role="line-total">@if($item->unavailable)&mdash;@else Rp {{ number_format($item->line_total, 0, ',', '.') }}@endif</span>
-                            @if(! $item->unavailable && $item->original_price > $unit)
-                                <span class="cart-old" data-role="line-old">Rp {{ number_format($item->original_price * $item->quantity, 0, ',', '.') }}</span>
-                            @endif
-                        </div>
-
-                        <form method="POST" action="{{ route('cart.destroy', $item->id) }}" class="js-remove-form">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit" class="cart-remove">Hapus</button>
-                        </form>
-                    </div>
-                </div>
-            @endforeach
-        </div>
-
-        <div class="cart-foot">
-            <div class="cart-line">
-                <span>Subtotal (<span data-role="cart-payable-qty">{{ $totalQty }}</span> item)</span>
-                <strong data-role="cart-subtotal">Rp {{ number_format($subtotal, 0, ',', '.') }}</strong>
+            <div class="cart-side">
+              <span class="cart-price">{{ $item->unavailable ? '—' : 'Rp '.number_format($item->line_total, 0, ',', '.') }}</span>
+              <div class="cart-actions">
+                @if(! $item->unavailable)<a href="{{ route('jual-beli-akun.checkout', $listing->id) }}" class="btn btn-solid">Checkout</a>@endif
+                <form method="POST" action="{{ route('cart.destroy', $item->id) }}">@csrf @method('DELETE')<button type="submit" class="cart-remove">Hapus</button></form>
+              </div>
             </div>
-            <div class="cart-total">
-                <span>Total</span>
-                <strong data-role="cart-total">Rp {{ number_format($subtotal, 0, ',', '.') }}</strong>
-            </div>
+          </article>
+        @endforeach
+      </div>
 
-            <div class="cart-warn" data-role="cart-unavailable" @if($unavailable < 1) hidden @endif>
-                <span>&#9888;</span>
-                <span><span data-role="cart-unavailable-count">{{ $unavailable }}</span> item tidak bisa dibayar karena stoknya habis. Hapus dulu.</span>
-            </div>
-
-            <div class="cart-warn">
-                <span>&#8505;</span>
-                <span>Harga flash &amp; ketersediaan stok divalidasi ulang saat kamu menekan tombol checkout.</span>
-            </div>
-
-            <a href="{{ $unavailable > 0 ? '#' : route('checkout.create') }}"
-               class="btn btn-solid btn-full btn-lg {{ $unavailable > 0 ? 'btn-disabled' : '' }}"
-               style="margin-top:1.1rem;"
-               data-role="cart-checkout-btn"
-               data-checkout-url="{{ route('checkout.create') }}">
-                Lanjut ke Checkout
-            </a>
-        </div>
+      <aside class="cart-summary" aria-label="Ringkasan keranjang">
+        <div class="cart-summary-label">Nilai keranjang</div>
+        <div class="cart-summary-total">Rp {{ number_format($subtotal, 0, ',', '.') }}</div>
+        <div class="cart-summary-line"><span>Akun tersedia</span><strong>{{ $totalQty }} akun</strong></div>
+        @if($unavailable > 0)<div class="cart-summary-line"><span>Tidak tersedia</span><strong>{{ $unavailable }} akun</strong></div>@endif
+        <p class="cart-summary-note">Setiap akun memiliki proses verifikasi dan pembayaran tersendiri.</p>
+      </aside>
     </div>
+  @endif
 </div>
-
-@push('scripts')
-<script>
-(function () {
-    var list = document.getElementById('cartList');
-    if (!list) return;
-
-    var csrf = (document.querySelector('meta[name="csrf-token"]') || {}).content || '';
-
-    function send(url, method, body) {
-        return fetch(url, {
-            method: method,
-            headers: {
-                'X-CSRF-TOKEN': csrf,
-                'X-Requested-With': 'XMLHttpRequest',
-                'Accept': 'application/json'
-            },
-            body: body
-        }).then(function (r) {
-            // Endpoint selalu JSON, tapi tetap aman bila server balas error HTML.
-            return r.json().catch(function () { return {}; }).then(function (data) {
-                if (!r.ok && !data.success) {
-                    data.success = false;
-                    data.message = data.message || 'Permintaan gagal (' + r.status + ')';
-                }
-                return data;
-            });
-        });
-    }
-
-    // Tombol "+" mati saat qty sudah menyentuh batas stok, tombol "Hapus"
-    // hanya dinonaktifkan sementara request berjalan.
-    function syncRowButtons(row) {
-        var qtyEl = row.querySelector('[data-role="qty"]');
-        var qty = parseInt(qtyEl ? qtyEl.textContent : '1', 10) || 1;
-        var max = parseInt(row.dataset.max || '0', 10);
-        var limit = max > 0 ? Math.min(max, 99) : 99;
-
-        row.querySelectorAll('.cart-qty button').forEach(function (b) {
-            b.disabled = b.dataset.act === 'inc' && qty >= limit;
-        });
-    }
-
-    function setBusy(row, busy) {
-        if (!row) return;
-
-        var removeBtn = row.querySelector('.cart-remove');
-        if (removeBtn) removeBtn.disabled = busy;
-
-        if (busy) {
-            row.querySelectorAll('.cart-qty button').forEach(function (b) { b.disabled = true; });
-        } else {
-            syncRowButtons(row);
-        }
-    }
-
-    // Terapkan angka dari server: badge navbar, jumlah item, subtotal, total,
-    // dan status stok per baris. Tidak ada reload halaman.
-    function paint(data) {
-        if (typeof applyCartState === 'function') applyCartState(data.state);
-    }
-
-    function changeQty(row, next) {
-        var id = row.dataset.item;
-        var max = parseInt(row.dataset.max || '0', 10);
-        next = Math.max(1, Math.min(next, max > 0 ? max : 99));
-
-        var span = row.querySelector('[data-role="qty"]');
-        var previous = parseInt(span ? span.textContent : '1', 10) || 1;
-        if (next === previous) return;
-
-        // Tampilkan angka baru duluan supaya terasa responsif, lalu kembalikan
-        // ke angka lama kalau server menolak (mis. stok habis di tengah).
-        if (span) span.textContent = next;
-
-        var fd = new FormData();
-        fd.append('quantity', next);
-        fd.append('_method', 'PATCH');
-
-        setBusy(row, true);
-
-        send('{{ url('/keranjang/item') }}/' + id, 'POST', fd)
-            .then(function (data) {
-                if (!data.success) {
-                    if (span) span.textContent = previous;
-                    showToast(data.message || 'Gagal memperbarui jumlah', true);
-                    return;
-                }
-                paint(data);
-            })
-            .catch(function (e) {
-                if (span) span.textContent = previous;
-                showToast('Gagal: ' + e.message, true);
-            })
-            .finally(function () { setBusy(row, false); });
-    }
-
-    list.addEventListener('click', function (e) {
-        var btn = e.target.closest('.cart-qty button');
-        if (!btn || btn.disabled) return;
-
-        var row = btn.closest('.cart-item');
-        var span = row.querySelector('[data-role="qty"]');
-        var current = parseInt(span.textContent, 10) || 1;
-
-        changeQty(row, btn.dataset.act === 'inc' ? current + 1 : current - 1);
-    });
-
-    // Hapus item tanpa reload halaman.
-    list.addEventListener('submit', function (e) {
-        var form = e.target.closest('.js-remove-form');
-        if (!form) return;
-
-        e.preventDefault();
-        if (!confirm('Hapus item ini dari keranjang?')) return;
-
-        var row = form.closest('.cart-item');
-        setBusy(row, true);
-
-        send(form.action, 'POST', new FormData(form))
-            .then(function (data) {
-                if (!data.success) { showToast(data.message || 'Gagal menghapus', true); setBusy(row, false); return; }
-                row.remove();
-                paint(data);
-            })
-            .catch(function (err) { showToast('Gagal: ' + err.message, true); setBusy(row, false); });
-    });
-
-    // Kosongkan keranjang tanpa reload: badge langsung jadi 0 dan tampilan
-    // "keranjang kosong" muncul otomatis.
-    var clearForm = document.querySelector('.js-clear-form');
-    if (clearForm) {
-        clearForm.addEventListener('submit', function (e) {
-            e.preventDefault();
-            if (!confirm('Kosongkan keranjang?')) return;
-
-            var btn = clearForm.querySelector('button');
-            if (btn) btn.disabled = true;
-
-            send(clearForm.action, 'POST', new FormData(clearForm))
-                .then(function (data) {
-                    if (!data.success) { showToast(data.message || 'Gagal mengosongkan keranjang', true); return; }
-                    list.innerHTML = '';
-                    paint(data);
-                    showToast(data.message || 'Keranjang dikosongkan.');
-                })
-                .catch(function (err) { showToast('Gagal: ' + err.message, true); })
-                .finally(function () { if (btn) btn.disabled = false; });
-        });
-    }
-
-    // Tombol lanjut ke checkout tetap dijaga ketika item stoknya habis baru
-    // muncul setelah halaman dimuat (mis. stok habis karena pembelian lain).
-    document.addEventListener('click', function (e) {
-        var btn = e.target.closest('[data-role="cart-checkout-btn"]');
-        if (!btn) return;
-
-        var state = window.__cartState;
-        var unavailable = state ? (parseInt(state.unavailable, 10) || 0) : 0;
-
-        if (unavailable > 0) {
-            e.preventDefault();
-            showToast('Hapus dulu item yang stoknya habis', true);
-            return;
-        }
-
-        // Arahkan ke URL checkout yang benar setelah state berubah.
-        if (btn.getAttribute('href') === '#') {
-            e.preventDefault();
-            window.location.href = btn.dataset.checkoutUrl;
-        }
-    });
-})();
-</script>
-@endpush
 @endsection

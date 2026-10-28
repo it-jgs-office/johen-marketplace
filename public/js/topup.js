@@ -541,8 +541,6 @@ if (testiTrack) {
   fillTestimonialLane(testiTrack, TESTIMONIALS);
 }
 
-// Each half of the track must cover the visible area before it is duplicated.
-// Otherwise short lists expose an empty tail on wide screens before looping.
 document.querySelectorAll('.home-testi-lane').forEach(lane => {
   const group = lane.querySelector('.home-testi-lane-group');
   const wrap = lane.closest('.home-testi-lane-wrap');
@@ -551,7 +549,7 @@ document.querySelectorAll('.home-testi-lane').forEach(lane => {
   const cards = Array.from(group.children).map(card => card.cloneNode(true));
   let lastWidth = 0;
 
-  function rebuildLane() {
+  function rebuildTestimonialMarquee() {
     const width = wrap.clientWidth;
     if (!width || width === lastWidth) return;
     lastWidth = width;
@@ -567,11 +565,11 @@ document.querySelectorAll('.home-testi-lane').forEach(lane => {
     lane.replaceChildren(group, copy);
   }
 
-  rebuildLane();
+  rebuildTestimonialMarquee();
   if (typeof ResizeObserver !== 'undefined') {
-    new ResizeObserver(rebuildLane).observe(wrap);
+    new ResizeObserver(rebuildTestimonialMarquee).observe(wrap);
   } else {
-    window.addEventListener('resize', rebuildLane);
+    window.addEventListener('resize', rebuildTestimonialMarquee);
   }
 });
 
@@ -606,10 +604,12 @@ function setCartBadge(count) {
   const value = Math.max(0, parseInt(count, 10) || 0);
   document.querySelectorAll('[data-role="cart-badge"]').forEach((badge) => {
     const wasHidden = badge.hasAttribute('hidden');
+    const previous = badge.dataset.cartCount;
     badge.textContent = value > 99 ? '99+' : String(value);
+    badge.dataset.cartCount = String(value);
     if (value > 0) {
       badge.removeAttribute('hidden');
-      if (wasHidden) {
+      if (wasHidden || previous !== String(value)) {
         badge.classList.remove('bump');
         void badge.offsetWidth;
         badge.classList.add('bump');

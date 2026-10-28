@@ -39,12 +39,16 @@ class OrderController extends Controller
         $paymentMethods = \App\Models\PaymentMethod::where('is_active', true)->get();
 
         $paymentMethods = $this->gateway->filterAvailableMethods($paymentMethods);
+        $gatewayName = $this->gateway->providerLabel();
         $requiresZoneId = str_starts_with(mb_strtolower($product->brand), 'mobile legends')
+            || str_starts_with(mb_strtolower($product->brand), 'magic chess')
             || (bool) Brand::where('name', $product->brand)->value('requires_zone_id');
+        $usesServerId = str_starts_with(mb_strtolower($product->brand), 'mobile legends')
+            || str_starts_with(mb_strtolower($product->brand), 'magic chess');
 
         $pointBalance = Auth::check() ? $this->balance->balanceFor(Auth::id()) : 0;
 
-        return view('orders.create', compact('product', 'paymentMethods', 'requiresZoneId', 'pointBalance'));
+        return view('orders.create', compact('product', 'paymentMethods', 'gatewayName', 'requiresZoneId', 'usesServerId', 'pointBalance'));
     }
 
     public function store(Request $request, GameAccountService $gameAccount)
@@ -88,7 +92,7 @@ class OrderController extends Controller
         }
 
         // Game yang membutuhkan Zone ID wajib mengisinya (divalidasi di server).
-        $brandRequiresZone = $isJoki || (str_starts_with(mb_strtolower($product->brand), 'mobile legends')
+        $brandRequiresZone = $isJoki || str_starts_with(mb_strtolower($product->brand), 'magic chess') || (str_starts_with(mb_strtolower($product->brand), 'mobile legends')
                 && str_ends_with(mb_strtolower($product->buyer_sku_code), '-idn'))
             || (bool) Brand::where('name', $product->brand)->value('requires_zone_id');
         $zoneId = $request->filled('zone_id') ? trim($request->zone_id) : null;

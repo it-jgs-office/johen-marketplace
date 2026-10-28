@@ -21,11 +21,11 @@
 </style>
 @endpush
 
-@section('title', 'Pesanan Akun')
+@section('title', 'Pesanan Stock Akun')
 
 @section('content')
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-    <h2 class="text-lg font-semibold">Pesanan Jual Beli Akun</h2>
+    <h2 class="text-lg font-semibold">Pesanan Stock Akun</h2>
     <span class="badge badge-neutral">{{ $orders->total() }} total</span>
 </div>
 
@@ -34,10 +34,6 @@
         <i class="fas fa-search search-icon"></i>
         <input type="text" name="search" value="{{ request('search') }}" class="input-field" placeholder="Cari no. pesanan, nama, akun..." style="padding-left:2.4rem">
     </div>
-    <select name="type" class="input-field" onchange="this.form.submit()">
-        <option value="topup" {{ request('type') === 'topup' ? 'selected' : '' }}>Top Up</option>
-        <option value="jual-beli" {{ request('type', 'jual-beli') === 'jual-beli' ? 'selected' : '' }}>Jual Beli Akun</option>
-    </select>
     <select name="status" class="input-field" onchange="this.form.submit()">
         <option value="all" {{ request('status') === 'all' || !request('status') ? 'selected' : '' }}>Semua Status</option>
         <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>

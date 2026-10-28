@@ -21,23 +21,19 @@
 </style>
 @endpush
 
-@section('title', 'Manajemen Pesanan')
+@section('title', $pageTitle)
 
 @section('content')
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
-    <h2 class="text-lg font-semibold">Semua Pesanan</h2>
+    <h2 class="text-lg font-semibold">{{ $pageTitle }}</h2>
     <span class="badge badge-neutral">{{ $orders->total() }} total</span>
 </div>
 
-<form method="GET" action="{{ route('admin.orders') }}" class="admin-filter-bar">
+<form method="GET" action="{{ route($ordersRoute) }}" class="admin-filter-bar">
     <div class="search-wrap">
         <i class="fas fa-search search-icon"></i>
         <input type="text" name="search" value="{{ request('search') }}" class="input-field" id="orderSearch" placeholder="Cari order ID, pelanggan, produk...">
     </div>
-    <select name="type" class="input-field" onchange="this.form.submit()">
-        <option value="topup" {{ request('type', 'topup') === 'topup' ? 'selected' : '' }}>Top Up</option>
-        <option value="jual-beli" {{ request('type') === 'jual-beli' ? 'selected' : '' }}>Jual Beli Akun</option>
-    </select>
     <select name="status" class="input-field" onchange="this.form.submit()">
         <option value="all" {{ request('status') === 'all' || !request('status') ? 'selected' : '' }}>Semua Status</option>
         <option value="pending" {{ request('status') === 'pending' ? 'selected' : '' }}>Pending</option>
@@ -52,7 +48,7 @@
     <input type="date" name="date_until" value="{{ request('date_until') }}" class="input-field" title="Tanggal akhir">
     <button type="submit" class="btn btn-primary"><i class="fas fa-filter"></i> Filter</button>
     @if(request()->hasAny(['search', 'status', 'date_from', 'date_until']))
-        <a href="{{ route('admin.orders') }}" class="btn btn-ghost">Reset</a>
+        <a href="{{ route($ordersRoute) }}" class="btn btn-ghost">Reset</a>
     @endif
 </form>
 

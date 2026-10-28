@@ -1,6 +1,6 @@
 @extends('layouts.topup')
 
-@section('title', 'Jual Beli Akun - ' . config('app.name'))
+@section('title', 'Stock Akun - ' . config('app.name'))
 
 @push('styles')
   @if($activeSlug && !empty($gameBackgrounds[$activeSlug]))
@@ -48,7 +48,7 @@
       @if(count($jbaBanners) > 1)<div class="hero-banner-dots" data-banner-dots aria-label="Pilih banner"></div>@endif
     @else
       <div class="hero-banner-empty">
-        <p style="color:var(--text-mute);font-size:.82rem">Tambahkan banner di Pengaturan → Hero Banner (Jual Beli Akun)</p>
+        <p style="color:var(--text-mute);font-size:.82rem">Tambahkan banner di Pengaturan → Hero Banner (Stock Akun)</p>
       </div>
     @endif
 
@@ -63,16 +63,18 @@
   </section>
 
   @if(!$activeSlug)
-  <div class="jba-transfer-info">
-    <div class="jba-transfer-icon">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 9v6"/><path d="M9 12h6"/></svg>
+  <section class="jba-transfer-marquee" aria-label="Informasi transfer">
+    <span class="jba-transfer-marquee-icon" aria-hidden="true">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 9v6"/><path d="M9 12h6"/></svg>
+    </span>
+    <div class="jba-transfer-marquee-viewport">
+      <div class="jba-transfer-marquee-track">
+        <p><strong>Informasi Transfer:</strong> Pembayaran hanya melalui transfer ke rekening <strong>BRI 114101707070565 a/n JOSIA HENDRICO SIMANUNGKALIT</strong>. Kami tidak pernah meminta transfer ke rekening lain.</p>
+        <p aria-hidden="true"><strong>Informasi Transfer:</strong> Pembayaran hanya melalui transfer ke rekening <strong>BRI 114101707070565 a/n JOSIA HENDRICO SIMANUNGKALIT</strong>. Kami tidak pernah meminta transfer ke rekening lain.</p>
+      </div>
     </div>
-    <div class="jba-transfer-text">
-      <strong>Informasi Transfer</strong>
-      <span>Pembayaran hanya melalui transfer ke rekening <strong>BRI 114101707070565 a/n JOSIA HENDRICO SIMANUNGKALIT</strong>. Kami tidak pernah meminta transfer ke rekening lain.</span>
-    </div>
-  </div>
-@endif
+  </section>
+  @endif
 
   @if($flashSaleBanners->isNotEmpty())
     <div class="jba-flash-sale">
@@ -135,7 +137,7 @@
 </script>
 
   <div class="jba-hero">
-    <h1>Jual Beli Akun Game</h1>
+    <h1>Stock Akun Game</h1>
     <p>Temukan akun game terbaik dengan harga terbaik. Semua akun sudah diverifikasi.</p>
   </div>
 
@@ -196,6 +198,15 @@
           </a>
         </div>
       </div>
+    </div>
+
+    <div class="jba-pubg-seller-filter" id="jbaPubgSellerFilter" style="display:none" aria-label="Pilih penjual PUBG">
+      <button type="button" class="jba-pubg-seller-card jba-is-active" data-pubg-seller="Johen PUBG" aria-pressed="true">
+        <img src="{{ asset('assets/icon/johen-pubg.png') }}" alt="Johen Gaming">
+      </button>
+      <button type="button" class="jba-pubg-seller-card" data-pubg-seller="Monkey PUBG" aria-pressed="false">
+        <img src="{{ asset('assets/icon/monkey-pubg.png') }}" alt="Monkey Bang Store">
+      </button>
     </div>
 
 <div class="jba-filter-bar" id="jbaFilterBar" style="display:none">
@@ -365,39 +376,55 @@
 .jba-page .games-grid {
   align-items: start;
 }
-.jba-transfer-info {
+@media (max-width: 640px) {
+  .jba-page .games-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: .75rem;
+  }
+}
+.jba-transfer-marquee {
   display: flex;
   align-items: center;
-  gap: .75rem;
-  padding: .85rem 1rem;
-  margin: 1.6rem 0 1.75rem;
-  border-radius: 12px;
-  background: linear-gradient(135deg, #5583ef, #2563eb);
-  border: 1px solid rgba(255, 255, 255, .18);
-  animation: jbaGlowPulse 2s ease-in-out infinite;
+  gap: .55rem;
+  min-height: 36px;
+  width: calc(100% + var(--layout-gutter) + var(--layout-gutter));
+  margin: 0 calc(0px - var(--layout-gutter)) 1rem;
+  padding: 0 .7rem;
+  overflow: hidden;
+  border: 1px solid #3b82f6;
+  border-radius: 0;
+  background: #2563eb;
+  color: #dbeafe;
 }
-@keyframes jbaGlowPulse {
-  0%, 100% { border-color: rgba(255, 255, 255, .18); box-shadow: 0 0 6px rgba(37, 99, 235, .25); }
-  50% { border-color: rgba(255, 255, 255, .55); box-shadow: 0 0 16px rgba(37, 99, 235, .5); }
+.jba-transfer-marquee-icon {
+  display: grid;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 6px;
+  background: #1d4ed8;
+  color: #fff;
 }
-.jba-transfer-icon {
-  flex-shrink: 0;
-  width: 38px;
-  height: 38px;
+.jba-transfer-marquee-viewport { min-width: 0; overflow: hidden; }
+.jba-transfer-marquee-track {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, .2);
-  color: #fff;
+  width: max-content;
+  animation: jbaTransferMarquee 28s linear infinite;
 }
-.jba-transfer-text {
-  font-size: .8rem;
-  color: rgba(255, 255, 255, .92);
-  line-height: 1.5;
+.jba-transfer-marquee-track p {
+  flex: 0 0 auto;
+  margin: 0;
+  padding-right: 3rem;
+  color: #bfdbfe;
+  font-size: .72rem;
+  line-height: 34px;
+  white-space: nowrap;
 }
-.jba-transfer-text strong {
-  color: #fff;
+.jba-transfer-marquee-track strong { color: #fff; }
+@keyframes jbaTransferMarquee { to { transform: translateX(-50%); } }
+@media (prefers-reduced-motion: reduce) {
+  .jba-transfer-marquee-track { animation: none; }
 }
 .jba-orders-btn {
   display: inline-flex;
@@ -1064,9 +1091,9 @@
   flex-wrap: wrap;
 }
 .jba-card-price {
-  font-size: .95rem;
+  font-size: 1.02rem;
   font-weight: 700;
-  color: var(--jba-accent);
+  color: #60a5fa;
 }
 .jba-card-save {
   display: inline-flex;
@@ -1098,12 +1125,21 @@
 }
 @media(max-width:640px){
   .jba-page{padding:var(--banner-navbar-gap, 0px) var(--layout-gutter) 1.5rem;}
-  .jba-grid{grid-template-columns:repeat(2,1fr);gap:.7rem;}
-  .jba-card-body{padding:.6rem .7rem;}
-  .jba-card-title{font-size:.8rem;}
-  .jba-card-price{font-size:.85rem;}
-  .jba-card-original{font-size:.7rem;}
-  .jba-card-game{font-size:.6rem;}
+  .jba-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:.55rem;}
+  .jba-card{border-radius:10px;}
+  .jba-card-img{aspect-ratio:3/4;}
+  .jba-card-img img{width:100%;height:100%;object-fit:cover;}
+  .jba-card-img-fallback{min-height:0;height:100%;}
+  .jba-card-body{min-height:96px;padding:.55rem .6rem;}
+  .jba-card-game{max-width:100%;margin-bottom:.28rem;padding:.16rem .34rem;font-size:.52rem;letter-spacing:.03em;}
+  .jba-card-title{min-height:2.08em;margin-bottom:.16rem;font-size:.72rem;line-height:1.28;}
+  .jba-card-owner{margin-bottom:.25rem;font-size:.62rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+  .jba-card-prices{gap:.16rem;}
+  .jba-card-price-row{gap:.25rem;}
+  .jba-card-price{font-size:.82rem;line-height:1.2;}
+  .jba-card-original{font-size:.62rem;}
+  .jba-card-save{padding:.12rem .32rem;font-size:.5rem;}
+  .jba-sold-badge{width:70px;height:70px;font-size:.65rem;}
 }
 .jba-empty h3 {
   font-size: 1.1rem;
@@ -1131,6 +1167,40 @@
   background: var(--surface-2);
   border: 1px solid var(--border);
 }
+.jba-pubg-seller-filter {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .65rem;
+  width: min(100%, 360px);
+  margin: 1rem 0 1.15rem;
+}
+.jba-pubg-seller-card {
+  display: grid;
+  min-width: 0;
+  height: 54px;
+  place-items: center;
+  padding: .45rem .7rem;
+  border: 1px solid rgba(96, 165, 250, .25);
+  border-radius: 11px;
+  background: #10275b;
+  cursor: pointer;
+  transition: border-color .18s ease, background-color .18s ease, box-shadow .18s ease;
+}
+.jba-pubg-seller-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+.jba-pubg-seller-card[data-pubg-seller="Johen PUBG"] img { transform: translateX(6px); }
+.jba-pubg-seller-card:hover { border-color: #60a5fa; }
+.jba-pubg-seller-card.jba-is-active {
+  border-color: #38bdf8;
+  background: #2563eb;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, .18);
+}
+.jba-pubg-seller-card:focus-visible { outline: 2px solid #93c5fd; outline-offset: 3px; }
 .jba-deal-tab {
   flex: 1;
   padding: .5rem .75rem;
@@ -1460,9 +1530,8 @@
   }
 }
 @media (max-width: 640px) {
-  .jba-transfer-info { padding: .6rem .8rem; margin: 1.1rem 0 1.4rem; border-radius: 10px; }
-  .jba-transfer-icon { width: 30px; height: 30px; }
-  .jba-transfer-text { font-size: .7rem; line-height: 1.4; }
+  .jba-transfer-marquee { min-height: 34px; margin-bottom: .75rem; }
+  .jba-transfer-marquee-track p { font-size: .66rem; line-height: 32px; }
 }
 </style>
 
@@ -1496,6 +1565,7 @@
   let priceMin = null;
   let priceMax = null;
   let collectorTier = null;
+  let pubgSeller = 'Johen PUBG';
   let budgetId = null;
   let backgroundRequest = 0;
   let visibleCardLimit = 12;
@@ -1514,6 +1584,8 @@
       if (priceMin !== null && p < priceMin) return false;
       if (priceMax !== null && p > priceMax) return false;
       if (collectorTier && l.collector_tier !== collectorTier) return false;
+      if (String(currentGame).toLowerCase() === 'pubg mobile' &&
+          String(l.owner_name || '').toLowerCase() !== pubgSeller.toLowerCase()) return false;
       if (searchQuery) {
         const hay = ((l.product_name || '') + ' ' + (l.owner_name || '') + ' ' + (l.game || '')).toLowerCase();
         if (hay.indexOf(searchQuery.toLowerCase()) === -1) return false;
@@ -1606,8 +1678,9 @@
   const jbaHero = document.querySelector('.jba-hero');
   const jbaBanner = document.getElementById('jba-hero');
   const jbaFlash = document.querySelector('.jba-flash-sale');
-  const jbaTransfer = document.querySelector('.jba-transfer-info');
+  const jbaTransfer = document.querySelector('.jba-transfer-marquee');
   const jbaFilterBar = document.getElementById('jbaFilterBar');
+  const jbaPubgSellerFilter = document.getElementById('jbaPubgSellerFilter');
 
   const collectorLabels = {
     ternama: 'Kolektor Ternama',
@@ -1631,7 +1704,13 @@
     priceMin = null;
     priceMax = null;
     collectorTier = null;
+    pubgSeller = 'Johen PUBG';
     budgetId = null;
+    document.querySelectorAll('.jba-pubg-seller-card').forEach(function(card) {
+      const isActive = card.dataset.pubgSeller === pubgSeller;
+      card.classList.toggle('jba-is-active', isActive);
+      card.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+    });
     document.querySelectorAll('.jba-budget-card').forEach(function(b) { b.classList.remove('jba-is-active'); });
     document.querySelectorAll('.jba-deal-tab').forEach(function(t) {
       t.classList.toggle('jba-is-active', t.dataset.deal === 'normal');
@@ -1700,12 +1779,13 @@
       }
     }
     setGameBackground(selectedSlug);
-    gameDesc.textContent = 'Pusat jual beli akun ' + game + ' resmi tanpa ribet \u2014 terverifikasi, cepat, dan 100% aman dibantu langsung oleh admin.';
+    gameDesc.textContent = 'Pusat stock akun ' + game + ' resmi tanpa ribet \u2014 terverifikasi, cepat, dan 100% aman dibantu langsung oleh admin.';
     if (statCount) statCount.textContent = availableListingCount(game);
     resetFilters();
     if (jbaFilterBar) {
       jbaFilterBar.style.display = String(game).toLowerCase() === 'mobile legends' ? '' : 'none';
     }
+    if (jbaPubgSellerFilter) jbaPubgSellerFilter.style.display = selectedSlug === 'pubg' ? '' : 'none';
     renderCards(applyFilters(allListings[game] || []));
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
@@ -1724,6 +1804,7 @@
     if (jbaTransfer) jbaTransfer.style.display = '';
     resetFilters();
     if (jbaFilterBar) jbaFilterBar.style.display = 'none';
+    if (jbaPubgSellerFilter) jbaPubgSellerFilter.style.display = 'none';
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }
 
@@ -1812,6 +1893,18 @@
       document.querySelectorAll('.jba-deal-tab').forEach(function(t) { t.classList.remove('jba-is-active'); });
       tab.classList.add('jba-is-active');
       dealType = tab.dataset.deal;
+      renderFiltered();
+    });
+  });
+
+  document.querySelectorAll('.jba-pubg-seller-card').forEach(function(card) {
+    card.addEventListener('click', function() {
+      pubgSeller = card.dataset.pubgSeller;
+      document.querySelectorAll('.jba-pubg-seller-card').forEach(function(option) {
+        const isActive = option === card;
+        option.classList.toggle('jba-is-active', isActive);
+        option.setAttribute('aria-pressed', isActive ? 'true' : 'false');
+      });
       renderFiltered();
     });
   });
@@ -1908,35 +2001,33 @@
   <div class="home-testi-wall" aria-label="Testimoni pelanggan Johen Gaming">
     <div class="home-testi-lane-wrap">
       <div class="home-testi-lane">
-        @foreach([false, true] as $duplicate)
-          <div class="home-testi-lane-group" @if($duplicate) aria-hidden="true" @endif>
-            @foreach($testimonials as $t)
-              @php
-                $testiGame = preg_replace('/^(Top Up|Joki Rank|Jual Akun)\s*-\s*/i', '', $t['game']);
-                $testiRating = max(0, min(5, (int) ($t['rating'] ?? 5)));
-              @endphp
-              <article class="home-testi-card" @if($duplicate) tabindex="-1" @endif>
-                <div class="home-testi-card-head">
-                  <div class="home-testi-brand"><span>{{ $testiGame ?: $t['game'] }}</span></div>
-                  <div class="home-testi-rating" aria-label="Rating {{ $testiRating }} dari 5">
-                    <span aria-hidden="true">
-                      @for($i = 1; $i <= 5; $i++)<span class="{{ $i > $testiRating ? 'is-empty' : '' }}">★</span>@endfor
-                    </span>
-                    <span>{{ number_format($testiRating, 1) }}</span>
-                  </div>
+        <div class="home-testi-lane-group">
+          @foreach($testimonials as $t)
+            @php
+              $testiGame = preg_replace('/^(Top Up|Joki Rank|Jual Akun|Stock Akun)\s*-\s*/i', '', $t['game']);
+              $testiRating = max(0, min(5, (int) ($t['rating'] ?? 5)));
+            @endphp
+            <article class="home-testi-card">
+              <div class="home-testi-card-head">
+                <div class="home-testi-brand"><span>{{ $testiGame ?: $t['game'] }}</span></div>
+                <div class="home-testi-rating" aria-label="Rating {{ $testiRating }} dari 5">
+                  <span aria-hidden="true">
+                    @for($i = 1; $i <= 5; $i++)<span class="{{ $i > $testiRating ? 'is-empty' : '' }}">★</span>@endfor
+                  </span>
+                  <span>{{ number_format($testiRating, 1) }}</span>
                 </div>
-                <p class="home-testi-quote">{{ $t['quote'] }}</p>
-                <div class="home-testi-user">
-                  <x-user-avatar :name="$t['name']" :src="$t['avatar_url'] ?? null" :size="37" class="home-testi-avatar" />
-                  <div>
-                    <div class="home-testi-name">{{ $t['name'] }}</div>
-                    <div class="home-testi-game">Pembeli terverifikasi</div>
-                  </div>
+              </div>
+              <p class="home-testi-quote">{{ $t['quote'] }}</p>
+              <div class="home-testi-user">
+                <img class="home-testi-avatar" src="{{ asset('assets/icon/icon-testimoni.png') }}" alt="Foto profil {{ $t['name'] }}" loading="lazy">
+                <div>
+                  <div class="home-testi-name">{{ $t['name'] }}</div>
+                  <div class="home-testi-game">Pembeli terverifikasi</div>
                 </div>
-              </article>
-            @endforeach
-          </div>
-        @endforeach
+              </div>
+            </article>
+          @endforeach
+        </div>
       </div>
     </div>
   </div>

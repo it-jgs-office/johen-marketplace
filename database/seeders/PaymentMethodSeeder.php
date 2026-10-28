@@ -10,7 +10,7 @@ class PaymentMethodSeeder extends Seeder
     /**
      * Sinkronkan daftar metode pembayaran dengan data lokal (idempotent).
      *
-     * Aktifkan hanya kanal yang berstatus aktif di dashboard DOKU merchant.
+     * Aktifkan hanya kanal yang didukung Midtrans Core API.
      */
     public function run(): void
     {
@@ -21,7 +21,7 @@ class PaymentMethodSeeder extends Seeder
                 'category' => 'ewallet',
                 'photo' => 'payments/gopay.svg',
                 'photo_light' => 'payments/gopay-dark.png',
-                'is_active' => false,
+                'is_active' => true,
             ],
             [
                 'name' => 'Dana',
@@ -58,14 +58,14 @@ class PaymentMethodSeeder extends Seeder
                 'category' => 'qris',
                 'photo' => 'payments/qris.svg',
                 'photo_light' => 'payments/qris-dark.png',
-                'is_active' => false,
+                'is_active' => true,
             ],
             [
                 'name' => 'BCA Virtual Account',
                 'code' => 'bca_va',
                 'category' => 'va',
                 'photo' => 'payments/bca.svg',
-                'is_active' => false,
+                'is_active' => true,
             ],
             [
                 'name' => 'BRI Virtual Account',
@@ -87,7 +87,7 @@ class PaymentMethodSeeder extends Seeder
                 'category' => 'va',
                 'photo' => null,
                 'photo_light' => null,
-                'is_active' => true,
+                'is_active' => false,
             ],
             [
                 'name' => 'CIMB Virtual Account',
@@ -102,7 +102,7 @@ class PaymentMethodSeeder extends Seeder
                 'code' => 'mandiri_va',
                 'category' => 'va',
                 'photo' => 'payments/mandiri.svg',
-                'is_active' => false,
+                'is_active' => true,
             ],
             [
                 'name' => 'Permata Virtual Account',
@@ -132,7 +132,7 @@ class PaymentMethodSeeder extends Seeder
                 'category' => 'ewallet',
                 'photo' => null,
                 'photo_light' => null,
-                'is_active' => true,
+                'is_active' => false,
             ],
             [
                 'name' => 'Akulaku',
@@ -140,7 +140,7 @@ class PaymentMethodSeeder extends Seeder
                 'category' => 'paylater',
                 'photo' => null,
                 'photo_light' => null,
-                'is_active' => true,
+                'is_active' => false,
             ],
             [
                 'name' => 'BJB Virtual Account',
@@ -148,7 +148,7 @@ class PaymentMethodSeeder extends Seeder
                 'category' => 'va',
                 'photo' => null,
                 'photo_light' => null,
-                'is_active' => true,
+                'is_active' => false,
             ],
             [
                 'name' => 'BNC Virtual Account',
@@ -156,7 +156,7 @@ class PaymentMethodSeeder extends Seeder
                 'category' => 'va',
                 'photo' => null,
                 'photo_light' => null,
-                'is_active' => true,
+                'is_active' => false,
             ],
             [
                 'name' => 'BSS Virtual Account',
@@ -164,7 +164,7 @@ class PaymentMethodSeeder extends Seeder
                 'category' => 'va',
                 'photo' => null,
                 'photo_light' => null,
-                'is_active' => true,
+                'is_active' => false,
             ],
             [
                 'name' => 'BTN Virtual Account',
@@ -172,7 +172,7 @@ class PaymentMethodSeeder extends Seeder
                 'category' => 'va',
                 'photo' => null,
                 'photo_light' => null,
-                'is_active' => true,
+                'is_active' => false,
             ],
             [
                 'name' => 'DOKU Virtual Account',
@@ -180,7 +180,7 @@ class PaymentMethodSeeder extends Seeder
                 'category' => 'va',
                 'photo' => null,
                 'photo_light' => null,
-                'is_active' => true,
+                'is_active' => false,
             ],
             [
                 'name' => 'Danamon Virtual Account',
@@ -188,7 +188,7 @@ class PaymentMethodSeeder extends Seeder
                 'category' => 'va',
                 'photo' => null,
                 'photo_light' => null,
-                'is_active' => true,
+                'is_active' => false,
             ],
             [
                 'name' => 'Maybank Virtual Account',
@@ -196,7 +196,7 @@ class PaymentMethodSeeder extends Seeder
                 'category' => 'va',
                 'photo' => null,
                 'photo_light' => null,
-                'is_active' => true,
+                'is_active' => false,
             ],
             [
                 'name' => 'Sinarmas Virtual Account',
@@ -204,7 +204,7 @@ class PaymentMethodSeeder extends Seeder
                 'category' => 'va',
                 'photo' => null,
                 'photo_light' => null,
-                'is_active' => true,
+                'is_active' => false,
             ],
         ];
 

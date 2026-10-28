@@ -21,6 +21,21 @@ class GameAccountService
         return true;
     }
 
+    /** Hanya provider yang terbukti mengembalikan nickname asli yang boleh dicek otomatis. */
+    public function supportsRealtimeCheck(string $brand): bool
+    {
+        $provider = $this->matchProvider($brand);
+
+        if ($provider instanceof CheckProvider) {
+            return in_array($provider->free_type, ['gopay', 'enka', 'alu'], true)
+                || in_array($provider->fallback_free_type, ['gopay', 'enka', 'alu'], true);
+        }
+
+        $resolver = $this->matchBrand($brand);
+
+        return in_array($resolver['type'] ?? null, ['gopay', 'enka', 'alu'], true);
+    }
+
     /**
      * Deteksi keberadaan akun game.
      *
@@ -32,6 +47,10 @@ class GameAccountService
      */
     public function check(string $brand, string $userId, ?string $zoneId = null, bool $allowPaidFallback = false): array
     {
+        if (! $this->supportsRealtimeCheck($brand)) {
+            return $this->result(false, null, false);
+        }
+
         $userId = trim($userId);
         $zoneId = trim((string) $zoneId);
 
@@ -221,6 +240,7 @@ class GameAccountService
     protected function requiresZone(string $brand): bool
     {
         return str_starts_with(mb_strtolower($brand), 'mobile legends')
+            || str_starts_with(mb_strtolower($brand), 'magic chess')
             || (bool) Brand::where('name', $brand)->value('requires_zone_id');
     }
 

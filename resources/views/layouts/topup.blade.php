@@ -30,7 +30,15 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="csrf-token" content="{{ csrf_token() }}">
-<title>@yield('title', config('app.name', 'Johen Gaming Marketplace'))</title>
+<title>{{ trim($__env->yieldContent('title', config('app.name', 'Johen Gaming Marketplace'))) }}</title>
+<meta name="description" content="{{ trim($__env->yieldContent('meta_description', 'Top up game, joki, dan stock akun game aman di Johen Gaming.')) }}">
+<link rel="canonical" href="{{ trim($__env->yieldContent('canonical', url()->current())) }}">
+<meta property="og:type" content="{{ trim($__env->yieldContent('og_type', 'website')) }}">
+<meta property="og:title" content="{{ trim($__env->yieldContent('title', config('app.name', 'Johen Gaming Marketplace'))) }}">
+<meta property="og:description" content="{{ trim($__env->yieldContent('meta_description', 'Top up game, joki, dan stock akun game aman di Johen Gaming.')) }}">
+<meta property="og:url" content="{{ trim($__env->yieldContent('canonical', url()->current())) }}">
+<meta property="og:image" content="{{ trim($__env->yieldContent('og_image', asset('logo.png'))) }}">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -44,6 +52,7 @@
 <style>:root{{{ $activeThemeCss }}}</style>
 @endif
 @include('partials.splash-head')
+@stack('head')
 @stack('styles')
 @if($isAccountHubPage)
 <link rel="stylesheet" href="{{ pwa_asset('css/account-hub.css') }}&f={{ filemtime(public_path('css/account-hub.css')) }}">
@@ -88,7 +97,7 @@
       </a>
       <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="10" r="2.2"/><path d="M5.5 17c.45-2 1.75-3 3-3s2.55 1 3 3M14 9h4.5M14 13h4.5M14 17h3"/></svg>
-        <span>Jual Beli Akun</span>
+        <span>Stock Akun</span>
       </a>
       <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z"/><path d="m8 11 2 2 5-5M8 16h8"/></svg>
@@ -98,13 +107,16 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 3h10v7a5 5 0 0 1-10 0V3Z"/><path d="M7 5H4v3a4 4 0 0 0 4 4M17 5h3v3a4 4 0 0 1-4 4"/></svg>
         <span>Leaderboard</span>
       </a>
+      <a href="{{ route('articles.index') }}" class="{{ request()->routeIs('articles.*') ? 'active' : '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        <span>Artikel</span>
+      </a>
     </nav>
 
     @php
-        // Hanya untuk user login: keranjang disimpan per user di database.
-        $cartCount = Auth::check() ? app(\App\Services\CartService::class)->countItems(Auth::id()) : 0;
+      $cartCount = Auth::check() ? app(\App\Services\CartService::class)->countItems(Auth::id()) : 0;
     @endphp
-    <a href="{{ route('cart.index') }}" class="nav-cart-btn {{ request()->routeIs('cart.*') || request()->routeIs('checkout.*') ? 'active' : '' }}" aria-label="Keranjang">
+    <a href="{{ route('cart.index') }}" class="nav-cart-btn {{ request()->routeIs('cart.*') ? 'active' : '' }}" aria-label="Keranjang akun">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
         <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
         <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
@@ -160,7 +172,7 @@
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h11L22 9l-10 12L2 9l4.5-6Z"/><path d="M2 9h20M9 3 7 9l5 12 5-12-2-6"/></svg><span>Top Up</span>
   </a>
   <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}" @if(request()->routeIs('jual-beli-akun*')) aria-current="page" @endif>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="10" r="2"/><path d="M5 17c.5-2 2-3 3-3s2.5 1 3 3M14 9h5M14 13h5M14 17h4"/></svg><span>Jual Akun</span>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="10" r="2"/><path d="M5 17c.5-2 2-3 3-3s2.5 1 3 3M14 9h5M14 13h5M14 17h4"/></svg><span>Stock Akun</span>
   </a>
   <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}" @if(request()->routeIs('check.transaction')) aria-current="page" @endif>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z"/><path d="m8 11 2 2 5-5M8 16h8"/></svg><span>Cek Transaksi</span>
@@ -168,7 +180,7 @@
   <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}" @if(request()->routeIs('leaderboard')) aria-current="page" @endif>
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 3h10v7a5 5 0 0 1-10 0zM7 5H4v3a4 4 0 0 0 4 4M17 5h3v3a4 4 0 0 1-4 4"/></svg><span>Ranking</span>
   </a>
-  <button type="button" id="hamburgerBtn" class="{{ request()->routeIs('cart.*') || request()->routeIs('checkout.*') || request()->routeIs('orders.*') || request()->routeIs('vouchers.*') || request()->routeIs('reviews.*') || request()->routeIs('profile.*') ? 'active' : '' }}" aria-label="Buka menu lainnya" aria-controls="mobileMenu" aria-expanded="false">
+  <button type="button" id="hamburgerBtn" class="{{ request()->routeIs('cart.*') || request()->routeIs('checkout.*') || request()->routeIs('orders.*') || request()->routeIs('vouchers.*') || request()->routeIs('reviews.*') || request()->routeIs('profile.*') || request()->routeIs('articles.*') ? 'active' : '' }}" aria-label="Buka menu lainnya" aria-controls="mobileMenu" aria-expanded="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menu</span>
   </button>
 </nav>
@@ -192,7 +204,7 @@
       </a>
       <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="10" r="2.2"/><path d="M5.5 17c.45-2 1.75-3 3-3s2.55 1 3 3M14 9h4.5M14 13h4.5M14 17h3"/></svg>
-        <span>Jual Beli Akun</span>
+        <span>Stock Akun</span>
       </a>
       <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z"/><path d="m8 11 2 2 5-5M8 16h8"/></svg>
@@ -202,7 +214,11 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 3h10v7a5 5 0 0 1-10 0V3Z"/><path d="M7 5H4v3a4 4 0 0 0 4 4M17 5h3v3a4 4 0 0 1-4 4"/></svg>
         <span>Leaderboard</span>
       </a>
-      <a href="{{ route('cart.index') }}" class="mobile-menu__cart {{ request()->routeIs('cart.*') || request()->routeIs('checkout.*') ? 'active' : '' }}">
+      <a href="{{ route('articles.index') }}" class="{{ request()->routeIs('articles.*') ? 'active' : '' }}">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        <span>Artikel</span>
+      </a>
+      <a href="{{ route('cart.index') }}" class="mobile-menu__cart {{ request()->routeIs('cart.*') ? 'active' : '' }}">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
         <span>Keranjang</span>
         <span class="nav-cart-badge nav-cart-badge--inline" data-role="cart-badge" @if($cartCount < 1) hidden @endif>{{ $cartCount > 99 ? '99+' : $cartCount }}</span>
@@ -283,7 +299,7 @@
         <img src="{{ $themeLogo }}" alt="Johen Gaming" class="logo-img">
         <span class="logo-text">JOHEN<span>GAMING</span></span>
       </div>
-      <p class="footer-about"><strong>{{ $biz['name'] }}</strong> &mdash; perusahaan digital gaming commerce terpercaya di Bandung. Spesialisasi jual beli akun game online, top up, jasa joki, live commerce, dan konten digital gaming.</p>
+      <p class="footer-about"><strong>{{ $biz['name'] }}</strong> &mdash; perusahaan digital gaming commerce terpercaya di Bandung. Spesialisasi stock akun game online, top up, jasa joki, live commerce, dan konten digital gaming.</p>
       <p>Top up game &amp; voucher terlaris, murah, aman legal 100% buka 24 jam dengan payment terlengkap Indonesia.</p>
     </div>
     <div class="footer-col">
@@ -292,6 +308,7 @@
       <a href="{{ route('check.transaction') }}">Cek Transaksi</a>
       <a href="{{ route('kontak') }}">Hubungi Kami</a>
       <a href="{{ route('testimoni') }}">Ulasan</a>
+      <a href="{{ route('articles.index') }}">Artikel</a>
       <a href="{{ route('vouchers.index') }}">Voucher Saya</a>
     </div>
     <div class="footer-col">
@@ -442,20 +459,20 @@
 
 <style>
 [data-theme="light"] {
-  --bg: color-mix(in srgb, var(--theme-primary, #2563eb) 9%, #ffffff);
-  --bg-soft: color-mix(in srgb, var(--theme-primary, #2563eb) 6%, #f4f1fa);
+  --bg: #ffffff;
+  --bg-soft: #f8fafc;
   --surface: #ffffff;
-  --surface-2: color-mix(in srgb, var(--theme-primary, #2563eb) 5%, #ffffff);
-  --surface-3: color-mix(in srgb, var(--theme-primary, #2563eb) 9%, #ffffff);
-  --border: rgba(0,0,0,.08);
-  --border-strong: rgba(0,0,0,.14);
+  --surface-2: #f8fbff;
+  --surface-3: #eff6ff;
+  --border: rgba(37,99,235,.12);
+  --border-strong: rgba(37,99,235,.22);
   --text: color-mix(in srgb, var(--theme-primary, #2563eb) 42%, #000000);
   --text-dim: color-mix(in srgb, var(--text) 58%, var(--surface));
   --text-mute: color-mix(in srgb, var(--text) 38%, var(--surface));
   --purple-glow: color-mix(in srgb, var(--theme-primary, #2563eb) 25%, transparent);
   --shadow-purple: 0 8px 30px -8px color-mix(in srgb, var(--theme-primary, #2563eb) 35%, transparent);
-  --header-bg: color-mix(in srgb, var(--theme-primary, #2563eb) 4%, rgba(255,255,255,.9));
-  --header-bg-scrolled: color-mix(in srgb, var(--theme-primary, #2563eb) 6%, rgba(255,255,255,.97));
+  --header-bg: rgba(255,255,255,.94);
+  --header-bg-scrolled: rgba(255,255,255,.98);
   --nav-active-text: color-mix(in srgb, var(--theme-primary-dark, #1a4a9e) 85%, #000000);
   --bg-card:#ffffff;
 }

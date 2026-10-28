@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\AccountListing;
 use App\Models\Brand;
+use App\Services\ArticleApiClient;
 use Illuminate\Http\Response;
 
 class SitemapController extends Controller
@@ -25,7 +26,17 @@ class SitemapController extends Controller
             ['loc' => $base.'/faq', 'priority' => '0.5', 'freq' => 'monthly'],
             ['loc' => $base.'/syarat-ketentuan', 'priority' => '0.3', 'freq' => 'yearly'],
             ['loc' => $base.'/kebijakan-privasi', 'priority' => '0.3', 'freq' => 'yearly'],
+            ['loc' => $base.'/artikel', 'priority' => '0.8', 'freq' => 'weekly'],
         ];
+
+        foreach (app(ArticleApiClient::class)->allForSitemap() as $article) {
+            $urls[] = [
+                'loc' => $base.'/artikel/'.rawurlencode($article->slug),
+                'priority' => $article->is_featured ? '0.8' : '0.7',
+                'freq' => 'monthly',
+                'lastmod' => $article->updated_at?->toAtomString(),
+            ];
+        }
 
         foreach (Brand::where('is_active', true)->orderBy('name')->get() as $brand) {
             $urls[] = [

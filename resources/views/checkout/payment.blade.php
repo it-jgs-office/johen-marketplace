@@ -66,6 +66,7 @@
 .ckp-ref-mono{font-family:var(--font-display);}
 .ckp-icon-qr{display:inline-block;padding:12px;background:#fff;border-radius:12px;}
 .ckp-icon-qr img{width:200px;height:200px;display:block;border-radius:6px;}
+.ckp-failed-lordicon{display:block;width:88px;height:88px;object-fit:contain;}
 
 @media(max-width:1000px){
     .pd-grid{grid-template-columns:1fr;}
@@ -111,7 +112,6 @@
 
     <div class="pd-grid">
         <div class="pd-left">
-            @include('partials.doku-payment-status', ['paymentOrder' => $checkout])
 
             {{-- Status pembayaran --}}
             <div class="pd-card pd-status-card">
@@ -159,11 +159,11 @@
                                 </button>
                             </form>
                         </div>
-                    @elseif($gatewayType === 'qris' && $checkout->qr_string)
+                    @elseif($gatewayType === 'qris' && ($checkout->qr_string || data_get($extra, 'qr_image_url')))
                         <div class="pd-method-qr-wrap">
                             <div class="ckp-icon-qr">
                                 <img id="ckpQr" alt="QRIS"
-                                     src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ urlencode($checkout->qr_string) }}">
+                                     src="{{ data_get($extra, 'qr_image_url') ?: 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&data='.urlencode($checkout->qr_string) }}">
                             </div>
                             <p class="pd-method-hint">Scan QRIS di atas memakai e-wallet atau mobile banking. Satu pembayaran untuk {{ $checkout->item_count }} item.</p>
                         </div>
@@ -172,6 +172,9 @@
                             <div class="pd-va-box">
                                 <div class="pd-va-label">{{ $extra['label'] ?? 'Nomor Virtual Account' }}</div>
                                 <div class="pd-va-number">{{ $checkout->va_number }}</div>
+                                @if(data_get($extra, 'biller_code'))
+                                    <p class="pd-method-hint" style="margin:.6rem 0 0">Kode Biller Mandiri: <strong>{{ data_get($extra, 'biller_code') }}</strong></p>
+                                @endif
                                 <button class="pd-copy-btn" data-copy="{{ $checkout->va_number }}">Salin Nomor VA</button>
                             </div>
                             @if(! empty($extra['expected_amount']))
@@ -331,9 +334,9 @@
         pending:    { label: 'MENUNGGU PEMBAYARAN', color: '#f59e0b', sub: 'Selesaikan pembayaran sebelum batas waktu habis.', icon: '<svg class="spin-slow" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" width="44" height="44"><path d="M21 12a9 9 0 11-6.219-8.56"/></svg>' },
         processing: { label: 'SEDANG DIPROSES',     color: '#f59e0b', sub: 'Pembayaran diterima, item sedang dikirim ke game.', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5" width="44" height="44"><path d="M12 6v6l4 2"/></svg>' },
         success:    { label: 'PEMBAYARAN SUKSES',    color: '#10b981', sub: 'Semua item sudah masuk ke akun kamu.', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2.5" width="44" height="44"><path d="M20 6L9 17l-5-5"/></svg>' },
-        failed:     { label: 'PEMBAYARAN GAGAL',    color: '#ef4444', sub: 'Silakan coba lagi atau hubungi admin.', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" width="44" height="44"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' },
-        expired:    { label: 'PEMBAYARAN EXPIRED',  color: '#ef4444', sub: 'Batas waktu pembayaran telah habis.', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" width="44" height="44"><circle cx="12" cy="12" r="10"/><path d="M12 7v6"/><path d="M12 17h.01"/></svg>' },
-        cancelled:  { label: 'PESANAN DIBATALKAN', color: '#ef4444', sub: 'Pesanan ini telah dibatalkan.', icon: '<svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" width="44" height="44"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>' },
+        failed:     { label: 'PEMBAYARAN GAGAL',    color: '#ef4444', sub: 'Silakan coba lagi atau hubungi admin.', icon: '<img class="ckp-failed-lordicon" src="{{ asset('assets/icon/payment-failed.svg') }}" alt="Pembayaran gagal">' },
+        expired:    { label: 'PEMBAYARAN EXPIRED',  color: '#ef4444', sub: 'Batas waktu pembayaran telah habis.', icon: '<img class="ckp-failed-lordicon" src="{{ asset('assets/icon/payment-expired.svg') }}" alt="Waktu pembayaran habis">' },
+        cancelled:  { label: 'PESANAN DIBATALKAN', color: '#ef4444', sub: 'Pesanan ini telah dibatalkan.', icon: '<img class="ckp-failed-lordicon" src="{{ asset('assets/icon/payment-failed.svg') }}" alt="Pesanan dibatalkan">' },
     };
 
     var DOT_CLASS = { pending: 'pending', processing: 'processing', success: 'success', failed: 'failed', expired: 'failed', cancelled: 'failed' };

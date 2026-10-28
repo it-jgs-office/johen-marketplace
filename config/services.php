@@ -46,7 +46,7 @@ return [
     | Simulasi Pembayaran
     |--------------------------------------------------------------------------
     |
-    | Saat PAYMENT_SIMULATION=true: invoice Xendit tidak dibuat dan
+    | Saat PAYMENT_SIMULATION=true: transaksi Midtrans tidak dibuat dan
     | transaksi Digiflazz (topUp/checkStatus) dijawab secara lokal.
     |
     */
@@ -54,7 +54,7 @@ return [
     'payment' => [
         'simulation' => env('APP_ENV', 'production') !== 'production'
             && env('PAYMENT_SIMULATION', false),
-        'gateway' => env('PAYMENT_GATEWAY', 'xendit'),
+        'gateway' => 'midtrans',
         /*
         |--------------------------------------------------------------------------
         | Saluran Pembayaran
@@ -64,7 +64,6 @@ return [
         | 'qris'    → QRIS dibuat dan dibayar langsung di halaman sendiri (embed QR).
         |
         */
-        'channel' => env('PAYMENT_CHANNEL', 'qris'),
     ],
 
     /**
@@ -90,6 +89,11 @@ return [
                 'name' => env('JBA_API_NAME_MARKETPLACE', 'Marketplace API'),
             ],
         ],
+    ],
+
+    'article_api' => [
+        'base_url' => rtrim((string) env('ARTICLE_API_BASE_URL', 'https://johengaming.id/api'), '/'),
+        'timeout' => (int) env('ARTICLE_API_TIMEOUT', 10),
     ],
 
     'alu' => [

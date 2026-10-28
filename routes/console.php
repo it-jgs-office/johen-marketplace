@@ -25,7 +25,10 @@ Schedule::command('digiflazz:reconcile')->everyMinute()->withoutOverlapping();
  * Refresh paksa dipakai supaya setiap jadwal selalu membaca price list terbaru,
  * bukan cache katalog sebelumnya.
  */
-Schedule::command('digiflazz:sync --force')->everyTenMinutes()->withoutOverlapping();
+Schedule::command('digiflazz:sync --force')
+    ->everyTenMinutes()
+    ->withoutOverlapping(9)
+    ->createMutexNameUsing('digiflazz-product-sync');
 
 /*
  * Settlement checkout keranjang berjalan lewat queue (butuh `queue:work`).
@@ -34,8 +37,8 @@ Schedule::command('digiflazz:sync --force')->everyTenMinutes()->withoutOverlappi
  */
 Schedule::command('checkout:retry')->everyTenMinutes()->withoutOverlapping();
 
-// Keep confirming DOKU payments even after the customer closes the payment page.
-Schedule::command('doku:reconcile')->everyMinute()->withoutOverlapping();
+// Tetap sinkronkan status Midtrans walau halaman pembayaran sudah ditutup.
+Schedule::command('midtrans:reconcile')->everyMinute()->withoutOverlapping();
 
 // Tutup otomatis pembayaran topup yang tidak dibayar sampai batas waktunya.
 Schedule::command('payments:expire')->everyMinute()->withoutOverlapping();

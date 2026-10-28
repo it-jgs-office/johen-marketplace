@@ -99,7 +99,6 @@
         </div>
       </div>
 
-      @include('partials.doku-payment-status', ['paymentOrder' => $order])
 
       {{-- STATUS PEMBAYARAN (live) --}}
       <div class="pd-card pd-status-card" id="pdStatusCard">
@@ -150,11 +149,10 @@
       </div>
 
       <div class="pd-payment-layout{{ $gatewayType === 'doku_checkout' ? ' pd-payment-layout-checkout' : '' }}">
-      {{-- DETAIL TRANSAKSI (2 kolom) --}}
-      <div class="pd-card">
+      <div class="pd-card pd-method-card" id="pdMethodCard">
         <div class="pd-card-head">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-          <span>Detail Transaksi</span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+          <span>Metode Pembayaran</span>
         </div>
         <div class="pd-detail-grid">
           <div class="pd-detail-col">
@@ -202,7 +200,7 @@
             </div>
           </div>
         </div>
-      </div>
+        <div class="pd-method-detail-divider"></div>
 
       {{-- METODE PEMBAYARAN --}}
       @if($gatewayType === 'doku_checkout')
@@ -229,11 +227,6 @@
         @endif
       </div>
       @else
-      <div class="pd-card pd-method-card" id="pdMethodCard">
-        <div class="pd-card-head">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-          <span>Metode Pembayaran</span>
-        </div>
         <div class="pd-method" id="pdMethodBody">
           <div class="pd-method-placeholder" id="pdMethodPlaceholder">
             <div class="pd-method-illus{{ $gatewayType === 'doku_checkout' ? ' pd-method-illus-doku' : '' }}">
@@ -278,6 +271,7 @@
               <div class="pd-va-box">
                 <div class="pd-va-label">Nomor Virtual Account</div>
                 <div class="pd-va-number" id="pdVaNumber">-</div>
+                <div class="pd-method-hint" id="pdVaBillerCode" style="display:none;margin:.6rem 0 0"></div>
                 <button class="pd-copy-btn" data-copy="" id="pdVaCopyBtn">Salin Nomor VA</button>
               </div>
               <p class="pd-method-hint">Bayar melalui mobile banking / ATM / Internet Banking.</p>
@@ -303,7 +297,7 @@
           </div>
           <div class="pd-method-failed" id="pdMethodFailed" style="display:none">
             <div class="pd-failed-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" width="56" height="56"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              <img class="pd-failed-lordicon" src="{{ asset('assets/icon/payment-failed.svg') }}" alt="Pembayaran gagal">
             </div>
             <div class="pd-failed-label">Pembayaran Gagal</div>
             <div class="pd-failed-sub">Silakan coba lagi atau hubungi admin.</div>
@@ -315,8 +309,8 @@
           </form>
           @endif
         </div>
-      </div>
       @endif
+      </div>
       </div>
 
     </div>
@@ -328,10 +322,15 @@
 /* ===== Replate status detail dengan design system yang sama dengan halaman transaksi existing (dt-*) ===== */
 .pd-wrap{max-width:var(--layout-max);}
 .pd-grid.pd-grid-single{grid-template-columns:minmax(0,1fr);}
-.pd-payment-layout{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(360px,.92fr);gap:1rem;align-items:stretch;}
-.pd-payment-layout>.pd-card{height:100%;}
+.pd-payment-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem;align-items:start;}
+.pd-payment-layout>.pd-card{width:100%;}
 .pd-payment-layout-checkout{grid-template-columns:minmax(0,1fr);}
-.pd-checkout-actions{display:flex;flex-direction:column;align-items:center;gap:.35rem;}
+.pd-method-card{display:flex;flex-direction:column;}
+.pd-method-card>.pd-card-head{order:0;}
+.pd-method-card>.pd-method,.pd-method-card>.pd-checkout-actions{order:1;}
+.pd-method-detail-divider{order:2;height:1px;margin:0 1.1rem;background:var(--border);}
+.pd-method-card>.pd-detail-grid{order:3;}
+.pd-checkout-actions{display:flex;flex-direction:column;align-items:center;gap:.35rem;padding:1.2rem 1.1rem;}
 .pd-continue-payment{width:100%;justify-content:center;}
 .pd-payment-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;width:100%;margin-top:.3rem;}
 .pd-payment-nav .btn{width:100%;justify-content:center;text-align:center;}
@@ -358,6 +357,9 @@
 .pd-status-icon-terminal .pd-pos-terminal{display:block;width:88px;height:88px;filter:none;overflow:visible;}
 .pd-status-icon-success{display:grid;place-items:center;width:94px;height:94px;border-radius:22px;background:radial-gradient(circle at 50% 40%,rgba(52,211,153,.2),rgba(16,185,129,.06) 70%,transparent);}
 .pd-status-icon-success .pd-success-lordicon{display:block;width:88px;height:88px;object-fit:contain;}
+.pd-status-icon-failed{display:grid;place-items:center;width:94px;height:94px;border-radius:22px;background:radial-gradient(circle at 50% 40%,rgba(248,113,113,.2),rgba(239,68,68,.06) 70%,transparent);}
+.pd-status-icon-failed .pd-failed-lordicon{display:block;width:88px;height:88px;object-fit:contain;}
+.pd-failed-lordicon{display:block;width:72px;height:72px;object-fit:contain;}
 .pd-success-lordicon{display:block;width:72px;height:72px;object-fit:contain;}
 .pd-pos-device{animation:pd-pos-float 3.4s ease-in-out infinite;transform-origin:center;}
 .pd-pos-card{animation:pd-pos-tap 3.4s ease-in-out infinite;transform-box:fill-box;transform-origin:center;}
@@ -494,6 +496,8 @@ const invoiceUrl = @json($invoiceUrl);
 const gatewayType = @json($gatewayType);
 const isQris = @json($isQris);
 const qrString = @json($qrString);
+const qrImageUrl = @json(data_get($gatewayExtra, 'qr_image_url'));
+const billerCode = @json(data_get($gatewayExtra, 'biller_code'));
 const vaNumber = @json($vaNumber);
 const paymentCode = @json($paymentCode);
 const checkoutUrl = @json($checkoutUrl);
@@ -533,8 +537,8 @@ function startPayment() {
         runSimulatedPayment();
         return;
     }
-    if (gatewayType === 'qris' && qrString) {
-        renderQris(qrString);
+    if (gatewayType === 'qris' && (qrString || qrImageUrl)) {
+        renderQris(qrString, qrImageUrl);
         return;
     }
     if (gatewayType === 'va' && vaNumber) {
@@ -561,7 +565,7 @@ function startPayment() {
 }
 
 /* Tampilkan QRIS asli langsung di halaman (tanpa redirect ke Xendit). */
-function renderQris(qrData) {
+function renderQris(qrData, imageUrl) {
     const placeholder = document.getElementById('pdMethodPlaceholder');
     const result = document.getElementById('pdMethodResult');
     const qrWrap = document.getElementById('pdMethodQrWrap');
@@ -572,9 +576,10 @@ function renderQris(qrData) {
     placeholder.style.display = 'none';
     result.style.display = 'block';
     qrWrap.style.display = 'block';
+    const source = imageUrl || ('https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(qrData));
     qr.innerHTML =
         '<div class="pd-qr-dummy" style="padding:12px;background:#fff;border-radius:12px;display:inline-block">' +
-        '<img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(qrData) + '" alt="QRIS" style="width:200px;height:200px;border-radius:6px;display:block">' +
+        '<img src="' + source + '" alt="QRIS" style="width:200px;height:200px;border-radius:6px;display:block">' +
         '</div>';
     name.textContent = 'QRIS';
     if (payBtnEl) {
@@ -589,6 +594,7 @@ function renderVa(vaNumber) {
     const result = document.getElementById('pdMethodResult');
     const vaWrap = document.getElementById('pdMethodVa');
     const vaNum = document.getElementById('pdVaNumber');
+    const billerCodeEl = document.getElementById('pdVaBillerCode');
     const copyBtn = document.getElementById('pdVaCopyBtn');
     const name = document.getElementById('pdMethodName');
     const payBtnEl = document.getElementById('payNowBtn');
@@ -597,6 +603,10 @@ function renderVa(vaNumber) {
     result.style.display = 'block';
     vaWrap.style.display = 'block';
     vaNum.textContent = vaNumber;
+    if (billerCode && billerCodeEl) {
+        billerCodeEl.textContent = 'Kode Biller Mandiri: ' + billerCode;
+        billerCodeEl.style.display = 'block';
+    }
     if (copyBtn) copyBtn.dataset.copy = vaNumber;
     name.textContent = 'Virtual Account';
     if (payBtnEl) payBtnEl.style.display = 'none';
@@ -701,6 +711,8 @@ const STATUS_MAP = {
 
 function cssVar(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
 const pendingTerminalMarkup = document.getElementById('pdStatusIcon').innerHTML;
+const failedAnimationUrl = @json(asset('assets/icon/payment-failed.svg'));
+const expiredAnimationUrl = @json(asset('assets/icon/payment-expired.svg'));
 
 function updateStatus(type, result) {
     const map = STATUS_MAP[type] || STATUS_MAP.pending;
@@ -723,6 +735,7 @@ function updateStatus(type, result) {
 
     icon.classList.toggle('pd-status-icon-terminal', type === 'pending' || type === 'processing');
     icon.classList.toggle('pd-status-icon-success', type === 'success');
+    icon.classList.toggle('pd-status-icon-failed', type === 'failed' || type === 'expired' || type === 'cancelled');
     if (cancelForm) cancelForm.style.display = type === 'pending' ? 'block' : 'none';
 
     // status card
@@ -752,9 +765,11 @@ function updateStatus(type, result) {
         if (methodFailed) methodFailed.style.display = 'none';
         maybeShowReviewPopup('success');
     } else if (type === 'failed' || type === 'expired' || type === 'cancelled') {
-        icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#ef4444" stroke-width="2.5" width="44" height="44"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
         const cancelled = type === 'cancelled';
         const expired = type === 'expired';
+        const terminalAnimationUrl = expired ? expiredAnimationUrl : failedAnimationUrl;
+        const terminalAnimationAlt = expired ? 'Waktu pembayaran habis' : (cancelled ? 'Pesanan dibatalkan' : 'Pembayaran gagal');
+        icon.innerHTML = '<img class="pd-failed-lordicon" src="' + terminalAnimationUrl + '" alt="' + terminalAnimationAlt + '">';
         label.textContent = cancelled ? 'Pesanan Dibatalkan' : expired ? 'Pembayaran Expired' : 'Pembayaran Gagal';
         sub.textContent = cancelled ? 'Pesanan dibatalkan tanpa proses refund.' : expired ? 'Batas waktu pembayaran telah habis.' : 'Silakan coba lagi atau hubungi admin.';
         pill.textContent = cancelled ? 'PESANAN DIBATALKAN' : expired ? 'PEMBAYARAN EXPIRED' : 'PEMBAYARAN GAGAL';
@@ -766,6 +781,11 @@ function updateStatus(type, result) {
         if (methodSuccess) methodSuccess.style.display = 'none';
         if (methodFailed) {
             methodFailed.style.display = 'flex';
+            const methodFailedIcon = methodFailed.querySelector('.pd-failed-lordicon');
+            if (methodFailedIcon) {
+                methodFailedIcon.src = terminalAnimationUrl;
+                methodFailedIcon.alt = terminalAnimationAlt;
+            }
             methodFailed.querySelector('.pd-failed-label').textContent = cancelled ? 'Pesanan Dibatalkan' : expired ? 'Pembayaran Expired' : 'Pembayaran Gagal';
             methodFailed.querySelector('.pd-failed-sub').textContent = cancelled ? 'Pesanan ini tidak dilanjutkan.' : expired ? 'Batas waktu pembayaran telah habis.' : 'Silakan coba lagi atau hubungi admin.';
         }
@@ -847,7 +867,7 @@ if (payBtn) {
 }
 
 if (!isSimulation && @json($order->status) === 'pending') {
-    if (gatewayType === 'qris' && qrString) renderQris(qrString);
+    if (gatewayType === 'qris' && (qrString || qrImageUrl)) renderQris(qrString, qrImageUrl);
     else if (gatewayType === 'va' && vaNumber) renderVa(vaNumber);
     else if (gatewayType === 'retail' && paymentCode) renderRetail(paymentCode);
 }

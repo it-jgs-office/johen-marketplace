@@ -34,22 +34,100 @@ class AdminController extends Controller
         $this->digiflazz = $digiflazz;
     }
 
-    public function dashboard()
+    public function dashboard(Request $request)
     {
+        $brands = Order::query()
+            ->where('service_type', 'topup')
+            ->whereNotNull('brand')
+            ->where('brand', '!=', '')
+            ->distinct()
+            ->orderBy('brand')
+            ->pluck('brand');
+
+        $selectedBrand = trim((string) $request->query('brand', ''));
+        if ($selectedBrand !== '' && ! $brands->contains($selectedBrand)) {
+            $selectedBrand = '';
+        }
+
+        $topupOrders = Order::query()->where('service_type', 'topup');
+        if ($selectedBrand !== '') {
+            $topupOrders->where('brand', $selectedBrand);
+        }
+
+        $successFinancials = (clone $topupOrders)
+            ->where('orders.status', 'success')
+            ->leftJoin('products', 'products.buyer_sku_code', '=', 'orders.buyer_sku_code')
+            ->selectRaw('COALESCE(SUM(orders.price), 0) as revenue')
+            ->selectRaw('COALESCE(SUM(COALESCE(products.price, 0) * COALESCE(orders.quantity, 1)), 0) as cost')
+            ->first();
+
+        $revenue = (float) ($successFinancials->revenue ?? 0);
+        $cost = (float) ($successFinancials->cost ?? 0);
+        $profit = max(0, $revenue - $cost);
+        $totalOrders = (clone $topupOrders)->count();
+        $successOrders = (clone $topupOrders)->where('status', 'success')->count();
+        $pendingOrders = (clone $topupOrders)->where('status', 'pending')->count();
+        $processingOrders = (clone $topupOrders)->where('status', 'processing')->count();
+        $failedOrders = (clone $topupOrders)->whereIn('status', ['failed', 'cancelled', 'expired'])->count();
+
+        $trendRows = (clone $topupOrders)
+            ->where('orders.created_at', '>=', now()->subDays(29)->startOfDay())
+            ->leftJoin('products', 'products.buyer_sku_code', '=', 'orders.buyer_sku_code')
+            ->selectRaw('DATE(orders.created_at) as day')
+            ->selectRaw("SUM(CASE WHEN orders.status = 'success' THEN orders.price ELSE 0 END) as revenue")
+            ->selectRaw("SUM(CASE WHEN orders.status = 'success' AND orders.price > (COALESCE(products.price, 0) * COALESCE(orders.quantity, 1)) THEN orders.price - (COALESCE(products.price, 0) * COALESCE(orders.quantity, 1)) ELSE 0 END) as profit")
+            ->groupBy(DB::raw('DATE(orders.created_at)'))
+            ->get()
+            ->keyBy('day');
+
+        $trend = collect(range(29, 0))->map(function (int $offset) use ($trendRows) {
+            $date = now()->subDays($offset);
+            $row = $trendRows->get($date->toDateString());
+
+            return [
+                'date' => $date->toDateString(),
+                'label' => $date->translatedFormat('d M'),
+                'revenue' => (float) ($row->revenue ?? 0),
+                'profit' => (float) ($row->profit ?? 0),
+            ];
+        })->values();
+
+        $productQuery = Product::query();
+        if ($selectedBrand !== '') {
+            $productQuery->where('brand', $selectedBrand);
+        }
+
+        $digiflazzBalance = null;
+        if ($this->digiflazz->isConfigured()) {
+            $balanceResult = \Illuminate\Support\Facades\Cache::remember(
+                'admin.dashboard.digiflazz_balance',
+                now()->addMinutes(5),
+                fn () => $this->digiflazz->checkBalance()
+            );
+            $digiflazzBalance = (float) ($balanceResult['data']['balance'] ?? $balanceResult['balance'] ?? 0);
+        }
+
         $stats = [
-            'total_products' => Product::count(),
-            'active_products' => Product::where('is_active', true)->count(),
-            'total_orders' => Order::count(),
-            'pending_orders' => Order::where('status', 'pending')->count(),
-            'success_orders' => Order::where('status', 'success')->count(),
+            'total_products' => (clone $productQuery)->count(),
+            'active_products' => (clone $productQuery)->where('is_active', true)->count(),
+            'total_orders' => $totalOrders,
+            'pending_orders' => $pendingOrders,
+            'processing_orders' => $processingOrders,
+            'success_orders' => $successOrders,
+            'failed_orders' => $failedOrders,
             'total_users' => User::count(),
-            'total_revenue' => Order::where('status', 'success')->sum('price'),
+            'total_revenue' => $revenue,
+            'estimated_cost' => $cost,
+            'estimated_profit' => $profit,
+            'average_order' => $successOrders > 0 ? $revenue / $successOrders : 0,
+            'success_rate' => $totalOrders > 0 ? ($successOrders / $totalOrders) * 100 : 0,
+            'digiflazz_balance' => $digiflazzBalance,
             'digiflazz_configured' => $this->digiflazz->isConfigured(),
-            'digiflazz_last_sync' => \App\Models\SiteSetting::get('digiflazz_last_sync'),
-            'digiflazz_product_count' => \App\Models\SiteSetting::get('digiflazz_product_count', '0'),
+            'digiflazz_last_sync' => SiteSetting::get('digiflazz_last_sync'),
+            'digiflazz_product_count' => SiteSetting::get('digiflazz_product_count', '0'),
         ];
 
-        $recentOrders = Order::with('user')->latest()->take(10)->get();
+        $recentOrders = (clone $topupOrders)->with('user')->latest()->take(10)->get();
 
         $stats['account_total'] = AccountOrder::count();
         $stats['account_pending'] = AccountOrder::where('status', 'pending')->count();
@@ -62,7 +140,14 @@ class AdminController extends Controller
             ->take(6)
             ->get();
 
-        return view('admin.dashboard', compact('stats', 'recentOrders', 'recentAccountOrders'));
+        return view('admin.dashboard', compact(
+            'stats',
+            'recentOrders',
+            'recentAccountOrders',
+            'brands',
+            'selectedBrand',
+            'trend'
+        ));
     }
 
     public function gatewayStatus()
@@ -70,8 +155,7 @@ class AdminController extends Controller
         $appUrl = config('app.url');
         $isLocal = in_array(parse_url($appUrl, PHP_URL_HOST), ['localhost', '127.0.0.1', '::1']);
 
-        $xenditConfigured = app(\App\Services\XenditService::class)->isConfigured();
-        $xenditSvc = app(\App\Services\XenditService::class);
+        $midtrans = app(\App\Services\MidtransService::class);
         $paymentGateway = app(\App\Services\PaymentGatewayService::class);
         $gatewayLabel = $paymentGateway->providerLabel();
 
@@ -80,24 +164,22 @@ class AdminController extends Controller
                 'label' => 'Domain/URL publik (bukan localhost)',
                 'ok' => !$isLocal,
                 'detail' => $isLocal
-                    ? 'APP_URL masih "' . $appUrl . '". Webhook Xendit & Digiflazz tidak dapat menjangkau localhost. Deploy + set APP_URL ke https://domain.'
+                    ? 'APP_URL masih "' . $appUrl . '". Webhook Midtrans & Digiflazz tidak dapat menjangkau localhost. Deploy + set APP_URL ke https://domain.'
                     : 'APP_URL = ' . $appUrl,
             ],
-            'xendit_configured' => [
-                'label' => 'Xendit API key terkonfigurasi',
-                'ok' => $xenditSvc->isConfigured(),
-                'detail' => $xenditSvc->isConfigured() ? 'Secret key terisi.' : 'XENDIT_SECRET_KEY masih kosong.',
+            'midtrans_configured' => [
+                'label' => 'Midtrans API key terkonfigurasi',
+                'ok' => $midtrans->isConfigured(),
+                'detail' => $midtrans->isConfigured() ? 'Merchant ID, Client Key, dan Server Key terisi.' : 'Credential MIDTRANS masih kosong.',
             ],
-            'xendit_live' => [
-                'label' => 'Xendit dalam mode live (bukan test)',
-                'ok' => (bool) config('xendit.is_production'),
-                'detail' => config('xendit.is_production')
-                    ? 'Mode live aktif.'
-                    : 'Masih mode test (' . (str_starts_with((string) config('xendit.secret_key'), 'xnd_development_') ? 'key development' : 'check key') . '). Verifikasi & ganti key live setelah approve.',
+            'midtrans_environment' => [
+                'label' => 'Midtrans Sandbox aktif',
+                'ok' => ! $midtrans->isProduction(),
+                'detail' => $midtrans->isProduction() ? 'Production aktif.' : 'Sandbox aktif untuk pengujian.',
             ],
-            'xendit_callback_token' => [
-                'label' => 'Xendit callback token terisi',
-                'ok' => (string) config('xendit.callback_token') !== '',
+            'midtrans_signature' => [
+                'label' => 'Verifikasi signature Midtrans',
+                'ok' => $midtrans->isConfigured(),
                 'detail' => (string) config('xendit.callback_token') !== '' ? 'Terkonfigurasi.' : 'XENDIT_CALLBACK_TOKEN kosong Ã¢â‚¬â€ webhook akan ditolak.',
             ],
             'webhook_route' => [
@@ -131,33 +213,7 @@ class AdminController extends Controller
             ],
         ];
 
-        if ($paymentGateway->isDoku()) {
-            $doku = app(\App\Services\DokuService::class);
-            $checks['domain_public']['detail'] = $isLocal
-                ? 'APP_URL masih "'.$appUrl.'". HTTP Notification DOKU tidak dapat menjangkau localhost; gunakan domain HTTPS publik.'
-                : 'APP_URL = '.$appUrl;
-            $checks['xendit_configured'] = [
-                'label' => 'DOKU API credential terkonfigurasi',
-                'ok' => $doku->isConfigured(),
-                'detail' => $doku->isConfigured() ? 'Client ID dan Secret Key terisi.' : 'DOKU_CLIENT_ID / DOKU_SECRET_KEY masih kosong.',
-            ];
-            $checks['xendit_live'] = [
-                'label' => 'Environment DOKU',
-                'ok' => ! $doku->isSandbox(),
-                'detail' => $doku->isSandbox() ? 'Sandbox aktif untuk pengujian.' : 'Production aktif.',
-            ];
-            $checks['xendit_callback_token'] = [
-                'label' => 'Verifikasi signature webhook DOKU',
-                'ok' => $doku->isConfigured(),
-                'detail' => 'Signature HMAC-SHA256 DOKU Checkout diverifikasi otomatis.',
-            ];
-            $checks['doku_direct'] = [
-                'label' => 'Hosted DOKU Checkout',
-                'ok' => $doku->isConfigured(),
-                'detail' => 'Pelanggan diarahkan ke halaman aman DOKU untuk memilih kanal pembayaran.',
-            ];
-            $checks['webhook_route']['detail'] = 'payment/doku/notification, payment/notification, dan digiflazz/callback sudah dikecualikan dari CSRF.';
-        }
+        $checks['midtrans_signature']['detail'] = 'Signature SHA-512 notifikasi Midtrans diverifikasi otomatis.';
 
         $pushStats = [
             'configured' => !empty(config('services.vapid.public_key')) && !empty(config('services.vapid.private_key')),
@@ -462,7 +518,7 @@ class AdminController extends Controller
             if ($brand->detail_bg) {
                 MediaStore::delete($brand->detail_bg);
             }
-            $data['detail_bg'] = ImageOptimizer::optimizeAndCrop($request->file('detail_bg'), '21:9');
+            $data['detail_bg'] = ImageOptimizer::optimizeAndCrop($request->file('detail_bg'), '16:5');
             $data['detail_bg_position'] = $request->input('detail_bg_position', 'center');
         } elseif ($request->boolean('remove_detail_bg')) {
             if ($brand->detail_bg) {
@@ -526,13 +582,11 @@ class AdminController extends Controller
     // ---- ORDERS ----
     public function orders(Request $request)
     {
-        if ($request->input('type') === 'jual-beli') {
-            return redirect()->route('admin.account-orders', $request->only([
-                'type', 'status', 'date_from', 'date_until', 'search',
-            ]));
-        }
+        $serviceType = $request->route('service_type', 'topup');
+        abort_unless(in_array($serviceType, ['topup', 'joki'], true), 404);
 
         $orders = Order::with('user', 'transaction')
+            ->where('service_type', $serviceType)
             ->when($request->filled('status') && $request->status !== 'all', fn ($query) => $query->where('status', $request->status))
             ->when($request->filled('date_from'), fn ($query) => $query->whereDate('created_at', '>=', $request->date_from))
             ->when($request->filled('date_until'), fn ($query) => $query->whereDate('created_at', '<=', $request->date_until))
@@ -550,7 +604,10 @@ class AdminController extends Controller
             ->paginate(20)
             ->withQueryString();
 
-        return view('admin.orders.index', compact('orders'));
+        $pageTitle = $serviceType === 'joki' ? 'Pesanan Joki' : 'Pesanan Top Up';
+        $ordersRoute = $serviceType === 'joki' ? 'admin.orders.joki' : 'admin.orders.topup';
+
+        return view('admin.orders.index', compact('orders', 'pageTitle', 'ordersRoute'));
     }
 
     public function ordersShow(Order $order)
@@ -700,7 +757,7 @@ class AdminController extends Controller
         return $record->wasRecentlyCreated ? $record : null;
     }
 
-    // ---- ACCOUNT ORDERS (Jual Beli Akun) ----
+    // ---- ACCOUNT ORDERS (Stock Akun) ----
     public function accountOrders(Request $request)
     {
         if ($request->input('type') === 'topup') {
@@ -1145,7 +1202,7 @@ $jbaGameBannerKeys = [
         }
     }
 
-    // QRIS statis untuk pembayaran Jual Beli Akun.
+    // QRIS statis untuk pembayaran Stock Akun.
     if ($request->hasFile('qris_image') && $request->file('qris_image')->isValid()) {
         $oldQris = \App\Models\SiteSetting::get('qris_image');
         if ($oldQris && Storage::disk('public')->exists($oldQris)) {

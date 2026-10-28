@@ -8,16 +8,13 @@
     // tampilan metode pembayaran tidak berbeda.
     $channelCategory = function (string $code): string {
         $code = strtolower($code);
-        if ($code === 'doku_checkout') return 'doku';
         if (in_array($code, ['qris'], true)) return 'qris';
-        if ($code === 'doku_wallet') return 'ewallet';
         if ($code === 'akulaku') return 'paylater';
         if (str_ends_with($code, '_va')) return 'va';
         if (in_array($code, ['alfamart', 'indomaret'], true)) return 'convenience_store';
         return 'ewallet';
     };
     $categories = [
-        'doku' => 'Pembayaran Aman DOKU',
         'qris' => 'QRIS',
         'ewallet' => 'E-Wallet',
         'paylater' => 'PayLater',
@@ -150,7 +147,7 @@
 
                             @if($group->requires_zone_id)
                                 <div class="gd-field" style="margin-top:.7rem;">
-                                    <label for="zi_{{ $brandKey }}">Zone / Server ID <span style="color:#f87171;">*</span></label>
+                                    <label for="zi_{{ $brandKey }}">{{ $group->uses_server_id ? 'Server ID' : 'Zone ID' }} <span style="color:#f87171;">*</span></label>
                                     <input type="text" inputmode="numeric" id="zi_{{ $brandKey }}"
                                            name="accounts[{{ $brandKey }}][zone_id]"
                                            value="{{ $value['zone_id'] ?? '' }}"
@@ -209,7 +206,7 @@
                 <div class="gd-card">
                     <div class="gd-step-head">
                         <div class="gd-step-num">3</div>
-                        <div class="gd-step-title">Pilih Pembayaran</div>
+                        <div><div class="gd-step-title">Pilih Pembayaran</div><div class="gd-step-subtitle">Diproses aman melalui {{ $gatewayName }}</div></div>
                     </div>
 
                     <input type="hidden" name="payment_method" id="payInput" value="{{ $selectedPay }}">
@@ -229,7 +226,7 @@
                                         <div class="gd-pay-cat-body">
                                             @foreach($catMethods as $pm)
                                                 @php($pmMin = $minAmounts[$catKey] ?? 1000)
-                                                <div class="gd-pay-row {{ $selectedPay === $pm->code ? 'selected' : '' }}" data-key="{{ $pm->code }}" data-min="{{ $pmMin }}">
+                                                <div class="gd-pay-row {{ $selectedPay === $pm->code ? 'selected' : '' }}" data-key="{{ $pm->code }}" data-min="{{ $pmMin }}" data-provider="{{ $pm->gateway_provider }}" data-gateway-code="{{ $pm->gateway_code }}">
                                                     <input type="radio" name="pay_choice" value="{{ $pm->code }}" {{ $selectedPay === $pm->code ? 'checked' : '' }} hidden>
                                                     <button type="button" class="gd-pay-row-head">
                                                         <span class="gd-pay-icon">

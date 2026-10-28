@@ -1,6 +1,6 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Tampilan Jual Beli Akun')
+@section('title', 'Tampilan Stock Akun')
 
 @push('styles')
 <style>
@@ -23,7 +23,7 @@
 @section('content')
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
     <div>
-    <h2 class="text-lg font-semibold">Tampilan Jual Beli Akun</h2>
+    <h2 class="text-lg font-semibold">Tampilan Stock Akun</h2>
         <p class="text-sm mt-1" style="color:var(--text-muted)">Atur urutan, foto kartu, dan banner game dari marketplace. Perubahan disimpan di company profile dan langsung dipakai kedua website.</p>
     </div>
     <a href="{{ route('admin.account-listings') }}" class="btn btn-ghost"><i class="fas fa-arrow-left"></i> Kembali ke Listing</a>
@@ -35,7 +35,7 @@
 
 @if($cards->isEmpty())
     <div class="card-glass p-6">
-        <p style="color:var(--text-muted)">Belum ada game populer. Aktifkan game populer terlebih dahulu agar kartu Jual Beli Akun muncul di sini.</p>
+        <p style="color:var(--text-muted)">Belum ada game populer. Aktifkan game populer terlebih dahulu agar kartu Stock Akun muncul di sini.</p>
     </div>
 @else
     <div class="jba-card-admin-grid">
@@ -80,7 +80,7 @@
                 </form>
 
                 @if($card['thumbnail_url'])
-                    <form action="{{ route('admin.jba-game-cards.destroy', $brand) }}" method="POST" class="mt-2" onsubmit="return confirm('Hapus gambar kartu Jual Beli Akun untuk {{ $brand->name }}?')">
+                    <form action="{{ route('admin.jba-game-cards.destroy', $brand) }}" method="POST" class="mt-2" onsubmit="return confirm('Hapus gambar kartu Stock Akun untuk {{ $brand->name }}?')">
                         @csrf
                         @method('DELETE')
                         <button type="submit" class="btn btn-ghost w-full" style="justify-content:center;color:#ef4444"><i class="fas fa-trash"></i> Hapus Gambar</button>

@@ -1,11 +1,11 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Jual Beli Akun')
+@section('title', 'Stock Akun')
 
 @section('content')
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
     <div class="flex items-center space-x-3">
-        <h2 class="text-lg font-semibold">Jual Beli Akun</h2>
+        <h2 class="text-lg font-semibold">Stock Akun</h2>
         <span class="badge badge-neutral">{{ $listings->total() }} hasil</span>
     </div>
     <div class="flex items-center gap-3">

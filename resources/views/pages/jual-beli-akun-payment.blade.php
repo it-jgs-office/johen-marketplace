@@ -16,7 +16,6 @@
 
   <div class="jpay-grid">
     <div class="jpay-left">
-      @include('partials.doku-payment-status', ['paymentOrder' => $accountOrder])
 
       <div class="jpay-card">
         <div class="jpay-card-head">
@@ -25,9 +24,23 @@
         </div>
         <div class="jpay-status" id="jpayStatusBody">
           <div class="jpay-status-left">
-            <div class="jpay-status-icon" id="jpayStatusIcon">
-              <svg class="spin-slow" viewBox="0 0 24 24" fill="none" stroke="var(--gold)" stroke-width="2" width="44" height="44">
-                <path d="M21 12a9 9 0 11-6.219-8.56"/>
+            <div class="jpay-status-icon jpay-status-icon-terminal" id="jpayStatusIcon">
+              <svg class="jpay-pos-terminal" viewBox="0 0 96 96" role="img" aria-label="Animasi terminal pembayaran">
+                <circle cx="47" cy="49" r="43" fill="#162f68" opacity=".55"/>
+                <g class="jpay-pos-device">
+                  <rect x="23" y="19" width="53" height="68" rx="10" fill="#3158ad" stroke="#a9caff" stroke-width="2.5"/>
+                  <rect class="jpay-pos-screen" x="31" y="29" width="37" height="22" rx="4" fill="#d5f6ff" stroke="#183d87" stroke-width="2"/>
+                  <path d="M38 37h23M38 43h16" fill="none" stroke="#3987bc" stroke-width="2.5" stroke-linecap="round"/>
+                  <circle cx="36" cy="61" r="2.5" fill="#bbd7ff"/><circle cx="49" cy="61" r="2.5" fill="#bbd7ff"/><circle cx="62" cy="61" r="2.5" fill="#bbd7ff"/>
+                  <circle cx="36" cy="71" r="2.5" fill="#bbd7ff"/><circle cx="49" cy="71" r="2.5" fill="#bbd7ff"/><circle cx="62" cy="71" r="2.5" fill="#f8c64f"/>
+                  <path d="M39 80h21" fill="none" stroke="#142f70" stroke-width="3" stroke-linecap="round"/>
+                </g>
+                <g class="jpay-pos-card">
+                  <rect x="56" y="7" width="30" height="19" rx="4" fill="#ffca54" stroke="#fff0bc" stroke-width="2"/>
+                  <path d="M58 14h26" stroke="#d78831" stroke-width="3"/>
+                  <rect x="62" y="18" width="6" height="4" rx="1" fill="#fff1bb"/>
+                </g>
+                <path class="jpay-pos-signal" d="M75 39c3-3 3-7 0-10m5 14c6-6 6-13 0-19" fill="none" stroke="#7ae5ff" stroke-width="2.5" stroke-linecap="round"/>
               </svg>
             </div>
             <div class="jpay-status-info">
@@ -44,7 +57,7 @@
       <div class="jpay-card">
         <div class="jpay-card-head">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-          <span>{{ $gatewayType === 'doku_checkout' ? 'Pembayaran Aman DOKU' : 'Metode Pembayaran' }}</span>
+          <span>Metode Pembayaran</span>
         </div>
         <div class="jpay-method" id="jpayMethodBody">
 
@@ -69,7 +82,9 @@
             <div class="jpay-method-qr-wrap">
               <div class="jpay-method-qr">
                 <div class="jpay-qr-dummy">
-                  @if($isDynamic && $qrString)
+                  @if(data_get($gatewayExtra, 'qr_image_url'))
+                    <img src="{{ data_get($gatewayExtra, 'qr_image_url') }}" alt="QRIS" width="220" height="220" style="display:block;border-radius:6px;background:#fff" loading="lazy">
+                  @elseif($isDynamic && $qrString)
                     <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ urlencode($qrString) }}" alt="QRIS" width="220" height="220" style="display:block;border-radius:6px;background:#fff" loading="lazy">
                   @elseif($qrisImage)
                     <img src="{{ media_url($qrisImage) }}" alt="QRIS" width="220" height="220" style="display:block;border-radius:6px;">
@@ -87,7 +102,7 @@
             <div class="jpay-money-box">
               <div class="jpay-nominal-label">Nominal Pembayaran</div>
               <div class="jpay-nominal-value">Rp {{ number_format($accountOrder->cash_amount, 0, ',', '.') }}</div>
-              @if($isDynamic)
+              @if($isDynamic || data_get($gatewayExtra, 'integration') === 'core_api')
                 <p class="jpay-nominal-note" style="color:#34d399;font-weight:600">Nominal otomatis sudah terisi pada QRIS ketika kamu scan &mdash; tanpa perlu memasukkan angka secara manual.</p>
               @else
                 <p class="jpay-nominal-note">Nominal sudah dihitung otomatis dari harga akun. Masukkan angka ini saat membayar.</p>
@@ -97,6 +112,9 @@
             <div class="jpay-money-box">
               <div class="jpay-money-label">Nomor Virtual Account</div>
               <div class="jpay-money-value" id="jpayMoneyValue">{{ $vaNumber }}</div>
+              @if(data_get($gatewayExtra, 'biller_code'))
+                <div class="jpay-money-note">Kode Biller Mandiri: {{ data_get($gatewayExtra, 'biller_code') }}</div>
+              @endif
               @if($gatewayExtra['bank_code'] ?? null)
                 <div class="jpay-money-note">{{ $gatewayExtra['bank_code'] }} Virtual Account</div>
               @endif
@@ -169,14 +187,14 @@
 
           <div class="jpay-method-success" id="jpayMethodSuccess" style="display:none">
             <div class="jpay-success-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="3" width="56" height="56"><path d="M20 6 9 17l-5-5"/></svg>
+              <img class="jpay-success-lordicon" src="https://media.lordicon.com/icons/wired/flat/2607-credit-card-shield.gif" alt="Pembayaran berhasil">
             </div>
             <div class="jpay-success-label" id="jpaySuccessLabel">Pembayaran Berhasil</div>
             <div class="jpay-success-sub" id="jpaySuccessSub">Data login akun sedang dikirim ke email kamu.</div>
           </div>
           <div class="jpay-method-failed" id="jpayMethodFailed" style="display:none">
             <div class="jpay-failed-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" width="56" height="56"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+              <img class="jpay-failed-lordicon" src="{{ asset('assets/icon/payment-failed.svg') }}" alt="Pembayaran gagal">
             </div>
             <div class="jpay-failed-label">Pembayaran Gagal</div>
             <div class="jpay-failed-sub">Pesanan dibatalkan. Silakan hubungi admin</div>
@@ -261,7 +279,7 @@
           @endauth
           <a href="{{ route('jual-beli-akun') }}" class="btn btn-outline btn-full">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
-            Kembali ke Jual Beli Akun
+            Kembali ke Stock Akun
           </a>
         </div>
       </div>
@@ -345,6 +363,19 @@
 .jpay-status { display: flex; align-items: center; justify-content: space-between; padding: 1.2rem; gap: .8rem; }
 .jpay-status-left { display: flex; align-items: center; gap: .8rem; }
 .jpay-status-icon { flex-shrink: 0; line-height: 0; }
+.jpay-status-icon-terminal, .jpay-status-icon-success, .jpay-status-icon-failed { display: grid; place-items: center; width: 94px; height: 94px; border-radius: 22px; }
+.jpay-status-icon-terminal { background: radial-gradient(circle at 50% 40%, rgba(81,139,242,.22), rgba(34,66,137,.09) 70%, transparent); }
+.jpay-status-icon-success { background: radial-gradient(circle at 50% 40%, rgba(52,211,153,.2), rgba(16,185,129,.06) 70%, transparent); }
+.jpay-status-icon-failed { background: radial-gradient(circle at 50% 40%, rgba(248,113,113,.2), rgba(239,68,68,.06) 70%, transparent); }
+.jpay-status-icon-terminal .jpay-pos-terminal, .jpay-status-icon-success .jpay-success-lordicon, .jpay-status-icon-failed .jpay-failed-lordicon { display: block; width: 88px; height: 88px; object-fit: contain; }
+.jpay-pos-device { animation: jpayPosFloat 3.4s ease-in-out infinite; transform-origin: center; }
+.jpay-pos-card { animation: jpayPosTap 3.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+.jpay-pos-screen { animation: jpayPosScreenGlow 3.4s ease-in-out infinite; }
+.jpay-pos-signal { animation: jpayPosSignalPulse 3.4s ease-in-out infinite; }
+@keyframes jpayPosFloat { 0%,100% { transform: translateY(0); } 50% { transform: translateY(1.5px); } }
+@keyframes jpayPosTap { 0%,10%,100% { transform: translate(10px,-10px) rotate(9deg); opacity: 0; } 22% { opacity: 1; } 40%,56% { transform: translate(-9px,10px) rotate(-7deg); opacity: 1; } 76% { transform: translate(10px,-10px) rotate(9deg); opacity: 1; } 88% { opacity: 0; } }
+@keyframes jpayPosScreenGlow { 0%,34%,75%,100% { fill: #d5f6ff; } 45%,62% { fill: #8ce8f8; } }
+@keyframes jpayPosSignalPulse { 0%,32%,72%,100% { opacity: 0; } 42%,60% { opacity: 1; } }
 .jpay-status-label { font-weight: 700; font-size: .95rem; }
 .jpay-status-sub { font-size: .75rem; color: var(--text-mute); margin-top: .1rem; }
 .jpay-status-pill { display: inline-block; padding: .25rem .7rem; border-radius: 6px; font-size: .7rem; font-weight: 700; background: rgba(251, 191, 36, .15); color: #fbbf24; white-space: nowrap; }
@@ -387,12 +418,24 @@
 .jpay-next-step { display: flex; align-items: flex-start; gap: .45rem; margin-top: .8rem; margin-bottom: 1rem; padding: .7rem .9rem; background: var(--bg-soft); border-radius: 10px; font-size: .72rem; color: var(--text-dim); line-height: 1.5; }
 .jpay-next-step svg { flex-shrink: 0; margin-top: 2px; }
 
-.jpay-method-success, .jpay-method-failed { display: flex; flex-direction: column; align-items: center; padding: 2rem 1.5rem; text-align: center; }
-.jpay-success-icon, .jpay-failed-icon { margin-bottom: .8rem; }
-.jpay-success-label { font-weight: 800; font-size: 1.1rem; color: #34d399; }
-.jpay-success-sub { font-size: .82rem; color: var(--text-dim); margin-top: .25rem; }
-.jpay-failed-label { font-weight: 800; font-size: 1.1rem; color: #f87171; }
-.jpay-failed-sub { font-size: .82rem; color: var(--text-dim); margin-top: .25rem; }
+.jpay-method-success, .jpay-method-failed { display: flex; flex-direction: column; align-items: center; gap: .5rem; padding: .6rem 0; text-align: center; }
+.jpay-success-icon, .jpay-failed-icon { animation: jpayPopIn .4s cubic-bezier(.2,.9,.3,1.2); }
+@keyframes jpayPopIn { 0% { transform: scale(0); opacity: 0; } 100% { transform: scale(1); opacity: 1; } }
+.jpay-failed-lordicon, .jpay-success-lordicon { display: block; width: 72px; height: 72px; object-fit: contain; }
+.jpay-success-label { font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; color: #34d399; }
+.jpay-success-sub { font-size: .78rem; color: var(--text-dim); }
+.jpay-failed-label { font-family: var(--font-display); font-weight: 800; font-size: 1.1rem; color: #f87171; }
+.jpay-failed-sub { font-size: .78rem; color: var(--text-dim); }
+
+@media (prefers-reduced-motion: reduce) {
+  .jpay-pos-device, .jpay-pos-card, .jpay-pos-screen, .jpay-pos-signal, .jpay-success-icon, .jpay-failed-icon { animation: none; }
+  .jpay-pos-card { transform: translate(-9px,10px) rotate(-7deg); opacity: 1; }
+  .jpay-pos-signal { opacity: 1; }
+}
+
+@media (max-width: 640px) {
+  .jpay-status { flex-direction: column; align-items: stretch; }
+}
 
 .jpay-ringkasan { display: flex; flex-direction: column; }
 .jpay-ringkasan-product { display: flex; align-items: center; gap: .7rem; padding: 1rem 1.1rem; border-bottom: 1px solid var(--border); }
@@ -468,6 +511,9 @@
   const gatewayType = @json($gatewayType);
   const checkoutUrl = @json($checkoutUrl);
   const invoiceUrl = @json($invoiceUrl);
+  const jpayFailedAnimationUrl = @json(asset('assets/icon/payment-failed.svg'));
+  const jpayExpiredAnimationUrl = @json(asset('assets/icon/payment-expired.svg'));
+  const jpayPendingTerminalMarkup = document.getElementById('jpayStatusIcon').innerHTML;
   const accountReviewUrl = @json(route('account-reviews.store', $accountOrder));
   const accountReviewCsrf = document.querySelector('meta[name="csrf-token"]')?.content || '';
   let accountHasReviewed = @json($hasReviewed);
@@ -532,8 +578,12 @@
     const methodSuccessSub = document.getElementById('jpaySuccessSub');
     const methodFailed = document.getElementById('jpayMethodFailed');
 
+    icon.classList.toggle('jpay-status-icon-terminal', type === 'pending' || type === 'processing');
+    icon.classList.toggle('jpay-status-icon-success', type === 'success');
+    icon.classList.toggle('jpay-status-icon-failed', type === 'failed' || type === 'expired' || type === 'cancelled');
+
     if (type === 'processing') {
-      icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2.5" width="44" height="44"><path d="M12 6v6l4 2"/></svg>';
+      icon.innerHTML = jpayPendingTerminalMarkup;
       label.textContent = 'Pembayaran Diterima';
       sub.textContent = 'Data login akun sedang dikirim ke email kamu.';
       pill.textContent = 'DIPROSES';
@@ -545,7 +595,7 @@
       if (methodFailed) methodFailed.style.display = 'none';
       setSummaryStatus('processing');
     } else if (type === 'success') {
-      icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#34d399" stroke-width="2.5" width="44" height="44"><path d="M20 6 9 17l-5-5"/></svg>';
+      icon.innerHTML = '<img class="jpay-success-lordicon" src="https://media.lordicon.com/icons/wired/flat/2607-credit-card-shield.gif" alt="Pembayaran berhasil">';
       label.textContent = 'Pesanan Selesai';
       sub.textContent = 'Data login akun sudah dikirim ke email kamu.';
       pill.textContent = 'BERHASIL';
@@ -558,15 +608,28 @@
       setSummaryStatus('success');
       maybeShowAccountReview('success');
     } else if (type === 'failed' || type === 'expired' || type === 'cancelled') {
-      icon.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="#f87171" stroke-width="2.5" width="44" height="44"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
-      label.textContent = type === 'expired' ? 'Pembayaran Expired' : 'Pembayaran Gagal';
-      sub.textContent = type === 'expired' ? 'Batas waktu pembayaran telah habis.' : 'Pesanan dibatalkan. Silakan hubungi admin';
-      pill.textContent = type === 'expired' ? 'EXPIRED' : 'GAGAL';
+      const cancelled = type === 'cancelled';
+      const expired = type === 'expired';
+      const terminalAnimationUrl = expired ? jpayExpiredAnimationUrl : jpayFailedAnimationUrl;
+      const terminalAnimationAlt = expired ? 'Waktu pembayaran habis' : (cancelled ? 'Pesanan dibatalkan' : 'Pembayaran gagal');
+      icon.innerHTML = '<img class="jpay-failed-lordicon" src="' + terminalAnimationUrl + '" alt="' + terminalAnimationAlt + '">';
+      label.textContent = cancelled ? 'Pesanan Dibatalkan' : expired ? 'Pembayaran Expired' : 'Pembayaran Gagal';
+      sub.textContent = cancelled ? 'Pesanan dibatalkan tanpa proses refund.' : expired ? 'Batas waktu pembayaran telah habis.' : 'Silakan coba lagi atau hubungi admin.';
+      pill.textContent = cancelled ? 'PESANAN DIBATALKAN' : expired ? 'PEMBAYARAN EXPIRED' : 'PEMBAYARAN GAGAL';
       pill.style.background = 'rgba(248,113,113,.15)';
       pill.style.color = '#f87171';
       if (methodResult) methodResult.style.display = 'none';
       if (methodSuccess) methodSuccess.style.display = 'none';
-      if (methodFailed) methodFailed.style.display = 'flex';
+      if (methodFailed) {
+        methodFailed.style.display = 'flex';
+        const methodFailedIcon = methodFailed.querySelector('.jpay-failed-lordicon');
+        if (methodFailedIcon) {
+          methodFailedIcon.src = terminalAnimationUrl;
+          methodFailedIcon.alt = terminalAnimationAlt;
+        }
+        methodFailed.querySelector('.jpay-failed-label').textContent = cancelled ? 'Pesanan Dibatalkan' : expired ? 'Pembayaran Expired' : 'Pembayaran Gagal';
+        methodFailed.querySelector('.jpay-failed-sub').textContent = cancelled ? 'Pesanan ini tidak dilanjutkan.' : expired ? 'Batas waktu pembayaran telah habis.' : 'Silakan coba lagi atau hubungi admin.';
+      }
       setSummaryStatus('failed');
     }
   }

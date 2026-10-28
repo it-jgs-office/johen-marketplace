@@ -225,7 +225,7 @@
                 <p class="text-red-400 text-xs mt-1 hidden" id="err_detail_bg"></p>
                 <div id="detailBgFrameWrap" style="display:none;margin-top:10px">
                     <p style="color:var(--text-dim);font-size:0.72rem;margin-bottom:6px">Seret gambar untuk mengatur posisi:</p>
-                    <div id="detailBgFrame" style="width:100%;aspect-ratio:4/1;border-radius:12px;overflow:hidden;position:relative;background:var(--bg-input);border:2px dashed var(--accent);cursor:grab">
+                    <div id="detailBgFrame" style="width:100%;aspect-ratio:16/5;border-radius:12px;overflow:hidden;position:relative;background:var(--bg-input);border:2px dashed var(--accent);cursor:grab">
                         <div id="detailBgFrameImg" style="width:100%;height:100%;background-size:cover;background-repeat:no-repeat;background-position:center"></div>
                     </div>
                     <input type="hidden" name="detail_bg_position" id="detailBgPosition" value="center">

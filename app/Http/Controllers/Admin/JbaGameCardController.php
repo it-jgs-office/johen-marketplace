@@ -55,7 +55,7 @@ class JbaGameCardController extends Controller
         ]);
 
         if (! $saved) {
-            return back()->with('error', 'Gambar tidak dapat disimpan ke API Jual Beli Akun.');
+            return back()->with('error', 'Gambar tidak dapat disimpan ke API Stock Akun.');
         }
 
         return back()->with('success', 'Tampilan '.$brand->name.' berhasil disimpan ke company profile.');
@@ -71,7 +71,7 @@ class JbaGameCardController extends Controller
         ]);
 
         if (! $deleted) {
-            return back()->with('error', 'Gambar tidak dapat dihapus dari API Jual Beli Akun.');
+            return back()->with('error', 'Gambar tidak dapat dihapus dari API Stock Akun.');
         }
 
         return back()->with('success', 'Gambar kartu '.$brand->name.' berhasil dihapus dari company profile.');

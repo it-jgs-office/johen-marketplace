@@ -12,7 +12,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminGachaPrizeController;
 use App\Http\Controllers\AdminVoucherController;
 use App\Http\Controllers\CartController;
-use App\Http\Controllers\CheckoutController;
+use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\GachaController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\JokiController;
@@ -50,6 +50,9 @@ Route::get('/service-worker.js', [PwaController::class, 'serviceWorker'])
 Route::get('/pwa-version.json', [PwaController::class, 'version'])->name('pwa.version');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+Route::get('/artikel', [ArticleController::class, 'index'])->name('articles.index');
+Route::get('/artikel/{slug}', [ArticleController::class, 'show'])->name('articles.show');
 
 Route::get('/sitemap.xml', [\App\Http\Controllers\SitemapController::class, 'index'])->name('sitemap');
 Route::get('/products/by-brand', [HomeController::class, 'getProductsByBrand'])->name('products.by-brand');
@@ -122,27 +125,19 @@ Route::post('/orders/reorder/{order}', [OrderController::class, 'reorder'])->nam
 Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
 
 /*
- * Keranjang belanja + checkout.
+ * Keranjang jual-beli akun.
  *
  * Wajib login (auth:web): keranjang disimpan di database supaya tidak hilang
- * saat ganti perangkat, dan isi keranjang selalu punya user_id untuk retrace
- * pesanan. Alur top-up yang lebih lama (Beli Sekarang / pesan inline di
- * game-detail) tetap terbuka untuk guest.
+ * saat ganti perangkat.
  */
 Route::middleware('auth:web')->group(function () {
     Route::get('/keranjang', [CartController::class, 'index'])->name('cart.index');
     Route::post('/keranjang', [CartController::class, 'store'])->name('cart.store');
     Route::post('/keranjang/kosongkan', [CartController::class, 'clear'])->name('cart.clear');
     Route::get('/keranjang/jumlah', [CartController::class, 'count'])->name('cart.count');
-Route::get('/keranjang/state', [CartController::class, 'state'])->name('cart.state');
-    Route::patch('/keranjang/item/{item}', [CartController::class, 'update'])->name('cart.update');
+    Route::get('/keranjang/state', [CartController::class, 'state'])->name('cart.state');
     Route::delete('/keranjang/item/{item}', [CartController::class, 'destroy'])->name('cart.destroy');
 
-    Route::get('/checkout', [CheckoutController::class, 'create'])->name('checkout.create');
-    Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
-    Route::get('/checkout/{checkout}/status', [CheckoutController::class, 'status'])->name('checkout.status');
-    Route::post('/checkout/{checkout}/simulasi', [CheckoutController::class, 'simulate'])->name('checkout.simulate');
-    Route::get('/checkout/{checkout}/pembayaran', [CheckoutController::class, 'payment'])->name('checkout.payment');
 });
 
 Route::get('/payment/detail/{order}', [PaymentController::class, 'detail'])->name('payment.detail');
@@ -153,9 +148,8 @@ Route::post('/payment/cancel/{order}', [PaymentController::class, 'cancel'])->na
 Route::post('/payment/simulate/{order}', [PaymentController::class, 'simulatePay'])
     ->name('payment.simulate');
 
-Route::post('/payment/notification', [PaymentController::class, 'notificationHandler'])->name('payment.notification');
-Route::post('/payment/doku/notification', \App\Http\Controllers\DokuNotificationController::class)
-    ->name('payment.doku.notification');
+Route::post('/payment/notification', \App\Http\Controllers\MidtransNotificationController::class)
+    ->name('payment.notification');
 
 Route::post('/reviews/{order}', [ReviewController::class, 'store'])->name('reviews.store')->middleware('auth:web');
 Route::post('/account-reviews/{accountOrder}', [ReviewController::class, 'storeAccount'])->name('account-reviews.store')->middleware('auth:web');
@@ -254,7 +248,9 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::get('/event-themes/{theme}/preview', [App\Http\Controllers\Admin\EventThemeController::class, 'preview'])->name('event-themes.preview');
     Route::delete('/event-themes/{theme}', [App\Http\Controllers\Admin\EventThemeController::class, 'destroy'])->name('event-themes.destroy');
 
-    Route::get('/orders', [AdminController::class, 'orders'])->name('orders');
+    Route::get('/orders', [AdminController::class, 'orders'])->defaults('service_type', 'topup')->name('orders');
+    Route::get('/orders/topup', [AdminController::class, 'orders'])->defaults('service_type', 'topup')->name('orders.topup');
+    Route::get('/orders/joki', [AdminController::class, 'orders'])->defaults('service_type', 'joki')->name('orders.joki');
     Route::get('/email-preview/order-status/{status}/{order?}', [AdminController::class, 'orderEmailPreview'])
         ->whereIn('status', ['success', 'failed'])
         ->whereNumber('order')

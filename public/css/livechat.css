@@ -48,25 +48,25 @@
   visibility: visible;
 }
 
-/* Token ungu lebih terang khusus lingkup live chat */
+/* Token biru khusus lingkup live chat */
 .lc-popup,
 .lc-context-menu,
 .lc-image-lightbox,
 .lc-image-reactions {
-  --purple: #8b5cf6;
-  --purple-light: #a78bfa;
-  --purple-dark: #6d28d9;
+  --purple: #2563eb;
+  --purple-light: #60a5fa;
+  --purple-dark: #1d4ed8;
 }
 .lc-popup input,
 .lc-popup textarea {
-  --purple: #8b5cf6;
-  --purple-light: #a78bfa;
+  --purple: #2563eb;
+  --purple-light: #60a5fa;
 }
 
 .lc-header {
   min-height: 68px;
   padding: 15px 18px;
-  background: linear-gradient(120deg, rgba(63,109,245,.16), rgba(139,92,246,.12)), var(--bg, #100821);
+  background: linear-gradient(120deg, rgba(37,99,235,.16), rgba(14,165,233,.12)), var(--bg, #100821);
   color: var(--text, #f5f3fb);
   flex-shrink: 0;
   display: flex;
@@ -126,7 +126,7 @@
   font-weight: 700;
   letter-spacing: 1.2px;
   text-transform: uppercase;
-  color: var(--purple-light, #9d5cf5);
+  color: var(--purple-light, #60a5fa);
 }
 .lc-panel-grid {
   display: grid;
@@ -149,10 +149,10 @@
 }
 .lc-game-card:hover {
   background: var(--surface-3, rgba(255,255,255,.08));
-  border-color: var(--purple, #7c3aed);
+  border-color: var(--purple, #2563eb);
 }
 [data-theme="light"] .lc-game-card:hover {
-  border-color: var(--purple, #7c3aed);
+  border-color: var(--purple, #2563eb);
 }
 .lc-game-avatar {
   width: 48px;
@@ -194,7 +194,7 @@
   line-height: 1.3;
 }
 .lc-game-admin.active {
-  color: var(--purple-light, #9d5cf5);
+  color: var(--purple-light, #60a5fa);
 }
 .lc-game-admin.inactive {
   color: var(--text-mute, rgba(255,255,255,.35));
@@ -306,7 +306,7 @@
   border: 1px solid var(--border, rgba(255,255,255,.08));
 }
 .lc-notif-row > svg {
-  color: var(--purple-light, #9d5cf5);
+  color: var(--purple-light, #60a5fa);
   flex-shrink: 0;
 }
 .lc-notif-info {

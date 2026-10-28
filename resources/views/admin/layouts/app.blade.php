@@ -671,11 +671,21 @@
                 </a>
 
                 <div class="nav-section">Pesanan</div>
-                <a href="{{ route('admin.orders') }}" class="{{ request()->routeIs('admin.orders*') ? 'active' : '' }}">
-                    <i class="fas fa-shopping-cart"></i> Pesanan Top Up &amp; Joki
+                @php
+                    $activeOrder = request()->route('order');
+                    $isTopupOrderPage = request()->routeIs('admin.orders', 'admin.orders.topup')
+                        || (request()->routeIs('admin.orders.show') && $activeOrder?->service_type !== 'joki');
+                    $isJokiOrderPage = request()->routeIs('admin.orders.joki')
+                        || (request()->routeIs('admin.orders.show') && $activeOrder?->service_type === 'joki');
+                @endphp
+                <a href="{{ route('admin.orders.topup') }}" class="{{ $isTopupOrderPage ? 'active' : '' }}">
+                    <i class="fas fa-bolt"></i> Pesanan Top Up
+                </a>
+                <a href="{{ route('admin.orders.joki') }}" class="{{ $isJokiOrderPage ? 'active' : '' }}">
+                    <i class="fas fa-trophy"></i> Pesanan Joki
                 </a>
                 <a href="{{ route('admin.account-orders') }}" class="{{ request()->routeIs('admin.account-orders*') ? 'active' : '' }}">
-                    <i class="fas fa-file-invoice-dollar"></i> Pesanan Akun
+                    <i class="fas fa-file-invoice-dollar"></i> Pesanan Stock Akun
                 </a>
 
                 <div class="nav-section">Produk</div>
@@ -686,7 +696,7 @@
                     <i class="fas fa-trophy"></i> Paket Joki MLBB
                 </a>
                 <a href="{{ route('admin.account-listings') }}" class="{{ request()->routeIs('admin.account-listings*') ? 'active' : '' }}">
-                    <i class="fas fa-store"></i> Jual Beli Akun
+                    <i class="fas fa-store"></i> Stock Akun
                 </a>
                 <a href="{{ route('admin.jba-game-cards') }}" class="{{ request()->routeIs('admin.jba-game-cards*') ? 'active' : '' }}">
                     <i class="fas fa-images"></i> Gambar Card Jual Beli

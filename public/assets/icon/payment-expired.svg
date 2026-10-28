@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <style>
+    .expired-clock{transform-origin:48px 50px;animation:expired-pop 2.8s cubic-bezier(.2,.85,.3,1) infinite}
+    .expired-progress{stroke-dasharray:214;stroke-dashoffset:0;animation:expired-drain 2.8s linear infinite}
+    .expired-minute{transform-origin:48px 50px;animation:expired-minute 2.8s cubic-bezier(.35,.05,.7,1) infinite}
+    .expired-hour{transform-origin:48px 50px;animation:expired-hour 2.8s cubic-bezier(.35,.05,.7,1) infinite}
+    .expired-wave{transform-box:fill-box;transform-origin:center;animation:expired-wave 2.8s ease-out infinite}
+    .expired-wave-b{animation-delay:.08s}
+    @keyframes expired-pop{0%,7%{transform:scale(.78);opacity:0}18%,72%{transform:scale(1);opacity:1}78%{transform:rotate(-4deg)}84%{transform:rotate(4deg)}90%{transform:rotate(0) scale(.96)}100%{transform:scale(.8);opacity:0}}
+    @keyframes expired-drain{0%,12%{stroke-dashoffset:0}70%,82%{stroke-dashoffset:214}100%{stroke-dashoffset:214}}
+    @keyframes expired-minute{0%,12%{transform:rotate(0)}70%,100%{transform:rotate(720deg)}}
+    @keyframes expired-hour{0%,12%{transform:rotate(0)}70%,100%{transform:rotate(120deg)}}
+    @keyframes expired-wave{0%,68%{transform:scale(.25);opacity:0}78%{transform:scale(1);opacity:1}94%,100%{transform:scale(1.5);opacity:0}}
+    @media(prefers-reduced-motion:reduce){.expired-clock,.expired-progress,.expired-minute,.expired-hour,.expired-wave{animation:none}.expired-clock{opacity:1}.expired-progress{stroke-dashoffset:0}.expired-wave{display:none}}
+  </style>
+  <g class="expired-clock">
+    <circle cx="48" cy="50" r="35" fill="#fffbeb" stroke="#fde68a" stroke-width="2"/>
+    <circle class="expired-progress" cx="48" cy="50" r="34" fill="none" stroke="#f59e0b" stroke-width="4" stroke-linecap="round" transform="rotate(-90 48 50)"/>
+    <g fill="#f59e0b">
+      <circle cx="48" cy="22" r="2"/><circle cx="76" cy="50" r="2"/><circle cx="48" cy="78" r="2"/><circle cx="20" cy="50" r="2"/>
+    </g>
+    <path class="expired-hour" d="M48 50V34" fill="none" stroke="#b45309" stroke-width="5" stroke-linecap="round"/>
+    <path class="expired-minute" d="M48 50l14 8" fill="none" stroke="#ef4444" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="48" cy="50" r="4" fill="#b45309"/>
+  </g>
+  <path class="expired-wave" d="M15 29l-5-5M12 37H5" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+  <path class="expired-wave expired-wave-b" d="M81 29l5-5M84 37h7" fill="none" stroke="#f59e0b" stroke-width="3" stroke-linecap="round"/>
+</svg>

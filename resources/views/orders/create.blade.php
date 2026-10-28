@@ -35,8 +35,8 @@
 
         @if($requiresZoneId)
         <div class="mb-4">
-            <label class="block text-sm font-medium mb-2" for="zone_id">Zone ID</label>
-            <input type="text" id="zone_id" name="zone_id" placeholder="Masukkan Zone ID" required
+            <label class="block text-sm font-medium mb-2" for="zone_id">{{ $usesServerId ? 'Server ID' : 'Zone ID' }}</label>
+            <input type="text" id="zone_id" name="zone_id" placeholder="Masukkan {{ $usesServerId ? 'Server ID' : 'Zone ID' }}" required
                    value="{{ old('zone_id', request('zone_id')) }}"
                    class="w-full bg-gray-700 border border-gray-600 rounded-lg px-4 py-2 text-white focus:border-purple-500">
             @error('zone_id')
@@ -69,10 +69,10 @@
                 <input type="checkbox" name="use_points" value="1" {{ old('use_points') ? 'checked' : '' }} class="accent-amber-400 h-5 w-5" {{ $pointBalance < 1 ? 'disabled' : '' }}>
             </label>
             @endauth
-            <label class="block text-sm font-medium mb-2">Metode Pembayaran</label>
+            <label class="block text-sm font-medium mb-1">Metode Pembayaran</label>
+            <p class="text-xs text-gray-400 mb-3">Diproses aman melalui {{ $gatewayName }}.</p>
             @php
                 $categories = [
-                    'doku' => 'Pembayaran Aman',
                     'qris' => 'QRIS',
                     'ewallet' => 'E-Wallet',
                     'paylater' => 'PayLater',
@@ -88,7 +88,7 @@
                     <div class="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-2">{{ $catLabel }}</div>
                     <div class="space-y-2">
                         @foreach($catMethods as $pm)
-                        <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-700 bg-gray-700/40 cursor-pointer hover:border-purple-500 transition payment-method-option">
+                        <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-700 bg-gray-700/40 cursor-pointer hover:border-purple-500 transition payment-method-option" data-provider="{{ $pm->gateway_provider }}" data-gateway-code="{{ $pm->gateway_code }}">
                             <input type="radio" name="payment_method" value="{{ $pm->code }}"
                                    @if(old('payment_method', $paymentMethods->first()?->code) === $pm->code) checked @endif
                                    class="accent-purple-500">

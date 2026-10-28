@@ -252,6 +252,7 @@ class JbaApiClient
         ]);
 
         $listing->setAttribute('id', (int) ($data['id'] ?? 0));
+        $listing->setAttribute('id_game', (string) ($data['id_game'] ?? ''));
         $listing->setAttribute('jba_raw', $data);
 
         return $listing;
