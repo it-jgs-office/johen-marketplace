@@ -18,9 +18,9 @@
 @endif
 
 @if($setupUser && $setupSecret && $qrCode)
-<div class="card-glass p-5 mb-6" style="border-color:rgba(37,99,235,.38)">
+<div class="card-glass p-5 mb-6" style="border-color:rgba(96,165,250,.38)">
     <div class="flex items-center gap-3 mb-5">
-        <div style="width:40px;height:40px;border-radius:12px;background:rgba(37,99,235,.16);color:#60a5fa;display:flex;align-items:center;justify-content:center">
+        <div style="width:40px;height:40px;border-radius:12px;background:rgba(96,165,250,.16);color:#60a5fa;display:flex;align-items:center;justify-content:center">
             <i class="fas fa-qrcode"></i>
         </div>
         <div>

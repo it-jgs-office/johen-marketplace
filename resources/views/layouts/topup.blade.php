@@ -3,7 +3,6 @@
         ?? pwa_asset('logo.png');
     $themeFavicon = asset('favicon.png') . '?v=' . pwa_build();
     $splashName = \App\Models\SiteSetting::get('site_name') ?: 'Johen Gaming';
-    $splashTagline = \App\Models\SiteSetting::get('site_tagline') ?: 'Top Up & Joki Game Termurah';
     $biz = business_info();
     $isAccountHubPage = request()->routeIs(
         'profile.*',
@@ -428,16 +427,16 @@
   --surface: #ffffff;
   --surface-2: #f8fbff;
   --surface-3: #eff6ff;
-  --border: rgba(26,79,141,.12);
-  --border-strong: rgba(26,79,141,.22);
-  --text: color-mix(in srgb, var(--theme-primary, #1a4f8d) 42%, #000000);
+  --border: rgba(96,165,250,.16);
+  --border-strong: rgba(96,165,250,.28);
+  --text: color-mix(in srgb, var(--theme-primary, #60a5fa) 35%, #07172a);
   --text-dim: color-mix(in srgb, var(--text) 58%, var(--surface));
   --text-mute: color-mix(in srgb, var(--text) 38%, var(--surface));
-  --purple-glow: color-mix(in srgb, var(--theme-primary, #1a4f8d) 25%, transparent);
-  --shadow-purple: 0 8px 30px -8px color-mix(in srgb, var(--theme-primary, #1a4f8d) 35%, transparent);
-  --header-bg: color-mix(in srgb, var(--theme-primary, #1a4f8d) 72%, transparent);
-  --header-bg-scrolled: color-mix(in srgb, var(--theme-primary, #1a4f8d) 82%, transparent);
-  --nav-active-text: color-mix(in srgb, var(--theme-primary-dark, #103b70) 85%, #000000);
+  --purple-glow: color-mix(in srgb, var(--theme-primary, #60a5fa) 25%, transparent);
+  --shadow-purple: 0 8px 30px -8px color-mix(in srgb, var(--theme-primary, #60a5fa) 35%, transparent);
+  --header-bg: color-mix(in srgb, var(--theme-primary, #60a5fa) 30%, #17445a);
+  --header-bg-scrolled: color-mix(in srgb, var(--theme-primary, #60a5fa) 38%, #12384d);
+  --nav-active-text: #07172a;
   --bg-card:#ffffff;
 }
 .nav-theme-btn {

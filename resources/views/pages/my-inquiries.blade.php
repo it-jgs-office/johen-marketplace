@@ -257,7 +257,7 @@ function openInqModal(el) {
   }
 
   const catColors = {
-    topup: { bg: 'rgba(37,99,235,0.15)', text: '#60a5fa' },
+    topup: { bg: 'rgba(96,165,250,0.15)', text: '#60a5fa' },
     'jual-beli-akun': { bg: 'rgba(245,158,11,0.15)', text: '#d97706' },
     pembayaran: { bg: 'rgba(59,130,246,0.15)', text: '#3b82f6' },
     keluhan: { bg: 'rgba(239,68,68,0.15)', text: '#dc2626' },
@@ -271,7 +271,7 @@ function openInqModal(el) {
   } else if (d.is_read) {
     document.getElementById('m_status').innerHTML = '<span style="display:inline-block;padding:2px 10px;border-radius:6px;font-size:0.72rem;font-weight:600;background:rgba(75,85,99,0.12);color:var(--text-dim)">Dibaca</span>';
   } else {
-    document.getElementById('m_status').innerHTML = '<span style="display:inline-block;padding:2px 10px;border-radius:6px;font-size:0.72rem;font-weight:600;background:rgba(37,99,235,0.15);color:#60a5fa">Belum dibaca</span>';
+    document.getElementById('m_status').innerHTML = '<span style="display:inline-block;padding:2px 10px;border-radius:6px;font-size:0.72rem;font-weight:600;background:rgba(96,165,250,0.15);color:#60a5fa">Belum dibaca</span>';
   }
 
   document.getElementById('inqModal').style.display = 'flex';

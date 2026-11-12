@@ -241,7 +241,7 @@
 
 <style>
 :root {
-  --jba-accent: #2563eb;
+  --jba-accent: #60a5fa;
 }
 .jba-detail-page {
   width: 100%;
@@ -764,8 +764,8 @@
   text-transform: uppercase;
 }
 @keyframes jbaGlowPulse {
-  0%, 100% { border-color: rgba(37, 99, 235, .25); box-shadow: 0 0 6px rgba(37, 99, 235, .08); }
-  50% { border-color: rgba(37, 99, 235, .7); box-shadow: 0 0 14px rgba(37, 99, 235, .25); }
+  0%, 100% { border-color: rgba(96, 165, 250, .25); box-shadow: 0 0 6px rgba(96, 165, 250, .08); }
+  50% { border-color: rgba(96, 165, 250, .7); box-shadow: 0 0 14px rgba(96, 165, 250, .25); }
 }
 .jba-transfer-icon {
   flex-shrink: 0;

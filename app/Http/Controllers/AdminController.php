@@ -171,8 +171,22 @@ class AdminController extends Controller
             ],
             'ayolinx_environment' => [
                 'label' => 'Environment Ayolinx',
-                'ok' => ! $ayolinx->isProduction(),
+                'ok' => $ayolinx->isProduction(),
                 'detail' => $ayolinx->isProduction() ? 'Production aktif.' : 'Sandbox aktif untuk pengujian.',
+            ],
+            'ayolinx_inbound' => [
+                'label' => 'Inbound VA Ayolinx',
+                'ok' => $ayolinx->isInboundConfigured(),
+                'detail' => $ayolinx->isInboundConfigured()
+                    ? 'Access Token dan callback VA siap menerima request Ayolinx.'
+                    : 'AYOLINX_INBOUND_CLIENT_KEY, secret, atau public key callback belum lengkap.',
+            ],
+            'ayolinx_production_ready' => [
+                'label' => 'Kesiapan production Ayolinx',
+                'ok' => $ayolinx->isProductionReady(),
+                'detail' => $ayolinx->isProductionReady()
+                    ? 'Outbound dan inbound Ayolinx sudah memakai konfigurasi production.'
+                    : 'Pastikan mode production aktif, base URL bukan sandbox, dan kredensial inbound lengkap.',
             ],
             'ayolinx_signature' => [
                 'label' => 'Verifikasi callback Ayolinx',
@@ -182,7 +196,7 @@ class AdminController extends Controller
             'webhook_route' => [
                 'label' => 'CSRF dikecualikan di webhook',
                 'ok' => true,
-                'detail' => 'payment/notification & digiflazz/callback sudah di-exclude CSRF.',
+                'detail' => 'Callback Ayolinx, inbound VA, dan Digiflazz sudah di-exclude CSRF.',
             ],
             'digiflazz_configured' => [
                 'label' => 'Digiflazz API terkonfigurasi',

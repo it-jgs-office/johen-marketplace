@@ -17,6 +17,7 @@ return [
     'callback_public_key_path' => $callbackPublicKeyPath === '' ? null : $callbackPublicKeyPath,
     'inbound_client_key' => env('AYOLINX_INBOUND_CLIENT_KEY'),
     'inbound_token_ttl' => (int) env('AYOLINX_INBOUND_TOKEN_TTL', 3600),
+    'inbound_timestamp_tolerance' => (int) env('AYOLINX_INBOUND_TIMESTAMP_TOLERANCE', 300),
     'base_url' => rtrim((string) env('AYOLINX_BASE_URL', 'https://sandbox.ayolinx.id'), '/'),
     'is_production' => (bool) env('AYOLINX_IS_PRODUCTION', false),
     'timeout' => (int) env('AYOLINX_TIMEOUT', 20),

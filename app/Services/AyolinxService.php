@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -26,6 +27,27 @@ class AyolinxService
     public function isProduction(): bool
     {
         return (bool) config('ayolinx.is_production', false);
+    }
+
+    public function isInboundConfigured(): bool
+    {
+        $publicKeyPath = (string) config('ayolinx.callback_public_key_path');
+
+        return trim((string) config('ayolinx.inbound_client_key')) !== ''
+            && trim((string) config('ayolinx.secret_key')) !== ''
+            && $publicKeyPath !== ''
+            && is_readable($publicKeyPath);
+    }
+
+    public function isProductionReady(): bool
+    {
+        $baseUrl = strtolower($this->baseUrl());
+
+        return $this->isConfigured()
+            && $this->isInboundConfigured()
+            && $this->isProduction()
+            && str_starts_with($baseUrl, 'https://')
+            && ! str_contains($baseUrl, 'sandbox');
     }
 
     public function createPaymentLink(array $payload): array
@@ -111,7 +133,7 @@ class AyolinxService
         $publicKeyPath = (string) config('ayolinx.callback_public_key_path');
 
         if ($expectedClientKey === '' || ! hash_equals($expectedClientKey, $clientKey)
-            || $timestamp === '' || $signature === ''
+            || ! $this->hasValidTimestamp($timestamp) || $signature === ''
             || $publicKeyPath === '' || ! is_readable($publicKeyPath)) {
             return null;
         }
@@ -127,7 +149,7 @@ class AyolinxService
         $ttl = max(60, (int) config('ayolinx.inbound_token_ttl', 3600));
         $token = Str::random(64);
 
-        Cache::put($this->inboundTokenCacheKey($token), true, now()->addSeconds($ttl));
+        Cache::put($this->inboundTokenCacheKey($token), $expectedClientKey, now()->addSeconds($ttl));
 
         return [
             'accessToken' => $token,
@@ -143,13 +165,21 @@ class AyolinxService
         string $timestamp,
         string $signature,
         string $authorization,
+        string $partnerId,
     ): string {
-        if (! preg_match('/^Bearer\s+(.+)$/i', trim($authorization), $matches)
-            || ! Cache::has($this->inboundTokenCacheKey($matches[1]))) {
+        if (! preg_match('/^Bearer\s+(.+)$/i', trim($authorization), $matches)) {
             return 'invalid_token';
         }
 
-        if ($timestamp === '' || $signature === '') {
+        $tokenClientKey = Cache::get($this->inboundTokenCacheKey($matches[1]));
+
+        if (! is_string($tokenClientKey) || $tokenClientKey === '') {
+            return 'invalid_token';
+        }
+
+        if (! hash_equals($tokenClientKey, $partnerId)
+            || ! $this->hasValidTimestamp($timestamp)
+            || $signature === '') {
             return 'invalid_signature';
         }
 
@@ -252,5 +282,22 @@ class AyolinxService
     private function inboundTokenCacheKey(string $token): string
     {
         return 'ayolinx:inbound-token:'.hash('sha256', $token);
+    }
+
+    private function hasValidTimestamp(string $timestamp): bool
+    {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?[+-]\d{2}:\d{2}$/', $timestamp) !== 1) {
+            return false;
+        }
+
+        try {
+            $requestTime = CarbonImmutable::parse($timestamp);
+        } catch (\Throwable) {
+            return false;
+        }
+
+        $tolerance = max(60, (int) config('ayolinx.inbound_timestamp_tolerance', 300));
+
+        return abs($requestTime->diffInSeconds(now(), false)) <= $tolerance;
     }
 }

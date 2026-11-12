@@ -18,7 +18,7 @@
                    style="width:44px;height:52px;text-align:center;font-size:1.3rem;font-weight:800;font-family:'Sora',sans-serif;
                           background:rgba(255,255,255,.04);border:1.5px solid rgba(255,255,255,.07);border-radius:12px;
                           color:#f5f3fb;outline:none;transition:border-color .2s;"
-                   onfocus="this.style.borderColor='#2563eb';this.style.boxShadow='0 0 0 3px rgba(37,99,235,.12)'"
+                   onfocus="this.style.borderColor='#60a5fa';this.style.boxShadow='0 0 0 3px rgba(96,165,250,.12)'"
                    onblur="if(!this.value)this.style.borderColor='rgba(255,255,255,.07)';this.style.boxShadow='none'"
                    oninput="otpInput(this)">
             @endfor
@@ -67,7 +67,7 @@
 
 <style>
 .otp-input { color:#ffffff !important; caret-color:#ffffff; background:rgba(255,255,255,.06) !important; padding:0 !important; box-sizing:content-box !important; }
-.otp-input:focus { border-color:#2563eb !important; box-shadow:0 0 0 3px rgba(37,99,235,.12) !important; }
+.otp-input:focus { border-color:#60a5fa !important; box-shadow:0 0 0 3px rgba(96,165,250,.12) !important; }
 .btn-resend:disabled { opacity:.5; cursor:not-allowed; text-decoration:none !important; }
 </style>
 

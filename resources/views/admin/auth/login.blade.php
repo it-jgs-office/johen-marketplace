@@ -58,7 +58,7 @@
         .bg .glow{position:absolute;border-radius:50%;filter:blur(120px);}
         .bg .glow-tl{
             width:460px;height:460px;left:-140px;top:-160px;
-            background:rgba(37,99,235,.32);
+            background:rgba(96,165,250,.32);
         }
         .bg .glow-tc{
             width:520px;height:520px;left:50%;top:0;transform:translateX(-50%);
@@ -66,7 +66,7 @@
         }
         .bg .glow-br{
             width:480px;height:480px;right:-160px;bottom:-180px;
-            background:rgba(124,58,237,.3);
+            background:rgba(59,130,246,.3);
         }
 
         /* ---------- Corner settings button ---------- */
@@ -228,13 +228,13 @@
             font-size:14.5px;font-weight:700;
             display:flex;align-items:center;justify-content:center;gap:9px;
             cursor:pointer;
-            box-shadow:0 10px 26px -12px rgba(37,99,235,.55),0 6px 18px -12px rgba(124,58,237,.5);
+            box-shadow:0 10px 26px -12px rgba(96,165,250,.55),0 6px 18px -12px rgba(59,130,246,.5);
             transition:box-shadow .25s,filter .25s,transform .15s;
         }
         .btn-login svg{width:17px;height:17px;}
         .btn-login:hover{
             filter:brightness(1.1);
-            box-shadow:0 14px 34px -12px rgba(37,99,235,.7),0 8px 24px -12px rgba(124,58,237,.6),0 0 26px -8px rgba(124,58,237,.4);
+            box-shadow:0 14px 34px -12px rgba(96,165,250,.7),0 8px 24px -12px rgba(59,130,246,.6),0 0 26px -8px rgba(59,130,246,.4);
         }
         .btn-login:active{transform:scale(.98);}
         .btn-login:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;}

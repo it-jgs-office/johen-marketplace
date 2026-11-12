@@ -35,7 +35,7 @@
     <section>
         <div class="dash-section-head"><h3>Ringkasan Keseluruhan</h3><p>{{ $selectedBrand ?: 'Akumulasi seluruh brand top-up' }}</p></div>
         <div class="dash-summary-grid">
-            <article class="dash-summary-card" style="--card-accent:#2563eb"><div class="dash-summary-icon"><i class="fas fa-cart-shopping"></i></div><div><div class="dash-summary-label">Total Omzet</div><div class="dash-summary-value">Rp {{ number_format($stats['total_revenue'],0,',','.') }}</div><div class="dash-summary-meta">Transaksi top-up sukses</div></div></article>
+            <article class="dash-summary-card" style="--card-accent:#60a5fa"><div class="dash-summary-icon"><i class="fas fa-cart-shopping"></i></div><div><div class="dash-summary-label">Total Omzet</div><div class="dash-summary-value">Rp {{ number_format($stats['total_revenue'],0,',','.') }}</div><div class="dash-summary-meta">Transaksi top-up sukses</div></div></article>
             <article class="dash-summary-card" style="--card-accent:#10b981"><div class="dash-summary-icon"><i class="fas fa-sack-dollar"></i></div><div><div class="dash-summary-label">Estimasi Profit</div><div class="dash-summary-value">Rp {{ number_format($stats['estimated_profit'],0,',','.') }}</div><div class="dash-summary-meta">Omzet dikurangi harga modal saat ini</div></div></article>
             <article class="dash-summary-card" style="--card-accent:#8b5cf6"><div class="dash-summary-icon"><i class="fas fa-receipt"></i></div><div><div class="dash-summary-label">Rata-rata Transaksi</div><div class="dash-summary-value">Rp {{ number_format($stats['average_order'],0,',','.') }}</div><div class="dash-summary-meta">Per transaksi sukses</div></div></article>
             <article class="dash-summary-card" style="--card-accent:#06b6d4"><div class="dash-summary-icon"><i class="fas fa-wave-square"></i></div><div><div class="dash-summary-label">Saldo Digiflazz</div><div class="dash-summary-value">{{ $stats['digiflazz_balance'] === null ? 'Tidak tersedia' : 'Rp '.number_format($stats['digiflazz_balance'],0,',','.') }}</div><div class="dash-summary-meta">Cache maksimal 5 menit</div></div></article>
@@ -46,7 +46,7 @@
         <article class="dash-panel">
             <div class="dash-panel-head"><div><h3>Tren Omzet & Profit</h3><p>Perbandingan kinerja top-up harian</p></div><div class="dash-periods" aria-label="Periode grafik"><button type="button" class="dash-period" data-days="7">7H</button><button type="button" class="dash-period is-active" data-days="14">14H</button><button type="button" class="dash-period" data-days="30">30H</button></div></div>
             <div class="dash-chart-wrap"><canvas id="topupTrendChart" aria-label="Grafik omzet dan profit top-up"></canvas></div>
-            <div class="dash-legend"><span><i style="background:#0ea5e9"></i>Omzet</span><span><i style="background:#10b981"></i>Profit</span></div>
+            <div class="dash-legend"><span><i style="background:#bfdbfe"></i>Omzet</span><span><i style="background:#10b981"></i>Profit</span></div>
         </article>
         <article class="dash-panel">
             <div class="dash-panel-head"><div><h3>Komposisi Transaksi</h3><p>Distribusi status transaksi saat ini</p></div></div>
@@ -63,7 +63,7 @@
     <section>
         <div class="dash-section-head"><h3>Kinerja Operasional</h3><p>Indikator utama untuk pengambilan keputusan</p></div>
         <div class="dash-op-grid">
-            <article class="dash-op-card" style="--op-accent:#2563eb"><i class="fas fa-chart-line"></i><strong>{{ number_format($stats['total_orders'],0,',','.') }}</strong><span>Total transaksi top-up</span></article>
+            <article class="dash-op-card" style="--op-accent:#60a5fa"><i class="fas fa-chart-line"></i><strong>{{ number_format($stats['total_orders'],0,',','.') }}</strong><span>Total transaksi top-up</span></article>
             <article class="dash-op-card" style="--op-accent:#10b981"><i class="fas fa-percent"></i><strong>{{ number_format($stats['success_rate'],1,',','.') }}%</strong><span>Tingkat transaksi berhasil</span></article>
             <article class="dash-op-card" style="--op-accent:#06b6d4"><i class="fas fa-box-open"></i><strong>{{ number_format($stats['active_products'],0,',','.') }}</strong><span>Produk aktif dari {{ $stats['total_products'] }}</span></article>
             <article class="dash-op-card" style="--op-accent:#f59e0b"><i class="fas fa-clock"></i><strong>{{ $stats['pending_orders'] }}</strong><span>Menunggu pembayaran</span></article>
@@ -126,7 +126,7 @@
         }
         const step = plotW/Math.max(1,data.length-1); const barW=Math.max(3,Math.min(13,step*.42));
         data.forEach((row,i)=>{const x=pad.l+i*step;const ph=(Number(row.profit)||0)/max*plotH;ctx.fillStyle='#10b981';ctx.fillRect(x-barW/2,pad.t+plotH-ph,barW,ph);if(i===0||i===data.length-1||i%Math.max(1,Math.ceil(data.length/7))===0){ctx.fillStyle=text;ctx.textAlign='center';ctx.fillText(row.label,x,height-12)}});
-        ctx.strokeStyle='#0ea5e9';ctx.lineWidth=2.2;ctx.lineJoin='round';ctx.lineCap='round';ctx.beginPath();
+        ctx.strokeStyle='#bfdbfe';ctx.lineWidth=2.2;ctx.lineJoin='round';ctx.lineCap='round';ctx.beginPath();
         data.forEach((row,i)=>{const x=pad.l+i*step;const y=pad.t+plotH-(Number(row.revenue)||0)/max*plotH;i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.stroke();
     }
 

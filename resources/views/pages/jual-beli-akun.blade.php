@@ -335,8 +335,8 @@
 
 <style>
 :root {
-  --jba-accent: #2563eb;
-  --jba-accent-glow: rgba(37, 99, 235, .35);
+  --jba-accent: #60a5fa;
+  --jba-accent-glow: rgba(96, 165, 250, .35);
 }
 .jba-page {
   width: 100%;
@@ -391,9 +391,9 @@
   margin: 0 calc(0px - var(--layout-gutter)) 1rem;
   padding: 0 .7rem;
   overflow: hidden;
-  border: 1px solid #3b82f6;
+  border: 1px solid #60a5fa;
   border-radius: 0;
-  background: #2563eb;
+  background: #3b82f6;
   color: #dbeafe;
 }
 .jba-transfer-marquee-icon {
@@ -403,7 +403,7 @@
   height: 22px;
   place-items: center;
   border-radius: 6px;
-  background: #1d4ed8;
+  background: #1e40af;
   color: #fff;
 }
 .jba-transfer-marquee-viewport { min-width: 0; overflow: hidden; }
@@ -1202,7 +1202,7 @@
 .jba-pubg-seller-card:hover { border-color: #60a5fa; }
 .jba-pubg-seller-card.jba-is-active {
   border-color: #38bdf8;
-  background: #2563eb;
+  background: #3b82f6;
   box-shadow: 0 0 0 2px rgba(56, 189, 248, .18);
 }
 .jba-pubg-seller-card:focus-visible { outline: 2px solid #93c5fd; outline-offset: 3px; }

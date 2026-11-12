@@ -27,6 +27,45 @@ class AyolinxPaymentService
             ?? Order::where('order_id', $reference)->first();
     }
 
+    public function findByVirtualAccount(string $virtualAccountNo): Order|Checkout|AccountOrder|null
+    {
+        return Checkout::where('va_number', $virtualAccountNo)->first()
+            ?? AccountOrder::where('va_number', $virtualAccountNo)->first()
+            ?? Order::where('va_number', $virtualAccountNo)->first()
+            ?? Checkout::where('gateway_extra->virtual_account_no', $virtualAccountNo)->first()
+            ?? AccountOrder::where('gateway_extra->virtual_account_no', $virtualAccountNo)->first()
+            ?? Order::where('gateway_extra->virtual_account_no', $virtualAccountNo)->first();
+    }
+
+    public function matchesInboundBill(
+        Order|Checkout|AccountOrder $payment,
+        string $trxId,
+        string $partnerServiceId,
+        string $customerNo,
+    ): bool {
+        if (data_get($payment->gateway_extra, 'provider') !== 'ayolinx') {
+            return false;
+        }
+
+        $references = array_filter([
+            data_get($payment->gateway_extra, 'partner_reference_no'),
+            data_get($payment->gateway_extra, 'trx_id'),
+            $payment instanceof Checkout
+                ? $payment->checkout_ref
+                : ($payment instanceof AccountOrder ? $payment->order_ref : $payment->order_id),
+        ], fn ($value) => filled($value));
+
+        if (! in_array($trxId, array_map('strval', $references), true)) {
+            return false;
+        }
+
+        $expectedPartnerServiceId = trim((string) data_get($payment->gateway_extra, 'partner_service_id'));
+        $expectedCustomerNo = trim((string) data_get($payment->gateway_extra, 'customer_no'));
+
+        return ($expectedPartnerServiceId === '' || hash_equals($expectedPartnerServiceId, $partnerServiceId))
+            && ($expectedCustomerNo === '' || hash_equals($expectedCustomerNo, $customerNo));
+    }
+
     public function sync(Order|Checkout|AccountOrder $payment): void
     {
         // Payment Link tidak menyediakan endpoint inquiry tersendiri.

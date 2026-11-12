@@ -282,7 +282,7 @@
   --gd-panel-raised: #eef6ff;
   --gd-field: #ffffff;
   --gd-border: #bfdbfe;
-  --gd-signal: #2563eb;
+  --gd-signal: #60a5fa;
 }
 .jco-topup-pay .jco-pay-row { cursor: pointer; }
 .jco-topup-pay .jco-pay-radio-input {
@@ -292,7 +292,7 @@
   opacity: 0;
   pointer-events: none;
 }
-[data-theme="light"] .jco-topup-pay .gd-pay-card-amount { color: #1d4ed8; }
+[data-theme="light"] .jco-topup-pay .gd-pay-card-amount { color: #3b82f6; }
 [data-theme="light"] .jco-topup-pay .gd-pay-row.selected .gd-pay-t { color: #0f2f66; }
 
 /* Header */
@@ -309,7 +309,7 @@
   margin-bottom: .75rem;
   transition: color .2s;
 }
-.jco-back:hover { color: var(--jba-accent, #9d5cf5); }
+.jco-back:hover { color: var(--jba-accent, #bfdbfe); }
 .jco-title {
   font-size: 1.6rem;
   font-weight: 800;
@@ -379,7 +379,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
   color: #fff;
   font-size: .78rem;
   font-weight: 700;
@@ -450,7 +450,7 @@
 .jco-field input:focus,
 .jco-field textarea:focus {
   outline: none;
-  border-color: var(--jba-accent, #9d5cf5);
+  border-color: var(--jba-accent, #bfdbfe);
   box-shadow: 0 0 0 3px rgba(157, 92, 245, .15);
 }
 .jco-field textarea {
@@ -468,7 +468,7 @@
   overflow: hidden;
   border-color: rgba(59, 130, 246, .34);
   background:
-    linear-gradient(135deg, rgba(37, 99, 235, .09), transparent 48%),
+    linear-gradient(135deg, rgba(96, 165, 250, .09), transparent 48%),
     var(--surface, #1a1a2e);
 }
 .jco-email-section::after {
@@ -481,7 +481,7 @@
   background: linear-gradient(90deg, transparent, #38bdf8);
 }
 .jco-email-section .jco-section-num {
-  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+  background: linear-gradient(135deg, #60a5fa, #3b82f6);
 }
 .jco-email-layout {
   display: grid;
@@ -527,7 +527,7 @@
   padding: .62rem .8rem;
   border: 1px solid rgba(59, 130, 246, .45);
   border-radius: 9px;
-  background: rgba(37, 99, 235, .12);
+  background: rgba(96, 165, 250, .12);
   color: #60a5fa;
   font-size: .76rem;
   font-weight: 700;
@@ -547,7 +547,7 @@
 .jco-email-confirm[hidden] { display: none !important; }
 .jco-email-confirm label { display:block;margin-bottom:.4rem;color:#6ee7b7;font-size:.75rem;font-weight:700; }
 .jco-otp-grid { display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.4rem; }
-.jco-field .jco-otp-digit { width:100%;min-width:0;height:46px;padding:0;text-align:center;font-size:1.05rem;font-weight:800;caret-color:var(--jba-accent,#9d5cf5); }
+.jco-field .jco-otp-digit { width:100%;min-width:0;height:46px;padding:0;text-align:center;font-size:1.05rem;font-weight:800;caret-color:var(--jba-accent,#bfdbfe); }
 .jco-field .jco-otp-digit.is-filled { border-color:rgba(52,211,153,.55);background:rgba(16,185,129,.09); }
 .jco-email-verify-btn { width:100%;margin-top:.55rem;padding:.62rem .8rem;border:1px solid rgba(52,211,153,.4);border-radius:9px;background:rgba(16,185,129,.12);color:#6ee7b7;font-size:.76rem;font-weight:800;cursor:pointer; }
 .jco-email-verify-btn:disabled { cursor:not-allowed;opacity:.45; }
@@ -598,7 +598,7 @@
   position: relative;
 }
 .jco-pay-opt input:checked + .jco-pay-card {
-  border-color: var(--jba-accent, #9d5cf5);
+  border-color: var(--jba-accent, #bfdbfe);
   background: rgba(157, 92, 245, .08);
   box-shadow: 0 0 0 3px rgba(157, 92, 245, .12);
 }
@@ -629,7 +629,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
   color: #fff;
   font-size: .7rem;
   font-weight: 700;
@@ -648,7 +648,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: var(--jba-accent, #9d5cf5);
+  background: var(--jba-accent, #bfdbfe);
   color: #fff;
   flex-shrink: 0;
   opacity: 0;
@@ -677,18 +677,18 @@
   padding: .85rem 1.5rem;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(135deg, #2563eb, #0ea5e9);
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
   color: #fff;
   font-weight: 700;
   font-size: .95rem;
   cursor: pointer;
   transition: transform .2s, box-shadow .2s;
-  box-shadow: 0 4px 20px -4px rgba(37, 99, 235, .45);
+  box-shadow: 0 4px 20px -4px rgba(96, 165, 250, .45);
   font-family: var(--font-body, inherit);
 }
 .jco-submit:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px -4px rgba(37, 99, 235, .6);
+  box-shadow: 0 8px 30px -4px rgba(96, 165, 250, .6);
 }
 .jco-submit:active {
   transform: translateY(0);
@@ -730,7 +730,7 @@
 }
 .jco-summary-game {
   font-size: .65rem;
-  color: var(--jba-accent, #9d5cf5);
+  color: var(--jba-accent, #bfdbfe);
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: .04em;
@@ -825,7 +825,7 @@
 }
 .jco-trust-item svg {
   flex-shrink: 0;
-  color: var(--jba-accent, #9d5cf5);
+  color: var(--jba-accent, #bfdbfe);
 }
 .jco-trust-item strong {
   color: var(--text, #fff);

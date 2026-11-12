@@ -93,7 +93,8 @@
     <h3 class="font-semibold mb-3"><i class="fas fa-clipboard-check" style="color:var(--accent)"></i> Urutan Persiapan Live</h3>
     <ol class="list-decimal list-inside space-y-1 text-sm" style="color:var(--text-muted)">
         <li>Deploy aplikasi ke hosting + domain + SSL, set <code>APP_URL=https://domainmu</code>.</li>
-        <li>Di dashboard Ayolinx, set <strong>Callback URL</strong> ke <code>{{ route('payment.notification') }}</code>.</li>
+        <li>Di dashboard Ayolinx, set <strong>Callback Payment Link</strong> ke <code>{{ route('payment.notification') }}</code>.</li>
+        <li>Daftarkan <strong>Access Token inbound</strong> <code>{{ route('ayolinx.access-token') }}</code> dan <strong>VA Payment</strong> <code>{{ route('ayolinx.va.payment') }}</code>.</li>
         <li>Aktifkan kanal Payment Link Ayolinx yang ingin ditampilkan di halaman pembayaran Johen.</li>
         <li>Pastikan mode dan kredensial <code>AYOLINX_*</code> sesuai environment yang digunakan.</li>
         <li>Set key &amp; mode Digiflazz konsisten (key live, <code>DIGIFLAZZ_PRODUCTION=true</code>), set webhook Digiflazz ke <code>{{ route('payment.digiflazz.callback') }}</code>.</li>

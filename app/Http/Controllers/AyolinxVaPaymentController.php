@@ -25,6 +25,7 @@ class AyolinxVaPaymentController extends Controller
             (string) $request->header('X-TIMESTAMP', ''),
             (string) $request->header('X-SIGNATURE', ''),
             $authorization,
+            (string) $request->header('X-PARTNER-ID', ''),
         );
 
         if ($authentication !== 'valid') {
@@ -34,6 +35,16 @@ class AyolinxVaPaymentController extends Controller
                     ? 'Access Token Invalid'
                     : 'Unauthorized Signature',
             ], 401);
+        }
+
+        foreach (['X-EXTERNAL-ID', 'CHANNEL-ID'] as $header) {
+            if (blank($request->header($header))) {
+                return $this->error('4002502', 'Invalid Mandatory Field '.$header, 400);
+            }
+        }
+
+        if (mb_strlen((string) $request->header('X-EXTERNAL-ID')) > 36) {
+            return $this->error('4002501', 'Invalid Field Format X-EXTERNAL-ID', 400);
         }
 
         $payload = $request->all();
@@ -49,18 +60,34 @@ class AyolinxVaPaymentController extends Controller
             return $this->error('4002502', 'Invalid Mandatory Field paidAmount', 400);
         }
 
-        if (! is_numeric(data_get($payload, 'paidAmount.value'))) {
+        $paidValue = (string) data_get($payload, 'paidAmount.value');
+        $paidCurrency = strtoupper(trim((string) data_get($payload, 'paidAmount.currency')));
+
+        if (preg_match('/^(?:0|[1-9][0-9]*)(?:\.[0-9]{2})$/', $paidValue) !== 1) {
             return $this->error('4002501', 'Invalid Field Format paidAmount.value', 400);
         }
 
-        $payment = $this->payments->findByReference(trim((string) $payload['trxId']));
+        if ($paidCurrency !== 'IDR') {
+            return $this->error('4002501', 'Invalid Field Format paidAmount.currency', 400);
+        }
 
-        if (! $payment || data_get($payment->gateway_extra, 'provider') !== 'ayolinx') {
+        $virtualAccountNo = trim((string) $payload['virtualAccountNo']);
+        $trxId = trim((string) $payload['trxId']);
+        $partnerServiceId = trim((string) $payload['partnerServiceId']);
+        $customerNo = trim((string) $payload['customerNo']);
+        $payment = $this->payments->findByVirtualAccount($virtualAccountNo);
+
+        if (! $payment || ! $this->payments->matchesInboundBill(
+            $payment,
+            $trxId,
+            $partnerServiceId,
+            $customerNo,
+        )) {
             return $this->error('4042512', 'Bill not found', 404);
         }
 
-        $paidAmount = (int) round((float) data_get($payload, 'paidAmount.value'));
-        $expectedAmount = (int) round((float) $payment->cash_amount);
+        $paidAmount = (int) round((float) $paidValue * 100);
+        $expectedAmount = (int) round((float) $payment->cash_amount * 100);
 
         if ($expectedAmount < 1 || $paidAmount !== $expectedAmount) {
             return $this->error('4042513', 'Invalid Amount', 404);
@@ -68,7 +95,7 @@ class AyolinxVaPaymentController extends Controller
 
         $notification = [
             'callbackType' => 'payment',
-            'originalPartnerReferenceNo' => (string) $payload['trxId'],
+            'originalPartnerReferenceNo' => $trxId,
             'originalReferenceNo' => $payload['referenceNo'] ?? $payload['paymentRequestId'],
             'paymentRequestId' => (string) $payload['paymentRequestId'],
             'latestTransactionStatus' => '00',
@@ -83,7 +110,7 @@ class AyolinxVaPaymentController extends Controller
             }
         } catch (\Throwable $e) {
             Log::error('Ayolinx VA payment callback failed', [
-                'trx_id' => $payload['trxId'],
+                'trx_id' => $trxId,
                 'payment_request_id' => $payload['paymentRequestId'],
                 'error' => $e->getMessage(),
             ]);
@@ -93,7 +120,7 @@ class AyolinxVaPaymentController extends Controller
 
         return response()->json([
             'responseCode' => '2002500',
-            'responseMessage' => 'Success',
+            'responseMessage' => 'Successful',
             'virtualAccountData' => [
                 'partnerServiceId' => (string) $payload['partnerServiceId'],
                 'customerNo' => (string) $payload['customerNo'],

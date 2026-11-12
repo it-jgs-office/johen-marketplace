@@ -1,18 +1,14 @@
 <div id="jhm-splash" role="status" aria-label="Memuat {{ $splashName }}">
     <div class="jhm-stack">
         <div class="jhm-stage">
-            <span class="jhm-halo" aria-hidden="true"></span>
-            <span class="jhm-ring" aria-hidden="true"></span>
-            <span class="jhm-logo-wrap">
-                <img class="jhm-logo" src="{{ $themeLogo }}" alt="{{ $splashName }}" width="84" height="84" decoding="sync" fetchpriority="high">
-            </span>
+            <img class="jhm-logo" src="{{ $themeLogo }}" alt="" width="76" height="76" decoding="sync" fetchpriority="high" aria-hidden="true">
         </div>
         <div class="jhm-copy">
             <div class="jhm-title">{{ $splashName }}</div>
-            <div class="jhm-sub">{{ $splashTagline }}</div>
+            <div class="jhm-sub">Memuat halaman&hellip;</div>
         </div>
+        <div class="jhm-bar" aria-hidden="true"></div>
     </div>
-    <div class="jhm-bar" aria-hidden="true"></div>
 </div>
 
 <script>
@@ -23,8 +19,8 @@
     if (root.getAttribute('data-splash') !== 'on') return;
 
     var KEY = 'jhm_splash_seen';
-    var MIN_MS = 1500;
-    var MAX_MS = 4000;
+    var MIN_MS = 900;
+    var MAX_MS = 3500;
     var started = Date.now();
     var dismissed = false;
 
@@ -42,7 +38,7 @@
         window.setTimeout(function () {
             var el = document.getElementById('jhm-splash');
             if (el && el.parentNode) el.parentNode.removeChild(el);
-        }, 500);
+        }, 350);
     }
 
     function dismissWhenReady() {
@@ -61,9 +57,6 @@
             dismissWhenReady();
         });
     }
-
-    var overlay = document.getElementById('jhm-splash');
-    if (overlay) overlay.addEventListener('click', dismiss);
 
     // Kalau tab di-switch lalu dikembalikan setelah splash dilewati, tetap
     // tutup supaya tidak ada overlay nyangkut di atas konten.

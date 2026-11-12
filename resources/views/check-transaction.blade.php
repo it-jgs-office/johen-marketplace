@@ -242,8 +242,8 @@
 .recent-tab:hover { color: var(--text); background: var(--surface); }
 .recent-tab:focus-visible { outline: 2px solid var(--purple-light); outline-offset: 2px; }
 .recent-tab.is-active {
-    border-color: rgba(37, 99, 235, .42);
-    background: rgba(37, 99, 235, .13);
+    border-color: rgba(96, 165, 250, .42);
+    background: rgba(96, 165, 250, .13);
     color: #60a5fa;
     box-shadow: inset 0 -2px 0 #3b82f6;
 }
@@ -283,7 +283,7 @@
     height: 42px;
     border: 1px solid rgba(96, 165, 250, .25);
     border-radius: 12px;
-    background: rgba(37, 99, 235, .11);
+    background: rgba(96, 165, 250, .11);
     color: #60a5fa;
 }
 .recent-item-icon--account {

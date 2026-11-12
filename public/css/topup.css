@@ -10,17 +10,17 @@
   --surface-3:color-mix(in srgb,var(--theme-card-bg,#0d2846) 79%,#ffffff);
   --border:color-mix(in srgb,var(--theme-text,#eaf2fa) 10%,transparent);
   --border-strong:color-mix(in srgb,var(--theme-text,#eaf2fa) 18%,transparent);
-  --purple:var(--theme-primary,#1a4f8d);
-  --purple-light:var(--theme-primary-light,#4d82b8);
-  --purple-dark:var(--theme-primary-dark,#103b70);
+  --purple:var(--theme-primary,#60a5fa);
+  --purple-light:var(--theme-primary-light,#bfdbfe);
+  --purple-dark:var(--theme-primary-dark,#3b82f6);
   --purple-glow:var(--theme-primary-glow,color-mix(in srgb,var(--purple) 45%,transparent));
   --gold:var(--theme-accent,#67c5df);
   --gold-dark:var(--theme-accent-dark,#3ca9c5);
-  --brand-purple:var(--theme-secondary,#24588f);
-  --action-blue:#1a4f8d;
-  --action-blue-light:#3c72ab;
+  --brand-purple:var(--theme-secondary,#60a5fa);
+  --action-blue:#3b82f6;
+  --action-blue-light:#60a5fa;
   --action-gradient:var(--action-blue);
-  --action-glow:rgba(26,79,141,.45);
+  --action-glow:rgba(96,165,250,.38);
   --brand-gradient:var(--action-gradient);
   --brand-border-gradient:var(--action-blue);
   --star:#ffc419;
@@ -34,8 +34,8 @@
   --font-display:'Sora',sans-serif;
   --font-body:'Inter',sans-serif;
   --shadow-purple:var(--theme-shadow-primary,0 8px 30px -8px color-mix(in srgb,var(--purple) 55%,transparent));
-  --header-bg:color-mix(in srgb,var(--theme-primary,#1a4f8d) 72%,transparent);
-  --header-bg-scrolled:color-mix(in srgb,var(--theme-primary,#1a4f8d) 82%,transparent);
+  --header-bg:color-mix(in srgb,var(--theme-primary,#60a5fa) 24%,rgba(6,26,49,.9));
+  --header-bg-scrolled:color-mix(in srgb,var(--theme-primary,#60a5fa) 30%,rgba(6,26,49,.96));
   --nav-active-text:var(--theme-text-on-primary,#fff);
   --bg-card:var(--theme-card-bg,#0d2846);
 }
@@ -63,10 +63,10 @@ body{
   *::-webkit-scrollbar{width:5px;height:5px;}
   *::-webkit-scrollbar-thumb{border-width:1px;}
 }
-.site-ambient{display:none;position:fixed;inset:0;z-index:1;overflow:hidden;pointer-events:none;background:radial-gradient(75% 58% at 50% -12%,rgba(26,79,141,.14),transparent 72%),radial-gradient(48% 42% at 5% 88%,rgba(21,61,114,.1),transparent 76%);}
+.site-ambient{display:none;position:fixed;inset:0;z-index:1;overflow:hidden;pointer-events:none;background:radial-gradient(75% 58% at 50% -12%,rgba(96,165,250,.14),transparent 72%),radial-gradient(48% 42% at 5% 88%,rgba(21,61,114,.1),transparent 76%);}
 html:not([data-theme="light"]) .site-ambient{display:block;}
 .site-ambient span{position:absolute;width:46vmax;height:46vmax;border-radius:50%;opacity:.18;filter:blur(32px);will-change:transform;}
-.site-ambient span:nth-child(1){top:-30vmax;left:-19vmax;background:#1a4f8d;animation:ambient-drift-one 24s ease-in-out infinite alternate;}
+.site-ambient span:nth-child(1){top:-30vmax;left:-19vmax;background:#60a5fa;animation:ambient-drift-one 24s ease-in-out infinite alternate;}
 .site-ambient span:nth-child(2){right:-24vmax;bottom:-27vmax;background:#153d72;animation:ambient-drift-two 30s ease-in-out infinite alternate;}
 .site-ambient span:nth-child(3){top:32%;left:36%;width:26vmax;height:26vmax;opacity:.1;background:#3ca9c5;animation:ambient-breathe 16s ease-in-out infinite alternate;}
 @keyframes ambient-drift-one{to{transform:translate3d(14vmax,9vmax,0) scale(1.12);}}
@@ -782,16 +782,16 @@ body.mobile-menu-open{overflow:hidden;}
   background:
     radial-gradient(ellipse at 50% 110%,color-mix(in srgb,var(--purple) 22%,transparent),transparent 60%),
     linear-gradient(108deg,color-mix(in srgb,var(--purple) 9%,#fff) 0%,#f8fbff 50%,color-mix(in srgb,var(--brand-purple) 8%,#fff) 100%);
-  box-shadow:inset 0 -1px 0 rgba(37,99,235,.1);
+  box-shadow:inset 0 -1px 0 rgba(96,165,250,.1);
 }
 [data-theme="light"] .hero-banner-card{
-  border-color:rgba(37,99,235,.14);
+  border-color:rgba(96,165,250,.14);
   box-shadow:0 18px 38px -22px rgba(30,64,175,.38);
 }
 [data-theme="light"] .hero-banner-card-active{
-  box-shadow:0 22px 48px -20px rgba(30,64,175,.42),0 0 0 1px rgba(37,99,235,.08);
+  box-shadow:0 22px 48px -20px rgba(30,64,175,.42),0 0 0 1px rgba(96,165,250,.08);
 }
-[data-theme="light"] .hero-banner-dot{background:rgba(37,99,235,.28);}
+[data-theme="light"] .hero-banner-dot{background:rgba(96,165,250,.28);}
 [data-theme="light"] .hero-banner-dot.is-active{background:var(--purple);}
 .hero-banner-img.no-transition{transition:none !important;}
 
@@ -2041,11 +2041,11 @@ main:has(.cta-section) + .site-footer{margin-top:0;}
   --gd-panel-raised:#eef6ff;
   --gd-field:#ffffff;
   --gd-border:#bfdbfe;
-  --gd-signal:#1a4f8d;
+  --gd-signal:#60a5fa;
 }
-[data-theme="light"] .gd-pay-group--cards .gd-pay-card-amount{color:#1d4ed8;}
+[data-theme="light"] .gd-pay-group--cards .gd-pay-card-amount{color:#3b82f6;}
 [data-theme="light"] .gd-pay-group--cards .gd-pay-row.selected .gd-pay-t{color:#0f2f66;}
-[data-theme="light"] .gd-pay-points-choice:has(.gd-pay-points-checkbox:checked) .gd-pay-points-action{color:#1d4ed8;}
+[data-theme="light"] .gd-pay-points-choice:has(.gd-pay-points-checkbox:checked) .gd-pay-points-action{color:#3b82f6;}
 
 /* hero (banner only) */
 .game-hero{
@@ -2531,7 +2531,7 @@ main:has(.cta-section) + .site-footer{margin-top:0;}
 }
 [data-theme="light"] .gd-mobile-toggle{background:#fff;border-color:#bfdbfe;color:#1e3a8a;}
 [data-theme="light"] .gd-mobile-bar-label{color:#64748b;}
-[data-theme="light"] .gd-mobile-bar-total{color:#1a4f8d;}
+[data-theme="light"] .gd-mobile-bar-total{color:#3b82f6;}
 
 /* accordion panel (slides up from bar) */
 .gd-mobile-panel{overflow:hidden;transition:max-height .35s ease,opacity .25s ease;max-height:0;opacity:0;}
@@ -3179,7 +3179,7 @@ main:has(.cta-section) + .site-footer{margin-top:0;}
 }
 
 /* Solid brand treatment for interactive buttons and cards. */
-.tab-pill.active,.gd-region-btn.active,.gd-qty-plus,.gd-pkg-footer,.gd-pay-group--cards .gd-pay-cat-preview{background:#1a4f8d;}
+.tab-pill.active,.gd-region-btn.active,.gd-qty-plus,.gd-pkg-footer,.gd-pay-group--cards .gd-pay-cat-preview{background:#3b82f6;}
 .gd-card,.gd-group,.gd-pay-group,.gd-pay-group--cards,.gd-pay-group--cards .gd-pay-cat-head,.gd-pay-group--cards .gd-pay-row,.gd-pay-points{background:var(--gd-panel-raised);}
 .gd-pay-group--cards .gd-pay-row.selected,.gd-pay-points:has(.gd-pay-points-checkbox:checked){background:color-mix(in srgb,var(--gd-signal) 15%,var(--gd-panel-raised));}
 .gd-pkg-main{background-color:var(--gd-panel-raised);background-image:linear-gradient(color-mix(in srgb,var(--gd-panel-raised) 84%,transparent),color-mix(in srgb,var(--gd-panel-raised) 84%,transparent)),url('/assets/card/iconj.png');background-position:center;background-repeat:no-repeat;background-size:cover,cover;}
