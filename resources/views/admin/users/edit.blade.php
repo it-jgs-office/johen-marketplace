@@ -44,21 +44,6 @@
                 @error('password') <p style="color:var(--error);font-size:0.78rem;margin-top:0.3rem">{{ $message }}</p> @enderror
             </div>
 
-            <div class="mb-6">
-                <label class="block text-sm font-medium mb-1.5">Role</label>
-                @php $assignedChannelId = $user->assignedChannels->pluck('id')->first(); @endphp
-                <select name="role" class="input-field" onchange="updateRole(this)">
-                    <option value="user" {{ !$user->is_admin && !$user->is_live_chat_admin ? 'selected' : '' }}>User Biasa</option>
-                    @foreach($channels as $ch)
-                    <option value="lc_{{ $ch->id }}" {{ $user->is_live_chat_admin && $assignedChannelId == $ch->id ? 'selected' : '' }}>Admin Live Chat - {{ $ch->name }}</option>
-                    @endforeach
-                    <option value="super_admin" {{ $user->is_admin ? 'selected' : '' }}>Super Admin</option>
-                </select>
-                <input type="hidden" name="is_admin" id="f_is_admin" value="{{ $user->is_admin ? '1' : '0' }}">
-                <input type="hidden" name="is_live_chat_admin" id="f_is_live_chat_admin" value="{{ $user->is_live_chat_admin ? '1' : '0' }}">
-                <input type="hidden" name="channel_id" id="f_channel_id" value="{{ $assignedChannelId }}">
-            </div>
-
             <div class="flex justify-end gap-3">
                 <a href="{{ route('admin.users') }}" class="btn btn-ghost">Batal</a>
                 <button type="submit" class="btn btn-primary">Simpan</button>
@@ -67,22 +52,4 @@
     </div>
 </div>
 
-<script>
-function updateRole(selectEl) {
-    const val = selectEl.value;
-    if (val === 'super_admin') {
-        document.getElementById('f_is_admin').value = '1';
-        document.getElementById('f_is_live_chat_admin').value = '0';
-        document.getElementById('f_channel_id').value = '';
-    } else if (val.startsWith('lc_')) {
-        document.getElementById('f_is_admin').value = '0';
-        document.getElementById('f_is_live_chat_admin').value = '1';
-        document.getElementById('f_channel_id').value = val.replace('lc_', '');
-    } else {
-        document.getElementById('f_is_admin').value = '0';
-        document.getElementById('f_is_live_chat_admin').value = '0';
-        document.getElementById('f_channel_id').value = '';
-    }
-}
-</script>
 @endsection

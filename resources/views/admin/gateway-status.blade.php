@@ -10,7 +10,7 @@
 <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
     <div>
         <h2 class="text-lg font-semibold">Status Gateway Pembayaran</h2>
-        <p class="text-sm" style="color:var(--text-muted)">Cek kesiapan {{ $gatewayLabel }} & Digiflazz untuk pengujian pembayaran.</p>
+        <p class="text-sm" style="color:var(--text-muted)">Cek kesiapan {{ $gatewayLabel }} &amp; Digiflazz untuk pengujian pembayaran.</p>
     </div>
     <span class="badge {{ $allOk ? 'badge-success' : 'badge-error' }}" style="font-size:0.8rem">
         <i class="fas {{ $allOk ? 'fa-check-circle' : 'fa-exclamation-triangle' }}"></i>
@@ -90,42 +90,12 @@
 </div>
 
 <div class="card-glass p-5 mt-6">
-    <h3 class="font-semibold mb-3">
-        <i class="fas fa-bell" style="color:var(--accent)"></i> Notifikasi Push Chat ({{ $pushStats['configured'] ? 'Terkonfigurasi' : 'VAPID key belum diisi' }})
-    </h3>
-    <p class="text-sm mb-3" style="color:var(--text-muted)">
-        Perangkat yang sudah aktif menerima notifikasi live chat. Angka 0 berarti belum ada browser yang menekan tombol
-        <strong>"Aktifkan Notifikasi"</strong> (di admin panel atau di widget live chat toko). Notifikasi push hanya berjalan di
-        <strong>HTTPS</strong> (atau localhost).
-    </p>
-    <div class="grid grid-cols-3 gap-3">
-        <div class="stat-card" style="text-align:center">
-            <div class="text-2xl font-bold">{{ $pushStats['admin'] }}</div>
-            <div class="text-xs text-sm" style="color:var(--text-muted)">Admin panel</div>
-        </div>
-        <div class="stat-card" style="text-align:center">
-            <div class="text-2xl font-bold">{{ $pushStats['lcadmin'] }}</div>
-            <div class="text-xs" style="color:var(--text-muted)">Live Chat Admin</div>
-        </div>
-        <div class="stat-card" style="text-align:center">
-            <div class="text-2xl font-bold">{{ $pushStats['web'] }}</div>
-            <div class="text-xs" style="color:var(--text-muted)">User toko</div>
-        </div>
-    </div>
-    @if($pushStats['admin'] + $pushStats['lcadmin'] + $pushStats['web'] > 0)
-    <p class="text-sm mt-3" style="color:var(--success)">
-        <i class="fas fa-check-circle"></i> Ada perangkat terdaftar — coba tombol <strong>"Uji"</strong> di indikator notifikasi kanan-bawah halaman admin.
-    </p>
-    @endif
-</div>
-
-<div class="card-glass p-5 mt-6">
     <h3 class="font-semibold mb-3"><i class="fas fa-clipboard-check" style="color:var(--accent)"></i> Urutan Persiapan Live</h3>
     <ol class="list-decimal list-inside space-y-1 text-sm" style="color:var(--text-muted)">
         <li>Deploy aplikasi ke hosting + domain + SSL, set <code>APP_URL=https://domainmu</code>.</li>
-        <li>Di dashboard Midtrans Sandbox, set <strong>Payment Notification URL</strong> ke <code>{{ route('payment.notification') }}</code>.</li>
-        <li>Aktifkan kanal Core API Sandbox yang ingin ditampilkan di halaman pembayaran Johen.</li>
-        <li>Pastikan <code>MIDTRANS_IS_PRODUCTION=false</code>.</li>
+        <li>Di dashboard Ayolinx, set <strong>Callback URL</strong> ke <code>{{ route('payment.notification') }}</code>.</li>
+        <li>Aktifkan kanal Payment Link Ayolinx yang ingin ditampilkan di halaman pembayaran Johen.</li>
+        <li>Pastikan mode dan kredensial <code>AYOLINX_*</code> sesuai environment yang digunakan.</li>
         <li>Set key &amp; mode Digiflazz konsisten (key live, <code>DIGIFLAZZ_PRODUCTION=true</code>), set webhook Digiflazz ke <code>{{ route('payment.digiflazz.callback') }}</code>.</li>
         <li>Set <code>PAYMENT_SIMULATION=false</code> (kecuali ingin menguji aman).</li>
     </ol>

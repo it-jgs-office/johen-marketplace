@@ -19,24 +19,18 @@
   $methodLabels = [
     'qris' => 'QRIS',
     'dana' => 'DANA',
-    'gopay' => 'GoPay',
-    'ovo' => 'OVO',
-    'shopeepay' => 'ShopeePay',
-    'linkaja' => 'LinkAja',
     'bca_va' => 'BCA Virtual Account', 'bca' => 'BCA Virtual Account',
     'bni_va' => 'BNI Virtual Account', 'bni' => 'BNI Virtual Account',
-    'bsi_va' => 'BSI Virtual Account', 'bsi' => 'BSI Virtual Account',
     'cimb_va' => 'CIMB Virtual Account', 'cimb' => 'CIMB Virtual Account',
     'bri_va' => 'BRI Virtual Account', 'bri' => 'BRI Virtual Account',
     'mandiri_va' => 'Mandiri Virtual Account', 'mandiri' => 'Mandiri Virtual Account',
-    'permata_va' => 'Permata Virtual Account', 'permata' => 'Permata Virtual Account',
     'alfamart' => 'Alfamart',
-    'indomaret' => 'Indomaret',
+    'bss_va' => 'BSS Virtual Account', 'bss' => 'BSS Virtual Account',
   ];
   $methodLabel = $methodLabels[strtolower((string) $paymentMethod)] ?? ($paidType ?: 'QRIS');
   $codeAliases = [
-    'bca' => 'bca_va', 'bni' => 'bni_va', 'bri' => 'bri_va', 'bsi' => 'bsi_va', 'cimb' => 'cimb_va',
-    'mandiri' => 'mandiri_va', 'permata' => 'permata_va',
+    'bca' => 'bca_va', 'bni' => 'bni_va', 'bri' => 'bri_va', 'bss' => 'bss_va', 'cimb' => 'cimb_va',
+    'mandiri' => 'mandiri_va',
   ];
   $methodCode = strtolower((string) $paymentMethod);
   $methodCode = $codeAliases[$methodCode] ?? $methodCode;
@@ -63,7 +57,7 @@
   @if($isDemo)
   <div class="pd-demo-banner">
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 8v8a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/><circle cx="12" cy="12" r="4"/></svg>
-    <span>@if($isSimulation)Mode Simulasi Aktif — pembayaran tidak nyata. Gunakan tombol "Simulasi Bayar" untuk menyelesaikan pesanan.@else Mode Demo — {{ $gatewayName }} belum dikonfigurasi. Tampilan hanya untuk preview.@endif</span>
+    <span>@if($isSimulation)Mode Simulasi Aktif — pembayaran tidak nyata. Gunakan tombol "Lanjut Bayar" untuk menyelesaikan pesanan.@else Mode Demo — pembayaran belum dikonfigurasi. Tampilan hanya untuk preview.@endif</span>
   </div>
   @endif
 
@@ -148,7 +142,7 @@
         </div>
       </div>
 
-      <div class="pd-payment-layout{{ $gatewayType === 'doku_checkout' ? ' pd-payment-layout-checkout' : '' }}">
+      <div class="pd-payment-layout">
       <div class="pd-card pd-method-card" id="pdMethodCard">
         <div class="pd-card-head">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
@@ -203,51 +197,30 @@
         <div class="pd-method-detail-divider"></div>
 
       {{-- METODE PEMBAYARAN --}}
-      @if($gatewayType === 'doku_checkout')
-      <div class="pd-checkout-actions" id="pdMethodPlaceholder">
-        <button class="btn btn-solid btn-lg pd-continue-payment" id="payNowBtn">
-          Lanjut Pembayaran
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
-        </button>
-        <div class="pd-payment-nav">
-          <a href="{{ route('home') }}" class="btn btn-solid">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            Kembali ke Beranda
-          </a>
-          <a href="{{ route('orders.my') }}" class="btn btn-solid">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-            Cek Transaksi
-          </a>
-        </div>
-        @if($canCancel)
-        <form method="POST" action="{{ route('payment.cancel', $order) }}" class="pd-cancel-form" id="pdCancelForm" onsubmit="return confirm('Batalkan pesanan ini? Pembayaran tidak dapat dilanjutkan setelah pesanan dibatalkan.')">
-          @csrf
-          <button type="submit" class="pd-cancel-btn">Batalkan Pesanan</button>
-        </form>
-        @endif
-      </div>
-      @else
         <div class="pd-method" id="pdMethodBody">
           <div class="pd-method-placeholder" id="pdMethodPlaceholder">
-            <div class="pd-method-illus{{ $gatewayType === 'doku_checkout' ? ' pd-method-illus-doku' : '' }}">
-              @if($gatewayType === 'doku_checkout')
-              <span>DOKU</span>
-              @else
-              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-mute)" stroke-width="1.2">
-                <rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M7 15h4"/>
-              </svg>
-              @endif
+            <div class="pd-pay-cta-head">
+              <div class="pd-pay-cta-icon">
+                @if($paymentLogo)
+                  <img src="{{ $paymentLogo }}" alt="{{ $methodLabel }}">
+                @else
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M7 15h4"/></svg>
+                @endif
+              </div>
+              <div class="pd-pay-cta-copy">
+                <span>Pembayaran belum selesai</span>
+                <strong>Selesaikan pembayaran</strong>
+              </div>
             </div>
-            <p class="pd-method-placeholder-text">{{ $gatewayType === 'doku_checkout' ? 'Metode '.$methodLabel.' sudah dipilih. Lanjutkan pembayaran pada halaman aman DOKU.' : 'Klik tombol di bawah untuk membuka pembayaran.' }}</p>
-            <button class="btn btn-solid btn-lg" id="payNowBtn">
-              @if($gatewayType === 'doku_checkout')
-              Bayar dengan {{ $methodLabel }}
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 3h7v7"/><path d="M10 14 21 3"/><path d="M21 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5"/></svg>
-              @else
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-              @if($isSimulation) Simulasi Bayar (QRIS) @else Bayar Sekarang @endif
-              @endif
+            <div class="pd-pay-cta-meta">
+              <div><span>Metode</span><strong>{{ $methodLabel }}</strong></div>
+              <div><span>Total</span><strong>Rp {{ number_format((float) $order->cash_amount, 0, ',', '.') }}</strong></div>
+            </div>
+            <button class="btn btn-solid btn-lg pd-pay-action" id="payNowBtn">
+              <span>Lanjut Bayar</span>
+              <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>
             </button>
+            <p class="pd-pay-cta-note">Klik tombol untuk melanjutkan proses pembayaran.</p>
           </div>
           <div class="pd-method-result" id="pdMethodResult" style="display:none">
             <div class="pd-method-result-head">
@@ -290,7 +263,7 @@
           </div>
           <div class="pd-method-success" id="pdMethodSuccess" style="display:none">
             <div class="pd-success-icon">
-              <img class="pd-success-lordicon" src="https://media.lordicon.com/icons/wired/flat/2607-credit-card-shield.gif" alt="Pembayaran berhasil">
+              <img class="pd-success-lordicon" src="{{ asset('assets/icon/payment-succes.gif') }}" alt="Pembayaran berhasil">
             </div>
             <div class="pd-success-label">Pembayaran Berhasil</div>
             <div class="pd-success-sub">Diamond telah masuk ke akun kamu.</div>
@@ -309,13 +282,41 @@
           </form>
           @endif
         </div>
-      @endif
       </div>
       </div>
 
     </div>
 
   </div>
+</div>
+
+<div class="pd-gateway-modal invoice-theme" id="pdGatewayModal" aria-hidden="true">
+  <button type="button" class="pd-gateway-backdrop" data-payment-modal-close aria-label="Tutup pembayaran"></button>
+  <section class="pd-gateway-dialog" role="dialog" aria-modal="true" aria-labelledby="pdGatewayTitle">
+    <header class="pd-gateway-head">
+      <div class="pd-gateway-head-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+      </div>
+      <div>
+        <strong id="pdGatewayTitle">Selesaikan Pembayaran</strong>
+        <span>Pesanan #{{ $order->order_id }}</span>
+      </div>
+      <button type="button" class="pd-gateway-close" data-payment-modal-close aria-label="Tutup pembayaran">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+      </button>
+    </header>
+    <div class="pd-gateway-frame-wrap">
+      <div class="pd-gateway-loading" id="pdGatewayLoading">
+        <span class="pd-gateway-spinner"></span>
+        <span>Memuat pembayaran...</span>
+      </div>
+      <iframe id="pdGatewayFrame" title="Halaman pembayaran" src="about:blank" allow="payment *" referrerpolicy="strict-origin-when-cross-origin"></iframe>
+    </div>
+    <footer class="pd-gateway-foot">
+      <span>Halaman status tetap terbuka di belakang.</span>
+      <a href="#" id="pdGatewayExternal" target="_blank" rel="noopener">Buka di tab baru</a>
+    </footer>
+  </section>
 </div>
 
 <style>
@@ -325,23 +326,55 @@
 .pd-payment-layout{display:grid;grid-template-columns:minmax(0,1fr);gap:1rem;align-items:start;}
 .pd-payment-layout>.pd-card{width:100%;}
 .pd-payment-layout-checkout{grid-template-columns:minmax(0,1fr);}
-.pd-method-card{display:flex;flex-direction:column;}
-.pd-method-card>.pd-card-head{order:0;}
-.pd-method-card>.pd-method,.pd-method-card>.pd-checkout-actions{order:1;}
-.pd-method-detail-divider{order:2;height:1px;margin:0 1.1rem;background:var(--border);}
-.pd-method-card>.pd-detail-grid{order:3;}
+.pd-method-card{display:grid;grid-template-columns:minmax(0,1fr) minmax(320px,390px);}
+.pd-method-card>.pd-card-head{grid-column:1/-1;}
+.pd-method-card>.pd-detail-grid{grid-column:1;grid-row:2;align-self:stretch;padding:1rem 1.1rem;}
+.pd-method-card>.pd-method,.pd-method-card>.pd-checkout-actions{grid-column:2;grid-row:2;align-self:stretch;border-left:1px solid var(--border);}
+.pd-method-card>.pd-method{display:flex;flex-direction:column;justify-content:center;background:var(--invoice-accent-soft);}
+.pd-method-detail-divider{display:none;}
+.pd-method-card .pd-method-placeholder{display:flex;flex-direction:column;align-items:stretch;text-align:left;padding:.35rem 0 0;}
+.pd-pay-cta-head{display:flex;align-items:center;gap:.8rem;margin-bottom:1rem;}
+.pd-pay-cta-icon{display:grid;place-items:center;width:48px;height:48px;flex-shrink:0;border-radius:12px;background:#fff;border:1px solid var(--invoice-accent-border);color:var(--invoice-accent);box-shadow:0 8px 20px -14px var(--invoice-accent);}
+.pd-pay-cta-icon img{display:block;width:30px;height:30px;object-fit:contain;}
+.pd-pay-cta-copy{display:flex;flex-direction:column;gap:.16rem;min-width:0;}
+.pd-pay-cta-copy span{font-size:.68rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--invoice-accent);}
+.pd-pay-cta-copy strong{font-family:var(--font-display);font-size:1.05rem;line-height:1.25;color:var(--text);}
+.pd-pay-cta-meta{display:grid;grid-template-columns:1fr 1fr;gap:.55rem;margin-bottom:.8rem;}
+.pd-pay-cta-meta>div{display:flex;flex-direction:column;gap:.2rem;min-width:0;padding:.65rem .7rem;border:1px solid var(--border);border-radius:9px;background:var(--bg-card);}
+.pd-pay-cta-meta span{font-size:.66rem;color:var(--text-mute);}
+.pd-pay-cta-meta strong{font-size:.78rem;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pd-pay-action{width:100%;min-height:52px;justify-content:space-between;padding-inline:1.05rem;background:var(--invoice-accent)!important;color:var(--invoice-heading-fg)!important;box-shadow:0 12px 26px -14px var(--invoice-accent);}
+.pd-pay-action:hover{transform:translateY(-2px);box-shadow:0 16px 30px -14px var(--invoice-accent);}
+.pd-pay-cta-note{margin:.65rem 0 0;text-align:center;font-size:.7rem;color:var(--text-dim);}
 .pd-checkout-actions{display:flex;flex-direction:column;align-items:center;gap:.35rem;padding:1.2rem 1.1rem;}
 .pd-continue-payment{width:100%;justify-content:center;}
 .pd-payment-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem;width:100%;margin-top:.3rem;}
 .pd-payment-nav .btn{width:100%;justify-content:center;text-align:center;}
-.pd-method-illus-doku{
-  width:86px;height:48px;margin-inline:auto;border-radius:12px;background:#ef2b24;
-  display:flex;align-items:center;justify-content:center;box-shadow:0 12px 26px rgba(239,43,36,.22);
-}
-.pd-method-illus-doku span{font-family:var(--font-display);font-size:1rem;font-weight:900;letter-spacing:.08em;color:#fff;}
 .pd-cancel-form{display:block;width:100%;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center;visibility:visible;opacity:1;}
-.pd-cancel-btn{display:inline-flex;align-items:center;justify-content:center;width:100%;min-height:42px;border:1px solid rgba(248,113,113,.58);background:rgba(239,68,68,.1);color:#fca5a5;font:inherit;font-size:.82rem;font-weight:800;cursor:pointer;padding:.55rem .85rem;border-radius:10px;transition:background .2s,color .2s,border-color .2s,box-shadow .2s;}
+.pd-cancel-btn{display:inline-flex;align-items:center;justify-content:center;width:100%;min-height:38px;border:1px solid transparent;background:transparent;color:var(--text-mute);font:inherit;font-size:.76rem;font-weight:700;cursor:pointer;padding:.5rem .8rem;border-radius:9px;transition:background .2s,color .2s,border-color .2s,box-shadow .2s;}
 .pd-cancel-btn:hover{background:rgba(239,68,68,.2);border-color:#f87171;color:#fff;box-shadow:0 8px 20px -14px rgba(248,113,113,.9);}
+.pd-gateway-modal{position:fixed;inset:0;z-index:12000;display:grid;place-items:center;padding:20px;visibility:hidden;opacity:0;transition:opacity .2s ease,visibility .2s ease;}
+.pd-gateway-modal.open{visibility:visible;opacity:1;}
+.pd-gateway-backdrop{position:absolute;inset:0;border:0;background:rgba(2,10,24,.82);backdrop-filter:blur(7px);-webkit-backdrop-filter:blur(7px);cursor:default;}
+.pd-gateway-dialog{position:relative;display:grid;grid-template-rows:auto minmax(0,1fr) auto;width:min(580px,calc(100vw - 32px));height:min(760px,calc(100dvh - 48px));overflow:hidden;border:1px solid var(--border-strong);border-radius:18px;background:var(--bg-card);box-shadow:0 30px 90px rgba(0,0,0,.64);transform:translateY(12px) scale(.985);transition:transform .22s ease;}
+.pd-gateway-modal.open .pd-gateway-dialog{transform:translateY(0) scale(1);}
+.pd-gateway-head{display:flex;align-items:center;gap:.7rem;min-height:64px;padding:.7rem .9rem;border-bottom:1px solid var(--border);background:var(--surface-2);}
+.pd-gateway-head-icon{display:grid;place-items:center;width:38px;height:38px;flex-shrink:0;border-radius:10px;background:var(--invoice-accent-soft);color:var(--invoice-accent);}
+.pd-gateway-head>div:nth-child(2){display:flex;flex-direction:column;gap:.1rem;min-width:0;}
+.pd-gateway-head strong{font-family:var(--font-display);font-size:.9rem;color:var(--text);}
+.pd-gateway-head span{font-size:.68rem;color:var(--text-mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.pd-gateway-close{display:grid;place-items:center;width:38px;height:38px;margin-left:auto;flex-shrink:0;border:1px solid var(--border);border-radius:10px;background:var(--surface);color:var(--text-dim);cursor:pointer;transition:background .2s,color .2s,border-color .2s;}
+.pd-gateway-close:hover{background:rgba(239,68,68,.12);border-color:rgba(248,113,113,.45);color:#fca5a5;}
+.pd-gateway-frame-wrap{position:relative;min-height:0;background:#f7f7f8;}
+.pd-gateway-frame-wrap iframe{display:block;width:100%;height:100%;border:0;background:#fff;}
+.pd-gateway-loading{position:absolute;inset:0;z-index:1;display:flex;align-items:center;justify-content:center;gap:.65rem;background:var(--bg-card);color:var(--text-dim);font-size:.78rem;transition:opacity .2s ease,visibility .2s ease;}
+.pd-gateway-loading.hidden{visibility:hidden;opacity:0;}
+.pd-gateway-spinner{width:22px;height:22px;border:2px solid var(--border-strong);border-top-color:var(--invoice-accent);border-radius:50%;animation:pdGatewaySpin .75s linear infinite;}
+@keyframes pdGatewaySpin{to{transform:rotate(360deg)}}
+.pd-gateway-foot{display:flex;align-items:center;justify-content:space-between;gap:1rem;min-height:44px;padding:.55rem .9rem;border-top:1px solid var(--border);background:var(--surface-2);font-size:.7rem;color:var(--text-mute);}
+.pd-gateway-foot a{color:var(--invoice-accent);font-weight:800;text-decoration:none;white-space:nowrap;}
+html.pd-payment-modal-open,body.pd-payment-modal-open{overflow:hidden!important;overscroll-behavior:none;}
+body.pd-payment-modal-open{position:fixed;left:0;right:0;width:100%;}
 .pd-breadcrumb{display:flex;align-items:center;gap:.5rem;font-size:.82rem;color:var(--text-dim);margin:-.2rem 0 1.2rem;}
 .pd-breadcrumb a{color:var(--text-dim);text-decoration:none;transition:color .2s;}
 .pd-breadcrumb a:hover{color:var(--text);}
@@ -422,12 +455,20 @@
   .pd-card-sticky{position:static;}
 }
 @media(max-width:768px){
+  .pd-method-card{grid-template-columns:1fr;}
+  .pd-method-card>.pd-card-head{grid-column:1;grid-row:1;}
+  .pd-method-card>.pd-method,.pd-method-card>.pd-checkout-actions{grid-column:1;grid-row:2;border-left:0;border-top:0;}
+  .pd-method-card>.pd-detail-grid{grid-column:1;grid-row:3;padding:.4rem 1.1rem .8rem;border-top:1px solid var(--border);}
   .pd-payment-nav{grid-template-columns:repeat(2,minmax(0,1fr));}
   .pd-payment-nav .btn{padding-inline:.6rem;font-size:.72rem;white-space:normal;}
   .pd-detail-grid{grid-template-columns:1fr;gap:0;}
   .pd-detail-col .pd-detail-item{border-bottom:1px dashed var(--border);}
 }
 @media(max-width:480px){
+  .pd-gateway-modal{padding:0;}
+  .pd-gateway-dialog{width:100vw;height:100dvh;border:0;border-radius:0;}
+  .pd-gateway-foot span{display:none;}
+  .pd-gateway-foot{justify-content:flex-end;}
   .pd-steps{gap:.2rem;}
   .pd-step-label{font-size:.62rem;max-width:80px;}
 }
@@ -493,13 +534,6 @@ const isDemo = @json($isDemo);
 const isSimulation = @json($isSimulation);
 const orderId = @json($order->order_id);
 const invoiceUrl = @json($invoiceUrl);
-const gatewayType = @json($gatewayType);
-const isQris = @json($isQris);
-const qrString = @json($qrString);
-const qrImageUrl = @json(data_get($gatewayExtra, 'qr_image_url'));
-const billerCode = @json(data_get($gatewayExtra, 'biller_code'));
-const vaNumber = @json($vaNumber);
-const paymentCode = @json($paymentCode);
 const checkoutUrl = @json($checkoutUrl);
 const statusUrl = @json(route('payment.status', $order));
 const simulateUrl = @json(route('payment.simulate', $order));
@@ -529,112 +563,80 @@ function maybeShowReviewPopup(type) {
     setTimeout(() => openReviewModal(), 700);
 }
 
-/* ===== xendit invoice ===== */
+/* ===== Payment Link ===== */
 const payBtn = document.getElementById('payNowBtn');
+const gatewayModal = document.getElementById('pdGatewayModal');
+const gatewayFrame = document.getElementById('pdGatewayFrame');
+const gatewayLoading = document.getElementById('pdGatewayLoading');
+const gatewayExternal = document.getElementById('pdGatewayExternal');
+let gatewayPageScrollY = 0;
+
+if (gatewayModal && gatewayModal.parentElement !== document.body) {
+    document.body.appendChild(gatewayModal);
+}
+
+function lockGatewayPageScroll() {
+    if (document.body.classList.contains('pd-payment-modal-open')) return;
+    gatewayPageScrollY = window.scrollY || document.documentElement.scrollTop || 0;
+    document.documentElement.classList.add('pd-payment-modal-open');
+    document.body.classList.add('pd-payment-modal-open');
+    document.body.style.top = '-' + gatewayPageScrollY + 'px';
+}
+
+function unlockGatewayPageScroll() {
+    document.documentElement.classList.remove('pd-payment-modal-open');
+    document.body.classList.remove('pd-payment-modal-open');
+    document.body.style.top = '';
+    window.scrollTo(0, gatewayPageScrollY);
+}
+
+function openGatewayModal(url) {
+    if (!url || !gatewayModal || !gatewayFrame) return false;
+    if (gatewayLoading) gatewayLoading.classList.remove('hidden');
+    if (gatewayExternal) gatewayExternal.href = url;
+    gatewayFrame.src = url;
+    gatewayModal.classList.add('open');
+    gatewayModal.setAttribute('aria-hidden', 'false');
+    lockGatewayPageScroll();
+    gatewayModal.querySelector('.pd-gateway-close')?.focus();
+    return true;
+}
+
+function closeGatewayModal() {
+    if (!gatewayModal || !gatewayFrame) return;
+    gatewayModal.classList.remove('open');
+    gatewayModal.setAttribute('aria-hidden', 'true');
+    unlockGatewayPageScroll();
+    gatewayFrame.src = 'about:blank';
+    payBtn?.focus();
+}
+
+gatewayFrame?.addEventListener('load', function() {
+    if (gatewayFrame.src !== 'about:blank') gatewayLoading?.classList.add('hidden');
+});
+
+document.querySelectorAll('[data-payment-modal-close]').forEach(function(button) {
+    button.addEventListener('click', closeGatewayModal);
+});
+
+document.addEventListener('keydown', function(event) {
+    if (event.key === 'Escape' && gatewayModal?.classList.contains('open')) closeGatewayModal();
+});
 
 function startPayment() {
     if (isSimulation) {
         runSimulatedPayment();
         return;
     }
-    if (gatewayType === 'qris' && (qrString || qrImageUrl)) {
-        renderQris(qrString, qrImageUrl);
-        return;
-    }
-    if (gatewayType === 'va' && vaNumber) {
-        renderVa(vaNumber);
-        return;
-    }
-    if (gatewayType === 'retail' && paymentCode) {
-        renderRetail(paymentCode);
-        return;
-    }
-    if (gatewayType === 'doku_checkout' && checkoutUrl) {
-        window.location.href = checkoutUrl;
-        return;
-    }
-    if (gatewayType === 'ewallet' && checkoutUrl) {
-        window.location.href = checkoutUrl;
+    if (checkoutUrl) {
+        if (!openGatewayModal(checkoutUrl)) window.location.href = checkoutUrl;
         return;
     }
     if (!invoiceUrl || isDemo) {
         simulatePayment();
         return;
     }
-    window.location.href = invoiceUrl;
-}
-
-/* Tampilkan QRIS asli langsung di halaman (tanpa redirect ke Xendit). */
-function renderQris(qrData, imageUrl) {
-    const placeholder = document.getElementById('pdMethodPlaceholder');
-    const result = document.getElementById('pdMethodResult');
-    const qrWrap = document.getElementById('pdMethodQrWrap');
-    const qr = document.getElementById('pdMethodQr');
-    const name = document.getElementById('pdMethodName');
-    const payBtnEl = document.getElementById('payNowBtn');
-
-    placeholder.style.display = 'none';
-    result.style.display = 'block';
-    qrWrap.style.display = 'block';
-    const source = imageUrl || ('https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=' + encodeURIComponent(qrData));
-    qr.innerHTML =
-        '<div class="pd-qr-dummy" style="padding:12px;background:#fff;border-radius:12px;display:inline-block">' +
-        '<img src="' + source + '" alt="QRIS" style="width:200px;height:200px;border-radius:6px;display:block">' +
-        '</div>';
-    name.textContent = 'QRIS';
-    if (payBtnEl) {
-        payBtnEl.style.display = 'none';
-    }
-    startPolling();
-}
-
-/* Tampilkan nomor Virtual Account di halaman sendiri. */
-function renderVa(vaNumber) {
-    const placeholder = document.getElementById('pdMethodPlaceholder');
-    const result = document.getElementById('pdMethodResult');
-    const vaWrap = document.getElementById('pdMethodVa');
-    const vaNum = document.getElementById('pdVaNumber');
-    const billerCodeEl = document.getElementById('pdVaBillerCode');
-    const copyBtn = document.getElementById('pdVaCopyBtn');
-    const name = document.getElementById('pdMethodName');
-    const payBtnEl = document.getElementById('payNowBtn');
-
-    placeholder.style.display = 'none';
-    result.style.display = 'block';
-    vaWrap.style.display = 'block';
-    vaNum.textContent = vaNumber;
-    if (billerCode && billerCodeEl) {
-        billerCodeEl.textContent = 'Kode Biller Mandiri: ' + billerCode;
-        billerCodeEl.style.display = 'block';
-    }
-    if (copyBtn) copyBtn.dataset.copy = vaNumber;
-    name.textContent = 'Virtual Account';
-    if (payBtnEl) payBtnEl.style.display = 'none';
-    startPolling();
-}
-
-/* Tampilkan kode pembayaran minimarket (Alfamart/Indomaret) di halaman sendiri. */
-function renderRetail(paymentCode) {
-    const placeholder = document.getElementById('pdMethodPlaceholder');
-    const result = document.getElementById('pdMethodResult');
-    const conv = document.getElementById('pdMethodConv');
-    const convHint = document.getElementById('pdConvHint');
-    const name = document.getElementById('pdMethodName');
-    const payBtnEl = document.getElementById('payNowBtn');
-
-    placeholder.style.display = 'none';
-    result.style.display = 'block';
-    conv.style.display = 'block';
-    conv.innerHTML =
-        '<div class="pd-va-box">' +
-        '<div class="pd-va-label">Kode Pembayaran</div>' +
-        '<div class="pd-va-number">' + paymentCode + '</div>' +
-        '<button class="pd-copy-btn" data-copy="' + paymentCode + '">Salin Kode</button>' +
-        '</div>';
-    convHint.style.display = 'none';
-    name.textContent = 'Minimarket';
-    if (payBtnEl) payBtnEl.style.display = 'none';
-    startPolling();
+    if (!openGatewayModal(invoiceUrl)) window.location.href = invoiceUrl;
 }
 
 /* Tampilkan QR dummy lalu panggil endpoint simulasi bayar di server. */
@@ -694,7 +696,7 @@ function simulatePayment() {
         document.getElementById('pdStatusSub').textContent = 'Scan QR untuk menyelesaikan pembayaran (Demo)';
         document.getElementById('pdStatusPill').textContent = 'MENUNGGU PEMBAYARAN';
         payBtn.disabled = false;
-        payBtn.innerHTML = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg> Bayar Sekarang';
+        payBtn.innerHTML = '<span>Lanjut Bayar</span><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M5 12h14"/><path d="m13 6 6 6-6 6"/></svg>';
     }, 1500);
 }
 
@@ -716,6 +718,9 @@ const expiredAnimationUrl = @json(asset('assets/icon/payment-expired.svg'));
 
 function updateStatus(type, result) {
     const map = STATUS_MAP[type] || STATUS_MAP.pending;
+    if (gatewayModal?.classList.contains('open') && ['processing', 'success', 'failed', 'expired', 'cancelled'].includes(type)) {
+        closeGatewayModal();
+    }
     const invoiceTheme = document.getElementById('pdInvoiceTheme');
     if (invoiceTheme) {
         invoiceTheme.dataset.invoiceState = type === 'success'
@@ -752,7 +757,7 @@ function updateStatus(type, result) {
         if (methodSuccess) methodSuccess.style.display = 'flex';
         if (methodFailed) methodFailed.style.display = 'none';
     } else if (type === 'success') {
-        icon.innerHTML = '<img class="pd-success-lordicon" src="https://media.lordicon.com/icons/wired/flat/2607-credit-card-shield.gif" alt="Pembayaran berhasil">';
+        icon.innerHTML = '<img class="pd-success-lordicon" src="{{ asset('assets/icon/payment-succes.gif') }}" alt="Pembayaran berhasil">';
         label.textContent = 'Pembayaran Berhasil';
         sub.textContent = 'Diamond telah masuk ke akun kamu.';
         pill.textContent = 'PEMBELIAN SUKSES';
@@ -864,12 +869,6 @@ let resultNote = @json($order->note);
 
 if (payBtn) {
     payBtn.addEventListener('click', startPayment);
-}
-
-if (!isSimulation && @json($order->status) === 'pending') {
-    if (gatewayType === 'qris' && (qrString || qrImageUrl)) renderQris(qrString, qrImageUrl);
-    else if (gatewayType === 'va' && vaNumber) renderVa(vaNumber);
-    else if (gatewayType === 'retail' && paymentCode) renderRetail(paymentCode);
 }
 
 /* render status awal */

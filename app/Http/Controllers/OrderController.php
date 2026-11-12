@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Services\BalanceService;
 use App\Services\DigiflazzService;
 use App\Services\GameAccountService;
+use App\Services\JokiPricingService;
 use App\Services\PaymentGatewayService;
 use App\Services\TopupOrderBuilder;
 use Illuminate\Http\Request;
@@ -53,6 +54,11 @@ class OrderController extends Controller
 
     public function store(Request $request, GameAccountService $gameAccount)
     {
+        $availablePaymentCodes = $this->gateway
+            ->filterAvailableMethods(\App\Models\PaymentMethod::where('is_active', true)->get())
+            ->pluck('code')
+            ->all();
+
         $request->validate([
             'product_id' => 'required|exists:products,id',
             'customer_number' => 'required|string|max:100',
@@ -62,15 +68,21 @@ class OrderController extends Controller
             'email' => 'required|email',
             'quantity' => 'nullable|integer|min:1|max:99',
             'promo_code' => 'nullable|string|max:32',
-            'payment_method' => 'nullable|string|max:50',
+            'payment_method' => ['required', 'string', \Illuminate\Validation\Rule::in($availablePaymentCodes)],
             'use_points' => 'nullable|boolean',
             'points_amount' => 'exclude_unless:use_points,1|required|integer|min:1',
             'joki_login_method' => 'nullable|string|max:40',
             'joki_login_identifier' => 'nullable|string|max:255',
             'joki_login_password' => 'nullable|string|max:255',
             'joki_notes' => 'nullable|string|max:1000',
+            'joki_stars' => 'nullable|integer|min:1|max:99',
+            'joki_gendong' => 'nullable|boolean',
+            'joki_vip_games' => 'nullable|integer|min:0|max:99',
+            'joki_no_hero_request' => 'nullable|boolean',
         ], [
             'zone_id.regex' => 'Zone ID hanya boleh berisi huruf dan angka.',
+            'payment_method.required' => 'Pilih metode pembayaran terlebih dahulu.',
+            'payment_method.in' => 'Metode pembayaran yang dipilih tidak tersedia.',
         ]);
 
         $product = Product::findOrFail($request->product_id);
@@ -117,6 +129,21 @@ class OrderController extends Controller
         }
 
         $quantity = (int) ($request->quantity ?? 1);
+        $jokiSurcharge = 0;
+        $jokiNotes = $request->joki_notes;
+
+        if ($isJoki) {
+            $quote = JokiPricingService::quote(
+                $product,
+                (int) ($request->joki_stars ?? 1),
+                $request->boolean('joki_gendong'),
+                (int) ($request->joki_vip_games ?? 0),
+                $request->boolean('joki_no_hero_request')
+            );
+            $quantity = $quote['quantity'];
+            $jokiSurcharge = $quote['surcharge'];
+            $jokiNotes = trim(implode("\n", array_filter([$jokiNotes, implode(' | ', $quote['notes'])])));
+        }
 
         try {
             $order = $this->createTopupOrder($product, [
@@ -133,7 +160,8 @@ class OrderController extends Controller
                 'joki_login_method' => $request->joki_login_method,
                 'joki_login_identifier' => $request->joki_login_identifier,
                 'joki_login_password' => $request->joki_login_password,
-                'joki_notes' => $request->joki_notes,
+                'joki_notes' => $jokiNotes,
+                'joki_surcharge' => $jokiSurcharge,
             ]);
         } catch (\RuntimeException $e) {
             if ($request->wantsJson()) {
@@ -224,7 +252,7 @@ class OrderController extends Controller
             // order memakai harga flash dan kuota terkunci untuk pesanan ini.
             $locked = $this->builder->lockItem($product, $quantity);
 
-            $subtotal = $locked['line_total'];
+            $subtotal = $locked['line_total'] + (int) ($input['joki_surcharge'] ?? 0);
 
             $voucherId = null;
             $voucher = null;

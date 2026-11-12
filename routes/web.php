@@ -1,13 +1,8 @@
 <?php
 
 use App\Http\Controllers\Admin\AuthController as AdminAuthController;
-use App\Http\Controllers\Admin\LiveChatChannelController;
-use App\Http\Controllers\Admin\LiveChatAdminController;
-use App\Http\Controllers\Admin\LiveChatChatController;
-use App\Http\Controllers\Admin\LiveChatConversationController;
-use App\Http\Controllers\Admin\LiveChatDashboardController;
-use App\Http\Controllers\Admin\LiveChatOperatorController;
 use App\Http\Controllers\Admin\PushSubscriptionController;
+use App\Http\Controllers\Admin\TwoFactorController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\AdminGachaPrizeController;
 use App\Http\Controllers\AdminVoucherController;
@@ -17,10 +12,6 @@ use App\Http\Controllers\GachaController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\JokiController;
 use App\Http\Controllers\AdminJokiPackageController;
-use App\Http\Controllers\LiveChatController;
-use App\Http\Controllers\LCAdmin\LCAdminDashboardController;
-use App\Http\Controllers\LCAdmin\LCAdminConversationController;
-use App\Http\Controllers\CsAdmin\CsConversationController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PaymentController;
@@ -50,6 +41,9 @@ Route::get('/service-worker.js', [PwaController::class, 'serviceWorker'])
 Route::get('/pwa-version.json', [PwaController::class, 'version'])->name('pwa.version');
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+Route::get('/company-auth', [App\Http\Controllers\CompanyAuthController::class, 'show'])
+    ->middleware(App\Http\Middleware\AllowCompanyAuthFrame::class)
+    ->name('company-auth');
 
 Route::get('/artikel', [ArticleController::class, 'index'])->name('articles.index');
 Route::get('/artikel/{slug}', [ArticleController::class, 'show'])->name('articles.show');
@@ -76,12 +70,15 @@ Route::redirect('/joki', '/joki/mobile-legends')->name('joki.index');
 Route::get('/joki/mobile-legends', [JokiController::class, 'mobileLegends'])->name('joki.mobile-legends');
 Route::get('/cek-transaksi', [HomeController::class, 'checkTransaction'])->name('check.transaction');
 Route::get('/jual-beli-akun', [App\Http\Controllers\HomeController::class, 'jualBeliAkun'])->name('jual-beli-akun');
+Route::match(['GET', 'POST', 'PATCH', 'DELETE'], '/api/live-chat/{path}', [App\Http\Controllers\CompanyChatController::class, 'handle'])
+    ->where('path', '.*')->middleware('throttle:120,1');
 Route::get('/jual-beli-akun/{game}', [App\Http\Controllers\HomeController::class, 'jualBeliAkunGame'])
     ->where('game', 'mlbb|pubg|efootball|fcm|ff|roblox|valorant')
     ->name('jual-beli-akun.game');
 Route::post('/jual-beli-akun/email-test', [App\Http\Controllers\HomeController::class, 'jualBeliAkunEmailTest'])
-    ->middleware('throttle:3,1')
     ->name('jual-beli-akun.email-test');
+Route::post('/jual-beli-akun/email-confirmation/verify', [App\Http\Controllers\HomeController::class, 'jualBeliAkunEmailConfirmationVerify'])
+    ->name('jual-beli-akun.email-confirmation.verify');
 Route::get('/jual-beli-akun/pesanan-saya', [App\Http\Controllers\HomeController::class, 'jualBeliAkunOrders'])
     ->name('jual-beli-akun.orders')
     ->middleware('auth:web');
@@ -90,6 +87,7 @@ Route::get('/jual-beli-akun/{listing}/checkout', [App\Http\Controllers\HomeContr
 Route::post('/jual-beli-akun/{listing}/checkout', [App\Http\Controllers\HomeController::class, 'jualBeliAkunCheckoutStore'])->whereNumber('listing')->name('jual-beli-akun.checkout.store');
 Route::get('/jual-beli-akun/order/{accountOrder}/payment', [App\Http\Controllers\HomeController::class, 'jualBeliAkunPayment'])->name('jual-beli-akun.payment');
 Route::get('/jual-beli-akun/order/{accountOrder}/status', [App\Http\Controllers\HomeController::class, 'jualBeliAkunPaymentStatus'])->name('jual-beli-akun.payment.status');
+Route::post('/jual-beli-akun/order/{accountOrder}/simulate', [App\Http\Controllers\HomeController::class, 'jualBeliAkunSimulatePayment'])->name('jual-beli-akun.payment.simulate');
 Route::get('/testimoni', [HomeController::class, 'testimoni'])->name('testimoni');
 Route::get('/faq', [HomeController::class, 'faq'])->name('faq');
 Route::get('/kebijakan-privasi', [HomeController::class, 'privacy'])->name('privacy');
@@ -148,8 +146,13 @@ Route::post('/payment/cancel/{order}', [PaymentController::class, 'cancel'])->na
 Route::post('/payment/simulate/{order}', [PaymentController::class, 'simulatePay'])
     ->name('payment.simulate');
 
-Route::post('/payment/notification', \App\Http\Controllers\MidtransNotificationController::class)
+Route::post('/payment/notification', \App\Http\Controllers\AyolinxNotificationController::class)
     ->name('payment.notification');
+
+Route::post('/v1.0/access-token/b2b', \App\Http\Controllers\AyolinxAccessTokenController::class)
+    ->name('ayolinx.access-token');
+Route::post('/v1.0/transfer-va/payment', \App\Http\Controllers\AyolinxVaPaymentController::class)
+    ->name('ayolinx.va.payment');
 
 Route::post('/reviews/{order}', [ReviewController::class, 'store'])->name('reviews.store')->middleware('auth:web');
 Route::post('/account-reviews/{accountOrder}', [ReviewController::class, 'storeAccount'])->name('account-reviews.store')->middleware('auth:web');
@@ -158,13 +161,6 @@ Route::post('/digiflazz/callback', [PaymentController::class, 'digiflazzCallback
 
 Route::get('/admin', function () {
     if (Auth::guard('admin')->check()) {
-        $user = Auth::guard('admin')->user();
-        if ($user->isLiveChatAdmin()) {
-            return redirect()->route('lcadmin.conversations');
-        }
-        if ($user->isLiveChatCs()) {
-            return redirect()->route('csadmin.conversations');
-        }
         return redirect()->route('admin.dashboard');
     }
     return view('admin.auth.login');
@@ -186,16 +182,7 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::delete('/joki-packages/{product}', [AdminJokiPackageController::class, 'destroy'])->name('joki-packages.destroy');
 
     Route::get('/account-listings', [App\Http\Controllers\AdminAccountListingController::class, 'index'])->name('account-listings');
-    Route::get('/account-listings/create', [App\Http\Controllers\AdminAccountListingController::class, 'create'])->name('account-listings.create');
-    Route::post('/account-listings', [App\Http\Controllers\AdminAccountListingController::class, 'store'])->name('account-listings.store');
-    Route::get('/account-listings/{listing}/edit', [App\Http\Controllers\AdminAccountListingController::class, 'edit'])->whereNumber('listing')->name('account-listings.edit');
-    Route::put('/account-listings/{listing}', [App\Http\Controllers\AdminAccountListingController::class, 'update'])->whereNumber('listing')->name('account-listings.update');
-    Route::patch('/account-listings/{listing}/toggle', [App\Http\Controllers\AdminAccountListingController::class, 'toggle'])->whereNumber('listing')->name('account-listings.toggle');
-    Route::delete('/account-listings/{listing}', [App\Http\Controllers\AdminAccountListingController::class, 'destroy'])->whereNumber('listing')->name('account-listings.destroy');
-
-    Route::get('/jba-game-cards', [App\Http\Controllers\Admin\JbaGameCardController::class, 'index'])->name('jba-game-cards');
-    Route::put('/jba-game-cards/{brand}', [App\Http\Controllers\Admin\JbaGameCardController::class, 'update'])->name('jba-game-cards.update');
-    Route::delete('/jba-game-cards/{brand}', [App\Http\Controllers\Admin\JbaGameCardController::class, 'destroy'])->name('jba-game-cards.destroy');
+    Route::get('/account-listings/{listing}', [App\Http\Controllers\AdminAccountListingController::class, 'show'])->whereNumber('listing')->name('account-listings.show');
 
     Route::get('/brands', [AdminController::class, 'brands'])->name('brands');
     Route::get('/brands/{brand}/edit', [AdminController::class, 'brandsEdit'])->name('brands.edit');
@@ -237,17 +224,6 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::put('/vouchers/{voucher}', [AdminVoucherController::class, 'update'])->name('vouchers.update');
     Route::delete('/vouchers/{voucher}', [AdminVoucherController::class, 'destroy'])->name('vouchers.destroy');
 
-    Route::get('/event-themes', [App\Http\Controllers\Admin\EventThemeController::class, 'index'])->name('event-themes');
-    Route::get('/event-themes/create', [App\Http\Controllers\Admin\EventThemeController::class, 'create'])->name('event-themes.create');
-    Route::post('/event-themes', [App\Http\Controllers\Admin\EventThemeController::class, 'store'])->name('event-themes.store');
-    Route::get('/event-themes/{theme}/edit', [App\Http\Controllers\Admin\EventThemeController::class, 'edit'])->name('event-themes.edit');
-    Route::put('/event-themes/{theme}', [App\Http\Controllers\Admin\EventThemeController::class, 'update'])->name('event-themes.update');
-    Route::patch('/event-themes/{theme}/toggle', [App\Http\Controllers\Admin\EventThemeController::class, 'toggle'])->name('event-themes.toggle');
-    Route::post('/event-themes/{theme}/set-default', [App\Http\Controllers\Admin\EventThemeController::class, 'setDefault'])->name('event-themes.set-default');
-    Route::post('/event-themes/reset-default', [App\Http\Controllers\Admin\EventThemeController::class, 'resetDefault'])->name('event-themes.reset-default');
-    Route::get('/event-themes/{theme}/preview', [App\Http\Controllers\Admin\EventThemeController::class, 'preview'])->name('event-themes.preview');
-    Route::delete('/event-themes/{theme}', [App\Http\Controllers\Admin\EventThemeController::class, 'destroy'])->name('event-themes.destroy');
-
     Route::get('/orders', [AdminController::class, 'orders'])->defaults('service_type', 'topup')->name('orders');
     Route::get('/orders/topup', [AdminController::class, 'orders'])->defaults('service_type', 'topup')->name('orders.topup');
     Route::get('/orders/joki', [AdminController::class, 'orders'])->defaults('service_type', 'joki')->name('orders.joki');
@@ -267,16 +243,16 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::patch('/account-orders/{accountOrder}/status', [AdminController::class, 'accountOrdersUpdateStatus'])->name('account-orders.status');
 
     Route::get('/users', [AdminController::class, 'users'])->name('users');
-    Route::post('/users', [AdminController::class, 'usersStore'])->name('users.store');
     Route::get('/users/{user}/edit', [AdminController::class, 'usersEdit'])->name('users.edit');
     Route::put('/users/{user}', [AdminController::class, 'usersUpdate'])->name('users.update');
 
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
     Route::post('/settings', [AdminController::class, 'settingsUpdate'])->name('settings.update');
 
-    Route::get('/check-providers', [App\Http\Controllers\Admin\CheckProviderController::class, 'index'])->name('check-providers');
-    Route::put('/check-providers/{checkProvider}', [App\Http\Controllers\Admin\CheckProviderController::class, 'update'])->name('check-providers.update');
-    Route::patch('/check-providers/{checkProvider}/toggle', [App\Http\Controllers\Admin\CheckProviderController::class, 'toggle'])->name('check-providers.toggle');
+    Route::get('/two-factor', [TwoFactorController::class, 'index'])->name('two-factor.index');
+    Route::post('/two-factor/{user}/setup', [TwoFactorController::class, 'setup'])->name('two-factor.setup');
+    Route::post('/two-factor/{user}/confirm', [TwoFactorController::class, 'confirm'])->name('two-factor.confirm');
+    Route::delete('/two-factor/{user}', [TwoFactorController::class, 'destroy'])->name('two-factor.destroy');
 
     Route::get('/contact-inquiries', [AdminController::class, 'contactInquiries'])->name('contact-inquiries');
     Route::get('/contact-inquiries/{contactInquiry}', [AdminController::class, 'contactInquiriesShow'])->name('contact-inquiries.show');
@@ -287,98 +263,7 @@ Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->gro
     Route::get('/digiflazz/test', [AdminController::class, 'digiflazzTest'])->name('digiflazz.test');
 });
 
-Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/live-chat', [LiveChatDashboardController::class, 'index'])->name('live-chat.dashboard');
-
-    Route::get('/live-chat/channels', [LiveChatChannelController::class, 'index'])->name('live-chat.channels');
-    Route::put('/live-chat/channels/{channel}', [LiveChatChannelController::class, 'update'])->name('live-chat.channels.update');
-    Route::patch('/live-chat/channels/{channel}/toggle', [LiveChatChannelController::class, 'toggle'])->name('live-chat.channels.toggle');
-
-    Route::get('/live-chat/conversations', [LiveChatConversationController::class, 'index'])->name('live-chat.conversations');
-    Route::get('/live-chat/conversations/{conversation}', [LiveChatConversationController::class, 'show'])->name('live-chat.conversations.show');
-    Route::get('/live-chat/conversations/{conversation}/poll', [LiveChatConversationController::class, 'poll'])->name('live-chat.conversations.poll');
-    Route::post('/live-chat/conversations/{conversation}/reply', [LiveChatConversationController::class, 'reply'])->name('live-chat.conversations.reply');
-    Route::patch('/live-chat/conversations/{conversation}/close', [LiveChatConversationController::class, 'close'])->name('live-chat.conversations.close');
-    Route::patch('/live-chat/conversations/{conversation}/reopen', [LiveChatConversationController::class, 'reopen'])->name('live-chat.conversations.reopen');
-    Route::delete('/live-chat/messages/{message}', [LiveChatChatController::class, 'deleteMessage'])->name('live-chat.messages.delete');
-    Route::post('/live-chat/messages/{message}/hide', [LiveChatChatController::class, 'hideMessage'])->name('live-chat.messages.hide');
-
-    Route::post('/push/{guard}/subscribe', [PushSubscriptionController::class, 'subscribe'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.subscribe');
-    Route::post('/push/{guard}/unsubscribe', [PushSubscriptionController::class, 'unsubscribe'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.unsubscribe');
-    Route::post('/push/{guard}/test', [PushSubscriptionController::class, 'test'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.test');
-    Route::get('/push/{guard}/status', [PushSubscriptionController::class, 'status'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.status');
-
-    Route::get('/live-chat/operators', [LiveChatOperatorController::class, 'index'])->name('live-chat.operators');
-    Route::post('/live-chat/operators', [LiveChatOperatorController::class, 'store'])->name('live-chat.operators.store');
-    Route::patch('/live-chat/operators/{operator}/toggle', [LiveChatOperatorController::class, 'toggle'])->name('live-chat.operators.toggle');
-    Route::delete('/live-chat/operators/{operator}', [LiveChatOperatorController::class, 'destroy'])->name('live-chat.operators.destroy');
-    Route::put('/live-chat/operators/{operator}/schedule', [LiveChatOperatorController::class, 'schedule'])->name('live-chat.operators.schedule');
-
-    Route::get('/live-chat/admins', [LiveChatAdminController::class, 'index'])->name('live-chat.admins');
-    Route::get('/live-chat/admins/{channel}/edit', [LiveChatAdminController::class, 'edit'])->name('live-chat.admins.edit');
-    Route::put('/live-chat/admins/{channel}', [LiveChatAdminController::class, 'update'])->name('live-chat.admins.update');
-});
-
-Route::middleware(['auth:admin', 'live-chat-admin'])->prefix('lcadmin')->name('lcadmin.')->group(function () {
-    Route::get('/dashboard', [LCAdminDashboardController::class, 'index'])->name('dashboard');
-    Route::get('/conversations', [LCAdminConversationController::class, 'index'])->name('conversations');
-    Route::get('/conversations/archived', [LCAdminConversationController::class, 'archived'])->name('conversations.archived');
-    Route::get('/conversations/archived-unread', [LCAdminConversationController::class, 'archivedUnread'])->name('conversations.archived-unread');
-    Route::patch('/conversations/{conversation}/restore', [LCAdminConversationController::class, 'restore'])->name('conversations.restore');
-    Route::get('/conversations/{conversation}', [LCAdminConversationController::class, 'show'])->name('conversations.show');
-    Route::get('/conversations/{conversation}/poll', [LCAdminConversationController::class, 'poll'])->name('conversations.poll');
-    Route::post('/conversations/{conversation}/reply', [LCAdminConversationController::class, 'reply'])->name('conversations.reply');
-    Route::patch('/conversations/{conversation}/close', [LCAdminConversationController::class, 'close'])->name('conversations.close');
-    Route::patch('/conversations/{conversation}/reopen', [LCAdminConversationController::class, 'reopen'])->name('conversations.reopen');
-            Route::patch('/conversations/{conversation}/favorite', [LCAdminConversationController::class, 'toggleFavorite'])->name('conversations.favorite');
-            Route::patch('/conversations/{conversation}/pin', [LCAdminConversationController::class, 'togglePin'])->name('conversations.pin');
-            Route::delete('/conversations/{conversation}', [LCAdminConversationController::class, 'deleteConversation'])->name('conversations.delete');
-            Route::get('/conversations/{conversation}/messages', [LCAdminConversationController::class, 'loadMessages'])->name('conversations.messages');
-            Route::patch('/conversations/{conversation}/archive', [LCAdminConversationController::class, 'archive'])->name('conversations.archive');
-    Route::delete('/messages/{message}', [LCAdminConversationController::class, 'deleteMessage'])->name('messages.delete');
-    Route::post('/messages/{message}/hide', [LCAdminConversationController::class, 'hideMessage'])->name('messages.hide');
-
-    Route::post('/push/{guard}/subscribe', [PushSubscriptionController::class, 'subscribe'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.subscribe');
-    Route::post('/push/{guard}/unsubscribe', [PushSubscriptionController::class, 'unsubscribe'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.unsubscribe');
-    Route::post('/push/{guard}/test', [PushSubscriptionController::class, 'test'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.test');
-    Route::get('/push/{guard}/status', [PushSubscriptionController::class, 'status'])->whereIn('guard', ['admin', 'lcadmin'])->name('push.status');
-});
-
-Route::middleware(['auth:admin', 'live-chat-cs'])->prefix('csadmin')->name('csadmin.')->group(function () {
-    Route::get('/conversations', [CsConversationController::class, 'index'])->name('conversations');
-    Route::get('/conversations/archived', [CsConversationController::class, 'archived'])->name('conversations.archived');
-    Route::get('/conversations/archived-count', [CsConversationController::class, 'archivedCount'])->name('conversations.archived-count');
-    Route::get('/conversations/{conversation}', [CsConversationController::class, 'show'])->name('conversations.show');
-    Route::get('/conversations/{conversation}/poll', [CsConversationController::class, 'poll'])->name('conversations.poll');
-    Route::get('/conversations/{conversation}/messages', [CsConversationController::class, 'loadMessages'])->name('conversations.messages');
-    Route::post('/conversations/{conversation}/reply', [CsConversationController::class, 'reply'])->name('conversations.reply');
-    Route::patch('/conversations/{conversation}/close', [CsConversationController::class, 'close'])->name('conversations.close');
-    Route::patch('/conversations/{conversation}/reopen', [CsConversationController::class, 'reopen'])->name('conversations.reopen');
-    Route::patch('/conversations/{conversation}/archive', [CsConversationController::class, 'archive'])->name('conversations.archive');
-    Route::patch('/conversations/{conversation}/restore', [CsConversationController::class, 'restore'])->name('conversations.restore');
-    Route::delete('/conversations/{conversation}', [CsConversationController::class, 'deleteConversation'])->name('conversations.delete');
-    Route::delete('/messages/{message}', [CsConversationController::class, 'deleteMessage'])->name('messages.delete');
-    Route::post('/messages/{message}/hide', [CsConversationController::class, 'hideMessage'])->name('messages.hide');
-
-    Route::post('/push/{guard}/subscribe', [PushSubscriptionController::class, 'subscribe'])->whereIn('guard', ['csadmin'])->name('push.subscribe');
-    Route::post('/push/{guard}/unsubscribe', [PushSubscriptionController::class, 'unsubscribe'])->whereIn('guard', ['csadmin'])->name('push.unsubscribe');
-    Route::post('/push/{guard}/test', [PushSubscriptionController::class, 'test'])->whereIn('guard', ['csadmin'])->name('push.test');
-    Route::get('/push/{guard}/status', [PushSubscriptionController::class, 'status'])->whereIn('guard', ['csadmin'])->name('push.status');
-});
-
 Route::middleware(['auth:web'])->prefix('api')->name('api.')->group(function () {
-    Route::get('/live-chat/channels', [LiveChatController::class, 'channels'])->name('live-chat.channels');
-    Route::get('/live-chat/conversation/{channelSlug}', [LiveChatController::class, 'getConversation'])->name('live-chat.conversation');
-    Route::get('/live-chat/messages/{conversation}', [LiveChatController::class, 'messages'])->name('live-chat.messages');
-    Route::post('/live-chat/messages', [LiveChatController::class, 'sendMessage'])->name('live-chat.messages.store');
-    Route::post('/live-chat/media/upload', [LiveChatController::class, 'uploadMedia'])->name('live-chat.media.upload');
-    Route::patch('/live-chat/conversation/{conversation}/read', [LiveChatController::class, 'markRead'])->name('live-chat.mark-read');
-    Route::get('/live-chat/unread', [LiveChatController::class, 'unreadCount'])->name('live-chat.unread');
-    Route::delete('/live-chat/messages/{message}', [LiveChatController::class, 'deleteMessage'])->name('live-chat.messages.delete');
-    Route::post('/live-chat/messages/{message}/hide', [LiveChatController::class, 'hideMessage'])->name('live-chat.messages.hide');
-    Route::post('/live-chat/messages/{message}/reaction', [LiveChatController::class, 'toggleReaction'])->name('live-chat.messages.reaction');
-    Route::post('/live-chat/messages/{message}/star', [LiveChatController::class, 'toggleStar'])->name('live-chat.messages.star');
-
     Route::post('/push/subscribe', [PushSubscriptionController::class, 'subscribeWeb'])->name('push.subscribe');
     Route::post('/push/unsubscribe', [PushSubscriptionController::class, 'unsubscribeWeb'])->name('push.unsubscribe');
     Route::post('/push/test', [PushSubscriptionController::class, 'testWeb'])->name('push.test');
@@ -390,6 +275,10 @@ Route::middleware(['auth:web'])->prefix('api')->name('api.')->group(function () 
 });
 
 Route::prefix('api')->name('api.')->group(function () {
+    Route::post('/company-auth/verify', [App\Http\Controllers\CompanyAuthController::class, 'verify'])
+        ->middleware(['jba-api-key', 'throttle:60,1'])
+        ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\PreventRequestForgery::class)
+        ->name('company-auth.verify');
     Route::middleware(['jba-api-key', 'throttle:60,1'])->prefix('jba')->name('jba.')->group(function () {
         Route::get('/listings', [App\Http\Controllers\JbaListingApiController::class, 'index'])->name('listings.index');
         Route::get('/listings/{listing}', [App\Http\Controllers\JbaListingApiController::class, 'show'])->name('listings.show');
@@ -400,19 +289,18 @@ Route::prefix('api')->name('api.')->group(function () {
         ->middleware('throttle:20,1')
         ->name('gacha.spin');
 
-    Route::get('/live-chat/guest/channels', [LiveChatController::class, 'guestChannels'])->name('live-chat.guest.channels');
-    Route::post('/live-chat/guest/conversation', [LiveChatController::class, 'guestConversation'])->name('live-chat.guest.conversation');
-    Route::get('/live-chat/guest/messages/{conversation}', [LiveChatController::class, 'guestMessages'])->name('live-chat.guest.messages');
-    Route::post('/live-chat/guest/messages', [LiveChatController::class, 'guestSendMessage'])->name('live-chat.guest.messages.store');
-    Route::patch('/live-chat/guest/conversation/{conversation}/read', [LiveChatController::class, 'guestMarkRead'])->name('live-chat.guest.mark-read');
-    Route::post('/live-chat/guest/conversation/{conversation}/route-back', [LiveChatController::class, 'guestRouteBack'])->name('live-chat.guest.route-back');
-    Route::get('/live-chat/guest/unread', [LiveChatController::class, 'guestUnreadCount'])->name('live-chat.guest.unread');
 });
 
 Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])
     ->middleware('guest:admin')
     ->name('admin.login');
 Route::post('/admin/login', [AdminAuthController::class, 'login'])
+    ->middleware('guest:admin');
+
+Route::get('/admin/two-factor-challenge', [AdminAuthController::class, 'showTwoFactorChallenge'])
+    ->middleware('guest:admin')
+    ->name('admin.two-factor.challenge');
+Route::post('/admin/two-factor-challenge', [AdminAuthController::class, 'twoFactorChallenge'])
     ->middleware('guest:admin');
 
 Route::post('/admin/logout', [AdminAuthController::class, 'logout'])

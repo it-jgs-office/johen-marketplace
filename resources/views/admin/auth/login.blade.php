@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Admin — Masuk — {{ config('app.name', 'Johen Gaming Marketplace') }}</title>
+    <title>Admin — {{ !empty($twoFactorChallenge) ? 'Verifikasi 2FA' : 'Masuk' }} — {{ config('app.name', 'Johen Gaming Marketplace') }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -33,6 +33,11 @@
         }
 
         *{box-sizing:border-box;margin:0;padding:0;}
+        *{scrollbar-width:thin;scrollbar-color:rgba(0,207,255,.52) transparent;}
+        *::-webkit-scrollbar{width:6px;height:6px;}
+        *::-webkit-scrollbar-track{background:transparent;}
+        *::-webkit-scrollbar-thumb{background:rgba(0,207,255,.52);border:1px solid transparent;border-radius:999px;background-clip:padding-box;}
+        *::-webkit-scrollbar-thumb:hover{background:var(--cyan);}
         html{scroll-behavior:smooth;}
         html,body{overflow-x:hidden;}
 
@@ -306,8 +311,14 @@
             </div>
 
             <div class="head">
-                <h1>Admin Panel</h1>
-                <p>PT. Johen Sukses Abadi — Masuk untuk melanjutkan</p>
+                <h1>{{ !empty($twoFactorChallenge) ? 'Verifikasi Dua Langkah' : 'Admin Panel' }}</h1>
+                <p>
+                    @if(!empty($twoFactorChallenge))
+                        Masukkan kode 6 digit Google Authenticator untuk {{ $twoFactorUser->name }}
+                    @else
+                        PT. Johen Sukses Abadi — Masuk untuk melanjutkan
+                    @endif
+                </p>
             </div>
 
             @if (session('error'))
@@ -329,9 +340,21 @@
                 </div>
             @endif
 
-            <form method="POST" action="{{ route('admin.login') }}" id="adminLoginForm" novalidate>
+            <form method="POST" action="{{ !empty($twoFactorChallenge) ? route('admin.two-factor.challenge') : route('admin.login') }}" id="adminLoginForm" novalidate>
                 @csrf
 
+                @if(!empty($twoFactorChallenge))
+                <div class="field">
+                    <label for="code">Kode autentikasi</label>
+                    <div class="input">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="10" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                        <input id="code" type="text" name="code" required autofocus inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000" class="{{ $errors->has('code') ? 'error' : '' }}" style="letter-spacing:.28em;font-size:18px;font-weight:700">
+                    </div>
+                    @error('code')
+                        <div class="error-text">{{ $message }}</div>
+                    @enderror
+                </div>
+                @else
                 <div class="field">
                     <label for="username">Username atau Email</label>
                     <div class="input">
@@ -386,15 +409,18 @@
                         Verifikasi reCAPTCHA nonaktif di lingkungan lokal.
                     </div>
                 @endif
+                @endif
 
                 <button type="submit" class="btn-login" id="adminLoginBtn">
                     <span class="spinner" aria-hidden="true"></span>
                     <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
-                    <span class="btn-text">Masuk</span>
+                    <span class="btn-text">{{ !empty($twoFactorChallenge) ? 'Verifikasi' : 'Masuk' }}</span>
                 </button>
             </form>
 
-            <a href="{{ route('home') }}" class="back">&larr; Kembali ke Website</a>
+            <a href="{{ !empty($twoFactorChallenge) ? route('admin.login') : route('home') }}" class="back">
+                &larr; {{ !empty($twoFactorChallenge) ? 'Kembali ke Login' : 'Kembali ke Website' }}
+            </a>
         </section>
     </main>
 

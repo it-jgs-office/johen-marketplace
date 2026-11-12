@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
  * Peng Settlement topup: satu-satunya tempat yang memutuskan Nasib order
  * sekaligus sisi saldonya.
  *
- * Dipakai oleh webhook Xendit, webhook Digiflazz, polling dari browser, dan
+ * Dipakai oleh callback Ayolinx, webhook Digiflazz, polling dari browser, dan
  * command rekonsiliasi — semuanya lewat method yang sama supaya tidak ada
  * jalur yang bisa lupa refunded saldonya.
  */
@@ -23,7 +23,7 @@ class TopupSettlementService
     ) {}
 
     /**
-     * Langkah 1: Xendit mengonfirmasi pembayaran.
+     * Langkah 1: Ayolinx mengonfirmasi pembayaran.
      * Order masuk "processing", saldo user naik dan terkunci, lalu topUp dikirim.
      */
     public function markPaid(Order $order): void

@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 /**
  * Kirim satu permintaan top-up Digiflazz untuk tiap order anak sebuah checkout.
  *
- * Dipisah dari webhook Xendit supaya webhook selesai cepat. Keamanannya tetap
+ * Dipisah dari callback pembayaran supaya respons callback selesai cepat. Keamanannya tetap
  * sama: TopupSettlementService::markPaid() hanya bekerja pada order berstatus
  * `pending`, jadi job ini boleh dijalankan berkali-kali tanpa menghasilkan
  * top-up ganda.

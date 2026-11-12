@@ -26,6 +26,11 @@
   var state = { isOpen: false, prizes: [], remaining: 0, spinning: false, rotation: 0, loaded: false, lastPrizeId: null };
   var toast = null;
   var toastTimer = null;
+  var scrollLock = {
+    active: false,
+    y: 0,
+    bodyTop: ''
+  };
 
   function csrf() {
     var meta = document.querySelector('meta[name="csrf-token"]');
@@ -161,27 +166,15 @@
     if (!prizes.length) return;
 
     var baseSpan = 360 / totalSectorScale(prizes);
-    var defs = svgEl('defs');
     var cursor = 0;
 
-    // Sektor dengan gradien dari pusat ke tepi (lebih terang di tengah roda).
-    prizes.forEach(function (prize) {
+    // Warna sektor dibuat solid seperti roda undian fisik; sedikit variasi
+    // gelap menjaga batas antarsektor tetap terbaca tanpa efek neon berlebih.
+    prizes.forEach(function (prize, index) {
       var span = baseSpan * sectorScale(prize);
       var start = cursor;
       var end = cursor + span;
       cursor = end;
-
-      var mid = start + span / 2;
-      var midPt = polar(cx, cy, r, mid);
-      var id = 'gcG' + prize.id;
-      var grad = svgEl('linearGradient', {
-        id: id,
-        x1: cx, y1: cy, x2: midPt.x, y2: midPt.y,
-        gradientUnits: 'userSpaceOnUse'
-      });
-      grad.appendChild(svgEl('stop', { offset: '0%', 'stop-color': shade(prize.color, 42) }));
-      grad.appendChild(svgEl('stop', { offset: '100%', 'stop-color': shade(prize.color, -22) }));
-      defs.appendChild(grad);
 
       var p1 = polar(cx, cy, r, start);
       var p2 = polar(cx, cy, r, end);
@@ -190,9 +183,9 @@
       wheel.appendChild(svgEl('path', {
         d: 'M' + cx + ' ' + cy + ' L' + p1.x + ' ' + p1.y +
            ' A' + r + ' ' + r + ' 0 ' + largeArc + ' 1 ' + p2.x + ' ' + p2.y + ' Z',
-        fill: 'url(#' + id + ')',
-        stroke: 'rgba(0,0,0,.2)',
-        'stroke-width': 1
+        fill: shade(prize.color, index % 2 === 0 ? -7 : -13),
+        stroke: 'rgba(8,17,27,.58)',
+        'stroke-width': 1.35
       }));
     });
 
@@ -246,9 +239,7 @@
       wheel.appendChild(text);
     });
 
-    wheel.appendChild(defs);
-
-    // Tepi roda: ring + lampu sorot.
+    // Tepi roda: ring dan baut penanda seperti roda undian fisik.
     wheel.appendChild(svgEl('circle', {
       cx: cx, cy: cy, r: r,
       fill: 'none', stroke: 'rgba(0,0,0,.25)', 'stroke-width': 2
@@ -261,7 +252,7 @@
       var bulb = polar(cx, cy, r - 2.5, i * 30);
       wheel.appendChild(svgEl('circle', {
         cx: bulb.x, cy: bulb.y, r: 2.4,
-        fill: '#fbbf24', stroke: 'rgba(0,0,0,.25)', 'stroke-width': .6
+        fill: '#f1d27a', stroke: 'rgba(42,31,10,.75)', 'stroke-width': .75
       }));
     }
   }
@@ -360,6 +351,33 @@
     }
   }
 
+  function lockPageScroll() {
+    if (scrollLock.active) return;
+
+    scrollLock.active = true;
+    scrollLock.y = window.scrollY || document.documentElement.scrollTop || 0;
+    scrollLock.bodyTop = document.body.style.top;
+    document.documentElement.classList.add('gc-page-locked');
+    document.body.classList.add('gc-page-locked');
+    document.body.style.top = '-' + scrollLock.y + 'px';
+  }
+
+  function unlockPageScroll(restorePosition) {
+    if (!scrollLock.active) {
+      document.documentElement.classList.remove('gc-page-locked');
+      document.body.classList.remove('gc-page-locked');
+      return;
+    }
+
+    var previousY = scrollLock.y;
+    scrollLock.active = false;
+    document.documentElement.classList.remove('gc-page-locked');
+    document.body.classList.remove('gc-page-locked');
+    document.body.style.top = scrollLock.bodyTop;
+
+    if (restorePosition !== false) window.scrollTo(0, previousY);
+  }
+
   function open() {
     // Tombol FAB memiliki handler inline dan listener JavaScript. Guard ini
     // membuat satu klik tetap menjalankan pembukaan sekali saja.
@@ -369,7 +387,7 @@
     modal.classList.add('active');
     overlay.setAttribute('aria-hidden', 'false');
     modal.setAttribute('aria-hidden', 'false');
-    document.body.style.overflow = 'hidden';
+    lockPageScroll();
     setHubState();
     if (!state.loaded) load();
     else if (state.remaining < 1) startCountdown();
@@ -382,7 +400,7 @@
     overlay.setAttribute('aria-hidden', 'true');
     modal.setAttribute('aria-hidden', 'true');
     stopCountdown();
-    if (!state.spinning) document.body.style.overflow = '';
+    unlockPageScroll(true);
   }
 
   function resetWheelRotation() {
@@ -550,7 +568,7 @@
     overlay.setAttribute('aria-hidden', 'true');
     modal.setAttribute('aria-hidden', 'true');
     stopCountdown();
-    document.body.style.overflow = '';
+    unlockPageScroll(false);
   }
 
   fab.addEventListener('click', open);

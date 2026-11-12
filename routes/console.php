@@ -37,8 +37,5 @@ Schedule::command('digiflazz:sync --force')
  */
 Schedule::command('checkout:retry')->everyTenMinutes()->withoutOverlapping();
 
-// Tetap sinkronkan status Midtrans walau halaman pembayaran sudah ditutup.
-Schedule::command('midtrans:reconcile')->everyMinute()->withoutOverlapping();
-
 // Tutup otomatis pembayaran topup yang tidak dibayar sampai batas waktunya.
 Schedule::command('payments:expire')->everyMinute()->withoutOverlapping();

@@ -2,19 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AccountOrder;
 use App\Models\Brand;
-use App\Models\Checkout;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Review;
 use App\Services\BalanceService;
-use App\Services\CheckoutSettlementService;
 use App\Services\DigiflazzService;
-use App\Services\DokuService;
 use App\Services\PaymentGatewayService;
 use App\Services\TopupSettlementService;
-use App\Services\XenditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -22,34 +17,22 @@ class PaymentController extends Controller
 {
     protected DigiflazzService $digiflazz;
 
-    protected XenditService $xendit;
-
-    protected DokuService $doku;
-
     protected PaymentGatewayService $gateway;
 
     protected TopupSettlementService $settlement;
 
     protected BalanceService $balance;
 
-    protected CheckoutSettlementService $checkoutSettlement;
-
     public function __construct(
         DigiflazzService $digiflazz,
-        XenditService $xendit,
-        DokuService $doku,
         PaymentGatewayService $gateway,
         TopupSettlementService $settlement,
         BalanceService $balance,
-        CheckoutSettlementService $checkoutSettlement,
     ) {
         $this->digiflazz = $digiflazz;
-        $this->xendit = $xendit;
-        $this->doku = $doku;
         $this->gateway = $gateway;
         $this->settlement = $settlement;
         $this->balance = $balance;
-        $this->checkoutSettlement = $checkoutSettlement;
     }
 
     public function detail(Order $order)
@@ -64,13 +47,7 @@ class PaymentController extends Controller
         $invoiceUrl = $order->gateway_invoice_url;
         $isSimulation = (bool) config('services.payment.simulation');
         $isDemo = $isSimulation || ! $this->gateway->isConfigured() || empty($order->gateway_invoice_id);
-        $isQris = $order->gateway_type === 'qris' || (! empty($order->qr_string));
-        $qrString = $order->qr_string;
-        $gatewayType = $order->gateway_type ?: ($isQris ? 'qris' : 'invoice');
-        $vaNumber = $order->va_number;
-        $paymentCode = $order->payment_code;
         $checkoutUrl = $order->checkout_url;
-        $gatewayExtra = $order->gateway_extra ?: [];
         $gatewayName = $this->gateway->providerLabel();
         $brand = Brand::where('name', $order->brand)->first();
         $hasReviewed = Review::where('order_id', $order->order_id)
@@ -87,8 +64,8 @@ class PaymentController extends Controller
         $canCancel = $order->status === 'pending' && $this->canCancelOrder(request(), $order);
 
         return view('payment.detail', compact(
-            'order', 'invoiceUrl', 'isDemo', 'isSimulation', 'brand', 'isQris', 'qrString', 'gatewayType', 'hasReviewed', 'canReview', 'reorderProduct',
-            'vaNumber', 'paymentCode', 'checkoutUrl', 'gatewayExtra', 'gatewayName', 'canCancel'
+            'order', 'invoiceUrl', 'isDemo', 'isSimulation', 'brand', 'hasReviewed', 'canReview', 'reorderProduct',
+            'checkoutUrl', 'gatewayName', 'canCancel'
         ));
     }
 
@@ -147,7 +124,7 @@ class PaymentController extends Controller
 
     /**
      * Simulasi pembayaran (PAYMENT_SIMULATION=true):
-     * menandai order lunas lalu memicu topUp Digiflazz seperti webhook PAID Xendit.
+     * menandai order lunas lalu memicu topUp Digiflazz seperti callback pembayaran.
      */
     public function simulatePay(Request $request, Order $order)
     {
@@ -177,393 +154,6 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function notificationHandler(Request $request)
-    {
-        if (! $this->xendit->verifyCallbackToken($request->header('x-callback-token'))) {
-            return response()->json(['status' => 'error', 'message' => 'Invalid callback token'], 401);
-        }
-
-        try {
-            $payload = $request->all();
-            $event = (string) ($payload['event'] ?? '');
-
-            // Checkout keranjang: satu charge untuk banyak order, jadi reference
-            // yang dicari bukan orders.order_id melainkan checkouts.checkout_ref.
-            // Dicoba lebih dulu supaya tidak ikut tertangkap pencarian order biasa.
-            if ($this->handleCheckoutWebhook($payload)) {
-                return response()->json(['status' => 'ok']);
-            }
-
-            // Webhook QR Code ("qr.payment") — body berisi data bersarang.
-            if (str_contains($event, 'qr.')) {
-                return $this->handleQrCallback($payload);
-            }
-
-            // Webhook Virtual Account (fva.paid) — pakai payment_id/external_id di level atas.
-            if (str_contains($event, 'fva.') || isset($payload['payment_id']) && ! empty($payload['account_number'])) {
-                return $this->handleVACallback($payload);
-            }
-
-            // Webhook Retail Outlet (ro_fpc.paid) — payment_id + payment_code/fixed_payment_code_id.
-            if (str_contains($event, 'ro_fpc.') || isset($payload['payment_id']) && ! empty($payload['fixed_payment_code_id'])) {
-                return $this->handleRetailCallback($payload);
-            }
-
-            // Webhook E-wallet (ewallet.capture / ewallet.charge) — reference_id di dalam data.reference_id.
-            if (str_contains($event, 'ewallet.')) {
-                return $this->handleEwalletCallback($payload);
-            }
-
-            // Webhook Invoice (V2) — status & external_id di level teratas.
-            $status = strtoupper($payload['status'] ?? '');
-            $externalId = $payload['external_id'] ?? null;
-
-            $order = Order::where('order_id', $externalId)->first();
-
-            if (! $order) {
-                // Webhook bisa berasal dari order jual-beli-akun (external_id = order_ref).
-                $accountOrder = $this->findAccountOrderByReference($externalId);
-
-                if ($accountOrder) {
-                    if (in_array($status, ['PAID', 'SETTLED'])) {
-                        $this->settleAccountOrder($accountOrder);
-                    } elseif ($status === 'EXPIRED') {
-                        $this->failAccountOrder($accountOrder);
-                    }
-
-                    return response()->json(['status' => 'ok']);
-                }
-
-                Log::warning('Xendit webhook: order tidak ditemukan', ['external_id' => $externalId]);
-
-                return response()->json(['status' => 'ok']);
-            }
-
-            $orderTransaction = $order->transaction;
-
-            $orderTransaction?->update([
-                'transaction_id' => $payload['id'] ?? null,
-                'payment_type' => $this->formatPaymentType($payload),
-                'status' => strtolower($status),
-                'raw_response' => $payload,
-            ]);
-
-            if (in_array($status, ['PAID', 'SETTLED'])) {
-                $this->handlePaid($order);
-            } elseif ($status === 'EXPIRED') {
-                app(\App\Services\PaymentExpirationService::class)->expire($order);
-            }
-
-            return response()->json(['status' => 'ok']);
-        } catch (\Exception $e) {
-            Log::error('Xendit webhook error: '.$e->getMessage());
-
-            return response()->json(['status' => 'error', 'message' => $e->getMessage()], 500);
-        }
-    }
-
-    /**
-     * Proses webhook Xendit yang-update milik checkout keranjang.
-     *
-     * Mengembalikan true bila reference-nya ketemu sebuah checkout, supaya
-     * pemanggil berhenti dan tidak mencari order biasa lagi.
-     */
-    private function handleCheckoutWebhook(array $payload): bool
-    {
-        $reference = $payload['external_id']
-            ?? $payload['reference_id']
-            ?? $payload['payment_id']
-            ?? ($payload['data']['reference_id'] ?? null)
-            ?? ($payload['data']['external_id'] ?? null)
-            ?? ($payload['data']['id'] ?? null);
-
-        if (! $reference) {
-            return false;
-        }
-
-        $checkout = Checkout::where('checkout_ref', $reference)
-            ->orWhere('gateway_invoice_id', $reference)
-            ->first();
-
-        if (! $checkout) {
-            return false;
-        }
-
-        $status = strtoupper((string) (
-            $payload['payment_status']
-            ?? ($payload['data']['status'] ?? null)
-            ?? ($payload['status'] ?? '')
-        ));
-
-        if (in_array($status, ['PAID', 'SETTLED', 'SUCCEEDED', 'COMPLETED', 'CAPTURED'], true)) {
-            $this->checkoutSettlement->markPaid($checkout);
-
-            Log::info('Checkout lunas via webhook Xendit', ['checkout_ref' => $checkout->checkout_ref]);
-
-            return true;
-        }
-
-        if (in_array($status, ['EXPIRED', 'FAILED', 'CANCELLED', 'VOIDED'], true)) {
-            if ($status === 'EXPIRED') {
-                app(\App\Services\PaymentExpirationService::class)->expire($checkout);
-            } else {
-                $this->checkoutSettlement->markFailed($checkout, 'Pembayaran '.$status.' di gateway');
-            }
-
-            Log::info('Checkout gagal via webhook Xendit', [
-                'checkout_ref' => $checkout->checkout_ref,
-                'status' => $status,
-            ]);
-
-            return true;
-        }
-
-        // Event lain (mis. qc.created) — reference-nya checkout kita tapi belum
-        // ada perubahan status, biarkan handler utama yang memproses.
-        return false;
-    }
-
-    private function handleQrCallback(array $payload)
-    {
-        $data = $payload['data'] ?? $payload['qr_code'] ?? $payload;
-
-        $referenceId = $data['reference_id'] ?? $data['external_id'] ?? null;
-        $status = strtoupper($data['status'] ?? $payload['status'] ?? '');
-
-        $order = Order::where('order_id', $referenceId)->first();
-
-        if ($order) {
-            $orderTransaction = $order->transaction;
-
-            $orderTransaction?->update([
-                'transaction_id' => $data['id'] ?? ($payload['id'] ?? null),
-                'payment_type' => 'QRIS - '.(($data['payment_detail']['source'] ?? $data['channel_code'] ?? 'QRIS') ?: 'QRIS'),
-                'status' => strtolower($status),
-                'raw_response' => $payload,
-            ]);
-
-            // QR Code dibayar → status SUCCEEDED pada QR webhook / COMPLETED pada v1.
-            if (in_array($status, ['SUCCEEDED', 'COMPLETED', 'PAID', 'SETTLED'])) {
-                $this->handlePaid($order);
-            } elseif (in_array($status, ['FAILED', 'EXPIRED'])) {
-                if ($status === 'EXPIRED') {
-                    app(\App\Services\PaymentExpirationService::class)->expire($order);
-                } else {
-                    $order->update(['status' => 'failed']);
-                    $orderTransaction?->update(['status' => 'failed']);
-                    $order->releaseDiscounts();
-                    app(\App\Services\BalanceService::class)->restorePoints($order, 'Pembayaran gagal; Johen Point dikembalikan');
-                }
-            }
-
-            return response()->json(['status' => 'ok']);
-        }
-
-        // Order jual-beli-akun (reference = order_ref).
-        $accountOrder = AccountOrder::where('order_ref', $referenceId)->first();
-
-        if ($accountOrder) {
-            if ($accountOrder->status === 'pending'
-                && in_array($status, ['SUCCEEDED', 'COMPLETED', 'PAID', 'SETTLED'])) {
-                $this->settleAccountOrder($accountOrder);
-                Log::info('Account order lunas via webhook QRIS', ['order_ref' => $accountOrder->order_ref]);
-            } elseif ($accountOrder->status === 'pending'
-                && in_array($status, ['FAILED', 'EXPIRED'])) {
-                $this->failAccountOrder($accountOrder);
-            }
-
-            return response()->json(['status' => 'ok']);
-        }
-
-        Log::warning('Xendit QR webhook: order tidak ditemukan', ['reference_id' => $referenceId]);
-
-        return response()->json(['status' => 'ok']);
-    }
-
-    private function handleVACallback(array $payload)
-    {
-        $externalId = $payload['external_id'] ?? $payload['payment_id'] ?? null;
-        $paymentStatus = strtoupper((string) ($payload['payment_status'] ?? ''));
-
-        $order = $this->findOrderByReference($externalId);
-
-        if (! $order) {
-            if ($this->handleAccountWebhook($externalId, $paymentStatus, $payload)) {
-                return response()->json(['status' => 'ok']);
-            }
-
-            Log::warning('Xendit VA webhook: order tidak ditemukan', ['external_id' => $externalId]);
-
-            return response()->json(['status' => 'ok']);
-        }
-
-        $this->recordPayment($order, [
-            'transaction_id' => $payload['id'] ?? ($payload['payment_id'] ?? null),
-            'payment_type' => 'Virtual Account - '.strtoupper((string) ($payload['bank_code'] ?? 'VA')),
-            'status' => $paymentStatus === 'PAID' ? 'paid' : 'pending',
-            'raw_response' => $payload,
-        ]);
-
-        if ($paymentStatus === 'PAID') {
-            $this->handlePaid($order);
-        }
-
-        return response()->json(['status' => 'ok']);
-    }
-
-    private function handleRetailCallback(array $payload)
-    {
-        $externalId = $payload['external_id'] ?? null;
-        $paymentStatus = strtoupper((string) ($payload['status'] ?? $payload['payment_status'] ?? ''));
-
-        $order = $this->findOrderByReference($externalId);
-
-        if (! $order) {
-            if ($this->handleAccountWebhook($externalId, $paymentStatus, $payload)) {
-                return response()->json(['status' => 'ok']);
-            }
-
-            Log::warning('Xendit Retail webhook: order tidak ditemukan', ['external_id' => $externalId]);
-
-            return response()->json(['status' => 'ok']);
-        }
-
-        $this->recordPayment($order, [
-            'transaction_id' => $payload['id'] ?? ($payload['payment_id'] ?? null),
-            'payment_type' => 'Minimarket - '.strtoupper((string) ($payload['retail_outlet_name'] ?? 'Retail')),
-            'status' => $paymentStatus === 'PAID' ? 'paid' : 'pending',
-            'raw_response' => $payload,
-        ]);
-
-        if ($paymentStatus === 'PAID') {
-            $this->handlePaid($order);
-        }
-
-        return response()->json(['status' => 'ok']);
-    }
-
-    private function handleEwalletCallback(array $payload)
-    {
-        $data = $payload['data'] ?? $payload;
-        $referenceId = $data['reference_id'] ?? $payload['reference_id'] ?? null;
-        $status = strtoupper((string) ($data['status'] ?? $payload['status'] ?? ''));
-        $channel = (string) ($data['channel_code'] ?? $payload['channel_code'] ?? 'E-Wallet');
-
-        $order = $this->findOrderByReference($referenceId);
-
-        if (! $order) {
-            if ($this->handleAccountWebhook($referenceId, $status, $payload)) {
-                return response()->json(['status' => 'ok']);
-            }
-
-            Log::warning('Xendit E-wallet webhook: order tidak ditemukan', ['reference_id' => $referenceId]);
-
-            return response()->json(['status' => 'ok']);
-        }
-
-        $this->recordPayment($order, [
-            'transaction_id' => $data['id'] ?? ($payload['id'] ?? null),
-            'payment_type' => $channel.' (E-wallet)',
-            'status' => in_array($status, ['CAPTURED', 'SUCCEEDED', 'COMPLETED', 'PAID']) ? 'paid' : 'pending',
-            'raw_response' => $payload,
-        ]);
-
-        if (in_array($status, ['CAPTURED', 'SUCCEEDED', 'COMPLETED', 'PAID'])) {
-            $this->handlePaid($order);
-        }
-
-        return response()->json(['status' => 'ok']);
-    }
-
-    /**
-     * Temukan order dari referensi yang direkam saat charge
-     * (order_id → gateway_invoice_id dikirim sebagai external_id / reference_id).
-     */
-    private function findOrderByReference(?string $reference): ?Order
-    {
-        if (! $reference) {
-            return null;
-        }
-
-        return Order::where('order_id', $reference)
-            ->orWhere('gateway_invoice_id', $reference)
-            ->first();
-    }
-
-    /**
-     * Proses webhook Xendit yang ternyata milik order jual-beli-akun.
-     * Referensi akun = order_ref / gateway_invoice_id; status sukses langsung
-     * menandai listing terjual (tanpa topUp Digiflazz).
-     */
-    private function handleAccountWebhook(?string $reference, string $status, array $payload): bool
-    {
-        $accountOrder = $this->findAccountOrderByReference($reference);
-
-        if (! $accountOrder) {
-            return false;
-        }
-
-        if (in_array($status, ['PAID', 'SETTLED', 'SUCCEEDED', 'CAPTURED', 'COMPLETED'])) {
-            $this->settleAccountOrder($accountOrder);
-        } elseif (in_array($status, ['FAILED', 'EXPIRED', 'CANCELLED'])) {
-            $this->failAccountOrder($accountOrder);
-        }
-
-        Log::info('Account order webhook Xendit', [
-            'order_ref' => $accountOrder->order_ref,
-            'status' => $status,
-            'raw' => $payload,
-        ]);
-
-        return true;
-    }
-
-    private function findAccountOrderByReference(?string $reference): ?AccountOrder
-    {
-        if (! $reference) {
-            return null;
-        }
-
-        return AccountOrder::where('order_ref', $reference)
-            ->orWhere('gateway_invoice_id', $reference)
-            ->first();
-    }
-
-    /**
-     * Tandai account order lunas (idempotent): success + listing terjual.
-     */
-    private function settleAccountOrder(AccountOrder $accountOrder): void
-    {
-        app(\App\Services\AccountDeliveryService::class)->deliver($accountOrder);
-    }
-
-    private function failAccountOrder(AccountOrder $accountOrder): void
-    {
-        if ($accountOrder->status !== 'pending') {
-            return;
-        }
-
-        $accountOrder->update(['status' => 'failed']);
-        app(\App\Services\BalanceService::class)->restorePoints($accountOrder, 'Pembayaran gagal; Johen Point dikembalikan');
-    }
-
-    /**
-     * Tulis record transaksi pembayaran terbaru dari webhook/polling.
-     */
-    private function recordPayment(Order $order, array $info): void
-    {
-        if (! $order->transaction) {
-            return;
-        }
-
-        $order->transaction->update([
-            'transaction_id' => $info['transaction_id'] ?? null,
-            'payment_type' => $info['payment_type'] ?? $order->payment_method,
-            'status' => $info['status'] ?? 'pending',
-            'raw_response' => $info['raw_response'] ?? null,
-        ]);
-    }
-
     public function success(Order $order)
     {
         return view('payment.success', compact('order'));
@@ -576,8 +166,6 @@ class PaymentController extends Controller
         app(\App\Services\PaymentExpirationService::class)->expireIfDue($order);
         $order->refresh();
 
-        // Fallback: order masih processing → tanyakan status final ke Digiflazz
-        // (jaga-jaga webhook Digiflazz tidak sampai, misal saat testing di localhost).
         if ($order->status === 'processing') {
             $this->syncFromDigiflazz($order);
             $order->refresh();
@@ -595,165 +183,7 @@ class PaymentController extends Controller
 
     private function syncFromGateway(Order $order): void
     {
-        app(\App\Services\MidtransPaymentService::class)->sync($order);
-    }
-
-    private function syncFromLegacyGateway(Order $order): void
-    {
-        if (data_get($order->gateway_extra, 'integration') === 'direct'
-            && data_get($order->gateway_extra, 'provider') === 'doku') {
-            app(\App\Services\DokuPaymentSyncService::class)->sync($order);
-            return;
-        }
-
-        if ($order->status !== 'pending' || empty($order->gateway_invoice_id)) {
-            return;
-        }
-
-        if ($order->gateway_type === 'doku_checkout') {
-            if (! $this->doku->isConfigured()) {
-                return;
-            }
-
-            $extra = (array) $order->gateway_extra;
-            $invoiceNumber = (string) ($extra['invoice_number'] ?? $order->order_id);
-            $data = $this->doku->checkStatus($invoiceNumber);
-            $status = strtoupper((string) data_get($data, 'transaction.status', ''));
-
-            if ($status === '') {
-                return;
-            }
-
-            $this->recordPayment($order, [
-                'transaction_id' => data_get($data, 'transaction.original_request_id'),
-                'payment_type' => 'DOKU - '.(data_get($data, 'channel.name') ?: data_get($data, 'channel.id', 'Checkout')),
-                'status' => $status === 'SUCCESS' ? 'paid' : 'pending',
-                'raw_response' => $data,
-            ]);
-
-            if ($status === 'SUCCESS') {
-                $this->handlePaid($order);
-            } elseif ($status === 'EXPIRED') {
-                app(\App\Services\PaymentExpirationService::class)->expire($order);
-            }
-
-            // FAILED pada DOKU Checkout tidak final karena pengguna dapat
-            // mencoba kanal lain dari URL checkout yang sama.
-            return;
-        }
-
-        if (! $this->xendit->isConfigured()) {
-            return;
-        }
-
-        $type = $order->gateway_type ?? 'invoice';
-
-        // QRIS (embedded) disinkronkan lewat Get QR Code.
-        if ($type === 'qris' || ! empty($order->qr_string)) {
-            $qr = $this->xendit->getQr($order->gateway_invoice_id);
-
-            if (! $qr || empty($qr['status'])) {
-                return;
-            }
-
-            $status = strtoupper($qr['status']);
-
-            $this->recordPayment($order, [
-                'transaction_id' => $qr['id'] ?? null,
-                'payment_type' => 'QRIS - '.(($qr['channel_code'] ?? 'QRIS') ?: 'QRIS'),
-                'status' => 'pending',
-                'raw_response' => $qr,
-            ]);
-
-            // INACTIVE juga terjadi saat QR kedaluwarsa, jadi bukan bukti pembayaran.
-            // Status lunas hanya diterima dari callback pembayaran Xendit.
-            return;
-        }
-
-        // Virtual Account (self-hosted) — status VA INACTIVE setelah dibayar.
-        if ($type === 'va') {
-            $va = $this->xendit->getVirtualAccount($order->gateway_invoice_id);
-
-            if (! $va || empty($va['status'])) {
-                return;
-            }
-
-            $status = strtoupper($va['status']);
-
-            $this->recordPayment($order, [
-                'transaction_id' => $va['id'] ?? null,
-                'payment_type' => 'Virtual Account - '.strtoupper((string) ($va['bank_code'] ?? 'VA')),
-                'status' => 'pending',
-                'raw_response' => $va,
-            ]);
-
-            return;
-        }
-
-        // Retail Outlet (self-hosted) — status ACTIVE/INACTIVE.
-        if ($type === 'retail') {
-            $retail = $this->xendit->getRetailOutlet($order->gateway_invoice_id);
-
-            if (! $retail || empty($retail['status'])) {
-                return;
-            }
-
-            $status = strtoupper($retail['status']);
-
-            $this->recordPayment($order, [
-                'transaction_id' => $retail['id'] ?? null,
-                'payment_type' => 'Minimarket - '.strtoupper((string) ($retail['retail_outlet_name'] ?? 'Retail')),
-                'status' => 'pending',
-                'raw_response' => $retail,
-            ]);
-
-            return;
-        }
-
-        // E-wallet charge — status COMPLETED/CAPTURED setelah dibayar.
-        if ($type === 'ewallet') {
-            $charge = $this->xendit->getEwalletCharge($order->gateway_invoice_id);
-
-            if (! $charge || empty($charge['status'])) {
-                return;
-            }
-
-            $status = strtoupper($charge['status']);
-
-            $this->recordPayment($order, [
-                'transaction_id' => $charge['id'] ?? null,
-                'payment_type' => (string) ($charge['channel_code'] ?? 'E-Wallet').' (E-wallet)',
-                'status' => in_array($status, ['SUCCEEDED', 'COMPLETED', 'CAPTURED']) ? 'paid' : 'pending',
-                'raw_response' => $charge,
-            ]);
-
-            if (in_array($status, ['SUCCEEDED', 'COMPLETED', 'CAPTURED'])) {
-                $this->handlePaid($order);
-            }
-
-            return;
-        }
-
-        $invoice = $this->xendit->getInvoice($order->gateway_invoice_id);
-
-        if (! $invoice || empty($invoice['status'])) {
-            return;
-        }
-
-        $status = strtoupper($invoice['status']);
-
-        $order->transaction?->update([
-            'transaction_id' => $invoice['id'] ?? null,
-            'payment_type' => $this->formatPaymentType($invoice),
-            'raw_response' => $invoice,
-        ]);
-
-        if (in_array($status, ['PAID', 'SETTLED'])) {
-            $order->transaction?->update(['status' => strtolower($status)]);
-            $this->handlePaid($order);
-        } elseif ($status === 'EXPIRED') {
-            app(\App\Services\PaymentExpirationService::class)->expire($order);
-        }
+        app(\App\Services\AyolinxPaymentService::class)->sync($order);
     }
 
     private function handlePaid(Order $order): void
@@ -764,7 +194,7 @@ class PaymentController extends Controller
     /**
      * Terapkan hasil respons Digiflazz ke order.
      *
-     * Logikanya hidup di TopupSettlementService supaya webhook Xendit, webhook
+     * Logikanya hidup di TopupSettlementService supaya callback Ayolinx, webhook
      * Digiflazz, polling browser, dan command rekonsiliasi memakai satu aturan
      * yang sama. Method ini tetap ada karena dipanggil dari callback Digiflazz.
      */
@@ -772,6 +202,7 @@ class PaymentController extends Controller
     {
         $this->settlement->applyResult($order, $result);
     }
+
     /**
      * Webhook dari Digiflazz: push status final transaksi (Sukses/Gagal/Pending).
      * Diverifikasi via header X-Hub-Signature (HMAC-SHA256 body dengan API key).
@@ -790,7 +221,6 @@ class PaymentController extends Controller
         try {
             $data = $request->json('data');
 
-            // Notifikasi deposit/saldo tidak punya ref_id → abaikan.
             if (empty($data) || empty($data['ref_id'])) {
                 return response()->json(['status' => 'ok']);
             }
@@ -815,24 +245,8 @@ class PaymentController extends Controller
         }
     }
 
-    /**
-     * Polling status transaksi ke Digiflazz untuk order yang masih processing.
-     * Dipanggil dari halaman status order saat user membuka halamannya.
-     */
     private function syncFromDigiflazz(Order $order): void
     {
         $this->settlement->poll($order);
-    }
-
-    private function formatPaymentType(array $invoice): string
-    {
-        $method = $invoice['payment_method'] ?? null;
-        $channel = $invoice['payment_channel'] ?? null;
-
-        if ($method && $channel) {
-            return $method.' - '.$channel;
-        }
-
-        return $method ?? $channel ?? 'unknown';
     }
 }

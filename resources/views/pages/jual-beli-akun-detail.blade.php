@@ -58,13 +58,6 @@
                 <source src="{{ $listing->video_url }}" type="video/mp4">
                 Browser Anda tidak mendukung pemutaran video.
               </video>
-              <div class="jba-video-loading" id="jbaVideoLoading" role="status" aria-live="polite">
-                <div class="jba-video-loading-head">
-                  <span>Memuat video</span>
-                  <strong id="jbaVideoProgress">0%</strong>
-                </div>
-                <div class="jba-video-progress-track"><span id="jbaVideoProgressBar"></span></div>
-              </div>
             @endif
           </div>
         </div>
@@ -127,9 +120,10 @@
 
       <div class="jba-detail-specs">
         <h3>Spesifikasi Produk</h3>
-        <div class="jba-detail-specs-content">
+        <div class="jba-detail-specs-content is-collapsed" id="jbaSpecifications">
           {!! $listing->specifications !!}
         </div>
+        <button type="button" class="jba-detail-specs-more" id="jbaSpecificationsToggle" aria-controls="jbaSpecifications" aria-expanded="false" hidden>Baca selengkapnya</button>
       </div>
 
       <div class="jba-detail-actions">
@@ -139,14 +133,6 @@
             Produk ini sudah terjual
           </div>
         @else
-          <form method="POST" action="{{ route('cart.store') }}" class="jba-cart-form">
-            @csrf
-            <input type="hidden" name="listing_id" value="{{ $listing->id }}">
-            <button type="submit" class="jba-btn jba-btn-primary">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18"/><path d="M16 10a4 4 0 01-8 0"/></svg>
-              Tambah ke Keranjang
-            </button>
-          </form>
           @if($listing->whatsapp)
           <a href="https://wa.me/{{ $listing->whatsapp }}?text=Halo%20saya%20tertarik%20dengan%20{{ urlencode($listing->product_name) }}" target="_blank" class="jba-btn jba-btn-wa">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
@@ -158,18 +144,36 @@
             Hubungi Admin
           </button>
           @endif
+          <a href="{{ route('jual-beli-akun.checkout', $listing) }}" class="jba-btn jba-btn-primary">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+            Beli Sekarang
+          </a>
         @endif
       </div>
     </div>
   </div>
 
   <div class="jba-transfer-info">
-    <div class="jba-transfer-icon">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 9v6"/><path d="M9 12h6"/></svg>
+    <div class="jba-transfer-heading">
+      <div class="jba-transfer-icon">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 9v6"/><path d="M9 12h6"/></svg>
+      </div>
+      <div class="jba-transfer-text">
+        <strong>Informasi Pembayaran</strong>
+        <span>Pilih alur pembayaran sesuai cara pembelian akun.</span>
+      </div>
     </div>
-    <div class="jba-transfer-text">
-      <strong>Informasi Transfer</strong>
-      <span>Pembayaran hanya melalui transfer ke rekening <strong>BRI 114101707070565 a/n JOSIA HENDRICO SIMANUNGKALIT</strong>. Kami tidak pernah meminta transfer ke rekening lain.</span>
+    <div class="jba-transfer-options">
+      <div class="jba-transfer-option">
+        <span class="jba-transfer-label">Pembelian via WhatsApp</span>
+        <strong>Transfer BRI 114101707070565</strong>
+        <span>a/n JOSIA HENDRICO SIMANUNGKALIT. Jangan transfer ke rekening lain.</span>
+      </div>
+      <div class="jba-transfer-option">
+        <span class="jba-transfer-label">Pembelian via Website</span>
+        <strong>Bayar melalui checkout Johen Gaming</strong>
+        <span>Klik Beli Sekarang, lalu gunakan metode dan petunjuk pembayaran yang tampil pada halaman checkout.</span>
+      </div>
     </div>
   </div>
 
@@ -188,7 +192,7 @@
             </div>
           @endif
           @if($item->is_sold)
-            <div class="jba-sold-badge">SOLD</div>
+            <span class="jba-sold-image"><img src="{{ asset('assets/icon/sold.png') }}" alt="Sold" loading="lazy"></span>
           @elseif($item->promo_type && $item->promo_type !== 'none')
             <div class="jba-ribbon">
               @if($item->promo_type === 'diskon' && $item->discount_percent)
@@ -492,26 +496,6 @@
   height: 100%;
 }
 .jba-detail-video-wrap video { object-fit: contain; }
-.jba-video-loading {
-  position: absolute;
-  z-index: 3;
-  left: 50%;
-  bottom: 1rem;
-  width: min(78%, 280px);
-  padding: .6rem .7rem;
-  border: 1px solid rgba(96, 165, 250, .45);
-  border-radius: 9px;
-  background: rgba(4, 21, 55, .88);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, .28);
-  transform: translateX(-50%);
-  transition: opacity .25s ease, visibility .25s ease;
-  pointer-events: none;
-}
-.jba-video-loading.is-ready { opacity: 0; visibility: hidden; }
-.jba-video-loading-head { display: flex; justify-content: space-between; gap: .75rem; color: #dbeafe; font-size: .7rem; font-weight: 600; }
-.jba-video-loading-head strong { color: #60a5fa; font-variant-numeric: tabular-nums; }
-.jba-video-progress-track { height: 4px; margin-top: .45rem; overflow: hidden; border-radius: 999px; background: rgba(147, 197, 253, .22); }
-.jba-video-progress-track span { display: block; width: 0; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #38bdf8, #2563eb); transition: width .2s linear; }
 .jba-detail-photo-fallback {
   width: 100%;
   min-height: 320px;
@@ -642,6 +626,12 @@
   white-space: pre-line;
   text-align: justify;
 }
+.jba-detail-specs-content.is-collapsed { max-height: 8.1em; overflow: hidden; }
+.jba-detail-specs-more {
+  margin-top: .55rem; padding: 0; border: 0; background: transparent;
+  color: var(--jba-accent); font: inherit; font-size: .78rem;
+  font-weight: 800; cursor: pointer;
+}
 .jba-detail-actions {
   display: flex;
   gap: .75rem;
@@ -731,10 +721,8 @@
   display: none;
 }
 .jba-transfer-info {
-  display: flex;
-  align-items: center;
-  gap: .75rem;
-  padding: .85rem 1rem;
+  display: block;
+  padding: 1rem;
   margin: 2rem 0 .5rem;
   border-radius: 14px;
   background: linear-gradient(145deg, rgba(12, 54, 120, .96), rgba(5, 27, 73, .94));
@@ -742,6 +730,38 @@
   box-shadow: 0 12px 28px rgba(1, 13, 38, .25);
   backdrop-filter: blur(10px);
   animation: jbaGlowPulse 2s ease-in-out infinite;
+}
+.jba-transfer-heading {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin-bottom: .85rem;
+}
+.jba-transfer-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: .75rem;
+}
+.jba-transfer-option {
+  display: flex;
+  flex-direction: column;
+  gap: .28rem;
+  min-width: 0;
+  padding: .8rem .9rem;
+  border: 1px solid rgba(147, 197, 253, .22);
+  border-radius: 10px;
+  background: rgba(7, 29, 73, .48);
+  color: rgba(219, 234, 254, .8);
+  font-size: .76rem;
+  line-height: 1.5;
+}
+.jba-transfer-option strong { color: #fff; font-size: .82rem; }
+.jba-transfer-label {
+  color: #93c5fd;
+  font-size: .65rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+  text-transform: uppercase;
 }
 @keyframes jbaGlowPulse {
   0%, 100% { border-color: rgba(37, 99, 235, .25); box-shadow: 0 0 6px rgba(37, 99, 235, .08); }
@@ -759,12 +779,18 @@
   color: #bfdbfe;
 }
 .jba-transfer-text {
+  display: flex;
+  flex-direction: column;
+  gap: .12rem;
   font-size: .8rem;
   color: rgba(219, 234, 254, .84);
   line-height: 1.5;
 }
 .jba-transfer-text strong {
   color: #fff;
+}
+@media (max-width: 640px) {
+  .jba-transfer-options { grid-template-columns: 1fr; }
 }
 .jba-related {
   margin-top: .75rem;
@@ -894,39 +920,25 @@
 .jba-ribbon--sold::after {
   border-color: #111 #111 transparent transparent;
 }
-.jba-sold-badge {
+.jba-sold-image {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) rotate(-14deg);
+  transform: translate(-50%, -50%);
   z-index: 3;
-  width: 116px;
-  height: 116px;
-  border-radius: 50%;
+  width: 66%;
+  max-width: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ff6b6b;
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 1.12rem;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  text-indent: .16em;
-  text-shadow: 0 1px 3px rgba(0,0,0,.25);
-  background: rgba(239,68,68,.13);
-  border: 2px solid rgba(239,68,68,.55);
-  backdrop-filter: blur(3px);
-  box-shadow: 0 0 0 5px rgba(239,68,68,.1), inset 0 0 0 2px rgba(239,68,68,.18), 0 12px 28px -12px rgba(0,0,0,.35);
-  white-space: nowrap;
   pointer-events: none;
 }
-.jba-sold-badge::before {
-  content: '';
-  position: absolute;
-  inset: -7px;
-  border-radius: 50%;
-  border: 2px dashed rgba(239,68,68,.4);
+.jba-sold-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: none;
 }
 .jba-card-thumb-fallback {
   width: 100%;
@@ -996,6 +1008,20 @@
 
 @push('scripts')
 <script>
+document.addEventListener('DOMContentLoaded', function () {
+  const content = document.getElementById('jbaSpecifications');
+  const toggle = document.getElementById('jbaSpecificationsToggle');
+  if (!content || !toggle) return;
+
+  if (content.scrollHeight > content.clientHeight + 1) toggle.hidden = false;
+  toggle.addEventListener('click', function () {
+    const expanded = toggle.getAttribute('aria-expanded') === 'true';
+    content.classList.toggle('is-collapsed', expanded);
+    toggle.setAttribute('aria-expanded', expanded ? 'false' : 'true');
+    toggle.textContent = expanded ? 'Baca selengkapnya' : 'Tampilkan lebih sedikit';
+  });
+});
+
 function changeMainPhoto(btn, url) {
   document.querySelectorAll('.jba-thumb').forEach(t => t.classList.remove('active', 'active-video'));
   btn.classList.add('active');
@@ -1017,35 +1043,6 @@ function showVideo(btn) {
   const hint = document.querySelector('.jba-zoom-hint');
   if (hint) hint.style.display = 'none';
 }
-
-(function bindDirectVideoProgress() {
-  const video = document.getElementById('jbaDirectVideo');
-  const loader = document.getElementById('jbaVideoLoading');
-  const label = document.getElementById('jbaVideoProgress');
-  const bar = document.getElementById('jbaVideoProgressBar');
-  if (!video || !loader || !label || !bar) return;
-
-  function setProgress(percent) {
-    const value = Math.max(0, Math.min(100, Math.round(percent)));
-    label.textContent = value + '%';
-    bar.style.width = value + '%';
-  }
-
-  function updateProgress() {
-    if (!Number.isFinite(video.duration) || !video.buffered.length) return;
-    setProgress((video.buffered.end(video.buffered.length - 1) / video.duration) * 100);
-  }
-
-  video.addEventListener('loadedmetadata', updateProgress);
-  video.addEventListener('progress', updateProgress);
-  video.addEventListener('canplay', function () {
-    updateProgress();
-    window.setTimeout(() => loader.classList.add('is-ready'), 350);
-  }, { once: true });
-  video.addEventListener('waiting', function () { loader.classList.remove('is-ready'); updateProgress(); });
-  video.addEventListener('playing', function () { loader.classList.add('is-ready'); });
-  video.addEventListener('error', function () { label.textContent = 'Gagal dimuat'; });
-})();
 
 (function(){
   const container = document.getElementById('jbaZoomContainer');

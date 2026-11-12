@@ -163,6 +163,9 @@ async function fetchPaymentMethods() {
 // ============ GLOBAL PRODUCT SEARCH ============
 const searchInput = document.getElementById('searchInput');
 const searchSuggest = document.getElementById('searchSuggest');
+const headerSearchWrap = document.getElementById('headerSearchWrap');
+const mobileSearchTrigger = document.getElementById('mobileSearchTrigger');
+const mobileSearchClose = document.getElementById('mobileSearchClose');
 const globalSearchPage = document.getElementById('globalSearchPage');
 const globalSearchState = document.getElementById('globalSearchState');
 const globalSearchResults = document.getElementById('globalSearchResults');
@@ -172,6 +175,25 @@ const globalSearchClose = document.getElementById('globalSearchClose');
 let globalSearchTimer;
 let globalSearchController;
 let globalSearchScrollY = 0;
+
+function openMobileSearch() {
+  if (!headerSearchWrap || !window.matchMedia('(max-width: 860px)').matches) return;
+  headerSearchWrap.classList.add('mobile-search-open');
+  mobileSearchTrigger?.setAttribute('aria-expanded', 'true');
+  requestAnimationFrame(() => searchInput?.focus());
+}
+
+function closeMobileSearch() {
+  headerSearchWrap?.classList.remove('mobile-search-open');
+  mobileSearchTrigger?.setAttribute('aria-expanded', 'false');
+  searchInput?.blur();
+}
+
+mobileSearchTrigger?.addEventListener('click', openMobileSearch);
+mobileSearchClose?.addEventListener('click', () => {
+  if (document.body.classList.contains('global-search-open')) closeGlobalSearch();
+  else closeMobileSearch();
+});
 
 function escapeSearchHtml(value) {
   return String(value ?? '').replace(/[&<>'"]/g, character => ({
@@ -200,6 +222,7 @@ function closeGlobalSearch() {
   globalSearchPage.hidden = true;
   globalSearchResults.innerHTML = '';
   if (searchInput) searchInput.value = '';
+  closeMobileSearch();
   window.scrollTo(0, globalSearchScrollY);
 }
 
@@ -433,7 +456,7 @@ async function openTopupModal(brand) {
         const photo = staticPaymentLogo(p);
         const icon = p.icon || '';
         const content = photo ? `<img src="${photo}" alt="${p.name}" class="pay-opt-img">` : (icon ? `<span class="pay-opt-icon">${icon}</span><span class="pay-opt-name">${p.name}</span>` : p.name);
-        return `<div class="pay-opt" data-pay="${p.name}">${content}</div>`;
+        return `<div class="pay-opt" data-pay="${p.code}">${content}</div>`;
       }).join('');
       paySelectGrid.querySelectorAll('.pay-opt').forEach(opt => {
         opt.addEventListener('click', () => {
@@ -442,6 +465,11 @@ async function openTopupModal(brand) {
           selectedPay = opt.dataset.pay;
         });
       });
+      const defaultPayment = paySelectGrid.querySelector('.pay-opt[data-pay="qris"]') || paySelectGrid.querySelector('.pay-opt');
+      if (defaultPayment) {
+        defaultPayment.classList.add('selected');
+        selectedPay = defaultPayment.dataset.pay;
+      }
     } else {
       paySelectGrid.innerHTML = '<div style="grid-column:1/-1;text-align:center;color:var(--text-mute);padding:1rem;font-size:.85rem;">Metode pembayaran tidak tersedia</div>';
     }

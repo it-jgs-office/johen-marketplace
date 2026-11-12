@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Log;
  *
  * Alur dana untuk satu order topup:
  *
- *   1. Pembayaran Xendit sukses      -> `deposit`  (+nominal)  saldo_status: none -> held
+ *   1. Pembayaran Ayolinx sukses     -> `deposit`  (+nominal)  saldo_status: none -> held
  *   2. Topup Digiflazz berhasil       -> `consume`  (-nominal)  saldo_status: held -> consumed
  *   3. Topup gagal / lewat timeout    -> `release`  (0)         saldo_status: held -> refunded
  *   4. Topup sukses TELAT (kasus 3)-> `correction_debit` (-nominal) refunded -> reversed
@@ -25,7 +25,7 @@ use Illuminate\Support\Facades\Log;
  * Kunci keamanannya ada di dua lapis:
  *   - `orders.saldo_status` hanya boleh berpindah dari status yang diharapkan,
  *     dicek di dalam transaksi yang sama dengan perubahan saldo.
- *   - `balance_transactions.idempotency_key` unik, jadi kalau webhook Xendit
+ *   - `balance_transactions.idempotency_key` unik, jadi kalau callback Ayolinx
  *     atau Digiflazz terkirim berulang, mutasi kedua ditolak diam-diam.
  */
 class BalanceService
@@ -273,7 +273,7 @@ class BalanceService
     }
 
     /**
-     * Saldo cukup untuk membayar order? Tidak dipakai di alur pembayaran Xendit
+     * Saldo cukup untuk membayar order? Tidak dipakai di alur pembayaran Ayolinx
      * (user selalu bayar lewat gateway), tapi berguna untuk pemeriksaan admin
      * dan rencana memakai saldo sebagai metode pembayaran.
      */

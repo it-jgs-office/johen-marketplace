@@ -18,12 +18,6 @@ class LiveChatMessagePolicy
 
         $conversation = $message->conversation;
 
-        if ($user->isLiveChatAdmin()) {
-            return $conversation->channel->operators()
-                ->where('user_id', $user->id)
-                ->exists();
-        }
-
         return $conversation->user_id === $user->id;
     }
 
@@ -40,12 +34,6 @@ class LiveChatMessagePolicy
 
         if ($message->sender_id === $user->id) {
             return true;
-        }
-
-        if ($user->isLiveChatAdmin()) {
-            return $message->conversation->channel->operators()
-                ->where('user_id', $user->id)
-                ->exists();
         }
 
         return false;

@@ -22,35 +22,16 @@
             <span class="jco-section-num">1</span>
             <div>
               <h2 class="jco-section-title">Data Pemesan</h2>
-              <p class="jco-section-desc">Data login akun akan dikirim ke email yang sudah kamu tes dan konfirmasi.</p>
+              <p class="jco-section-desc">Data login akun akan dikirim ke email yang sudah dikonfirmasi.</p>
             </div>
           </div>
 
           <div class="jco-fields">
-            <div class="jco-email-notice">
-              <strong>Pastikan email aktif dan dapat menerima pesan</strong>
-              <span>Setelah pembayaran berhasil, seluruh data login akun game dikirim otomatis ke email pemesan.</span>
-            </div>
-            <div class="jco-field">
-              <label for="customer_name">Nama Lengkap <span class="jco-req">*</span></label>
-              <input type="text" name="customer_name" id="customer_name" value="{{ old('customer_name', auth()->user()->name ?? '') }}" required placeholder="Masukkan nama lengkap">
-              @error('customer_name')<span class="jco-error">{{ $message }}</span>@enderror
-            </div>
-
             <div class="jco-field-row">
               <div class="jco-field">
-                <label for="customer_email">Email <span class="jco-req">*</span></label>
-                <input type="email" name="customer_email" id="customer_email" value="{{ old('customer_email', auth()->user()->email ?? '') }}" required placeholder="email@contoh.com">
-                <input type="hidden" name="email_test_token" id="email_test_token" value="{{ old('email_test_token') }}">
-                <button type="button" class="jco-email-test-btn" id="emailTestBtn">Kirim Email Tes</button>
-                <span class="jco-email-test-status" id="emailTestStatus" aria-live="polite"></span>
-                <label class="jco-email-confirm" id="emailConfirmWrap" @if(!old('email_test_token')) hidden @endif>
-                  <input type="checkbox" name="email_test_confirmed" id="email_test_confirmed" value="1" {{ old('email_test_confirmed') ? 'checked' : '' }}>
-                  <span>Ya, email tes dari Johen Gaming sudah masuk.</span>
-                </label>
-                @error('customer_email')<span class="jco-error">{{ $message }}</span>@enderror
-                @error('email_test_token')<span class="jco-error">Kirim email tes terlebih dahulu.</span>@enderror
-                @error('email_test_confirmed')<span class="jco-error">Konfirmasikan bahwa email tes sudah masuk.</span>@enderror
+                <label for="customer_name">Nama Lengkap <span class="jco-req">*</span></label>
+                <input type="text" name="customer_name" id="customer_name" value="{{ old('customer_name', auth()->user()->name ?? '') }}" required placeholder="Masukkan nama lengkap">
+                @error('customer_name')<span class="jco-error">{{ $message }}</span>@enderror
               </div>
               <div class="jco-field">
                 <label for="customer_phone">No. WhatsApp <span class="jco-req">*</span></label>
@@ -61,9 +42,47 @@
           </div>
         </div>
 
-        <div class="jco-section">
+        <div class="jco-section jco-email-section">
           <div class="jco-section-header">
             <span class="jco-section-num">2</span>
+            <div>
+              <h2 class="jco-section-title">Verifikasi Email</h2>
+              <p class="jco-section-desc">Konfirmasi alamat tujuan pengiriman data login akun.</p>
+            </div>
+          </div>
+
+          <div class="jco-email-layout">
+            <div class="jco-email-notice">
+              <strong>Pastikan email aktif dan dapat menerima pesan</strong>
+              <span>Setelah pembayaran berhasil, seluruh data login akun game dikirim otomatis ke email yang sudah terverifikasi.</span>
+            </div>
+            <div class="jco-field jco-email-field">
+              <label for="customer_email">Email Penerima <span class="jco-req">*</span></label>
+              <input type="email" name="customer_email" id="customer_email" value="{{ old('customer_email', $emailConfirmationEmail ?: (auth()->user()->email ?? '')) }}" required placeholder="email@contoh.com">
+              <button type="button" class="jco-email-test-btn" id="emailTestBtn">Kirim Kode Konfirmasi</button>
+              <span class="jco-email-test-status" id="emailTestStatus" aria-live="polite"></span>
+              <div class="jco-email-confirm" id="emailConfirmWrap" @if(!($emailConfirmationPending ?? false) && !old('email_confirmation_code')) hidden @endif>
+                <label id="email_confirmation_code_label">Kode Konfirmasi Pembelian <span class="jco-req">*</span></label>
+                <input type="hidden" name="email_confirmation_code" id="email_confirmation_code" value="{{ old('email_confirmation_code') }}">
+                <div class="jco-otp-grid" role="group" aria-labelledby="email_confirmation_code_label">
+                  @for($digit = 1; $digit <= 6; $digit++)
+                    <input type="text" class="jco-otp-digit" data-otp-digit inputmode="numeric" autocomplete="{{ $digit === 1 ? 'one-time-code' : 'off' }}" maxlength="1" aria-label="Digit kode ke-{{ $digit }}">
+                  @endfor
+                </div>
+                <button type="button" class="jco-email-verify-btn" id="emailVerifyBtn" disabled>Verifikasi Kode</button>
+                <div class="jco-email-verified" id="emailVerifiedStatus" @if(!($emailCodeVerified ?? false)) hidden @endif>
+                  <span aria-hidden="true">✓</span> Email terverifikasi
+                </div>
+              </div>
+              @error('customer_email')<span class="jco-error">{{ $message }}</span>@enderror
+              @error('email_confirmation_code')<span class="jco-error">{{ $message }}</span>@enderror
+            </div>
+          </div>
+        </div>
+
+        <div class="jco-section">
+          <div class="jco-section-header">
+            <span class="jco-section-num">3</span>
             <div>
               <h2 class="jco-section-title">Metode Pembayaran</h2>
               <p class="jco-section-desc">Semua metode diproses aman melalui {{ $gatewayName }}.</p>
@@ -74,12 +93,12 @@
               $categories = [
                   'qris' => 'QRIS',
                   'ewallet' => 'E-Wallet',
-                  'paylater' => 'PayLater',
                   'va' => 'Virtual Account / Bank',
                   'convenience_store' => 'Convenience Store',
               ];
               $groupedPay = collect($paymentMethods)->groupBy('category');
-              $selectedPayment = old('payment_method', $paymentMethods->first()?->code);
+              $defaultPayment = $paymentMethods->firstWhere('code', 'qris')?->code ?? $paymentMethods->first()?->code;
+              $selectedPayment = old('payment_method', $defaultPayment);
               $channelMinAmount = fn ($category) => in_array($category, ['qris', 'ewallet'], true) ? 1000 : 10000;
           @endphp
           <div class="gd-pay-group gd-pay-group--cards jco-topup-pay" id="jcoPayGroup">
@@ -166,7 +185,7 @@
 
         <div class="jco-section">
           <div class="jco-section-header">
-            <span class="jco-section-num">3</span>
+            <span class="jco-section-num">4</span>
             <div>
               <h2 class="jco-section-title">Catatan</h2>
               <p class="jco-section-desc">Tambahkan catatan jika diperlukan (opsional).</p>
@@ -179,7 +198,7 @@
           </div>
         </div>
 
-        <button type="submit" class="jco-submit">
+        <button type="submit" class="jco-submit" id="checkoutSubmitBtn" @if(!($emailCodeVerified ?? false)) disabled @endif>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4zM3 6h18"/><path d="M16 10a4 4 0 01-8 0"/></svg>
           Buat Pesanan
         </button>
@@ -240,10 +259,6 @@
         <div class="jco-trust-item">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
           <span>Pembayaran aman & terpercaya</span>
-        </div>
-        <div class="jco-trust-item">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M12 9v6"/><path d="M9 12h6"/></svg>
-          <span>Transfer ke <strong>BRI 114101707070565</strong> a/n JOSIA HENDRICO SIMANUNGKALIT</span>
         </div>
       </div>
     </div>
@@ -317,6 +332,24 @@
 .jco-topup-pay .gd-pay-card-grid {
   min-width: 0;
   max-width: 100%;
+}
+@media (min-width: 901px) {
+  body:has(.jco-layout) { overflow-x: clip; }
+  .jco-summary-side {
+    position: sticky;
+    top: 90px;
+    z-index: 10;
+    align-self: start;
+    max-height: calc(100dvh - 110px);
+    padding-right: 4px;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border-strong) transparent;
+  }
+  .jco-summary-side::-webkit-scrollbar { width: 4px; }
+  .jco-summary-side::-webkit-scrollbar-thumb { border-radius: 999px; background: var(--border-strong); }
+  .jco-summary { position: static; }
 }
 @media (max-width: 900px) {
   .jco-layout { grid-template-columns: 1fr; }
@@ -430,6 +463,51 @@
   color: #f87171;
   margin-top: .3rem;
 }
+.jco-email-section {
+  position: relative;
+  overflow: hidden;
+  border-color: rgba(59, 130, 246, .34);
+  background:
+    linear-gradient(135deg, rgba(37, 99, 235, .09), transparent 48%),
+    var(--surface, #1a1a2e);
+}
+.jco-email-section::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 96px;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #38bdf8);
+}
+.jco-email-section .jco-section-num {
+  background: linear-gradient(135deg, #0ea5e9, #2563eb);
+}
+.jco-email-layout {
+  display: grid;
+  grid-template-columns: minmax(210px, .85fr) minmax(0, 1.35fr);
+  gap: 1rem;
+  align-items: start;
+}
+.jco-email-field {
+  min-width: 0;
+  padding: 1rem;
+  border: 1px solid rgba(96, 165, 250, .22);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--bg-soft, #10182d) 88%, #0b4f7c);
+}
+[data-theme="light"] .jco-email-section {
+  border-color: #bfdbfe;
+  background: linear-gradient(135deg, #eff6ff, #fff 52%);
+}
+[data-theme="light"] .jco-email-field {
+  border-color: #dbeafe;
+  background: #fff;
+}
+@media (max-width: 700px) {
+  .jco-email-layout { grid-template-columns: 1fr; }
+  .jco-email-field { padding: .8rem; }
+}
 .jco-email-notice {
   display: flex;
   flex-direction: column;
@@ -456,23 +534,25 @@
   cursor: pointer;
 }
 .jco-email-test-btn:disabled { cursor: wait; opacity: .65; }
-.jco-email-test-status { display: block; margin-top: .4rem; color: var(--text-dim, #999); font-size: .7rem; line-height: 1.45; }
-.jco-email-test-status.is-success { color: #34d399; }
-.jco-email-test-status.is-error { color: #f87171; }
+.jco-email-test-status { position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0; }
 .jco-email-confirm {
-  display: flex !important;
-  align-items: flex-start;
-  gap: .5rem;
+  display: block;
   margin-top: .6rem !important;
   padding: .7rem;
   border: 1px solid rgba(52, 211, 153, .3);
   border-radius: 9px;
   background: rgba(16, 185, 129, .08);
   color: #6ee7b7 !important;
-  cursor: pointer;
 }
 .jco-email-confirm[hidden] { display: none !important; }
-.jco-email-confirm input { margin-top: .1rem; accent-color: #10b981; }
+.jco-email-confirm label { display:block;margin-bottom:.4rem;color:#6ee7b7;font-size:.75rem;font-weight:700; }
+.jco-otp-grid { display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:.4rem; }
+.jco-field .jco-otp-digit { width:100%;min-width:0;height:46px;padding:0;text-align:center;font-size:1.05rem;font-weight:800;caret-color:var(--jba-accent,#9d5cf5); }
+.jco-field .jco-otp-digit.is-filled { border-color:rgba(52,211,153,.55);background:rgba(16,185,129,.09); }
+.jco-email-verify-btn { width:100%;margin-top:.55rem;padding:.62rem .8rem;border:1px solid rgba(52,211,153,.4);border-radius:9px;background:rgba(16,185,129,.12);color:#6ee7b7;font-size:.76rem;font-weight:800;cursor:pointer; }
+.jco-email-verify-btn:disabled { cursor:not-allowed;opacity:.45; }
+.jco-email-verified { display:flex;align-items:center;justify-content:center;gap:.4rem;margin-top:.55rem;color:#6ee7b7;font-size:.76rem;font-weight:800; }
+.jco-email-verified[hidden] { display:none !important; }
 
 /* Payment */
 .jco-pay-group {
@@ -613,6 +693,7 @@
 .jco-submit:active {
   transform: translateY(0);
 }
+.jco-submit:disabled { cursor:not-allowed;opacity:.5;transform:none;box-shadow:none; }
 
 /* Summary Sidebar */
 .jco-summary {
@@ -620,8 +701,6 @@
   border: 1px solid var(--border, rgba(255,255,255,.08));
   border-radius: 16px;
   padding: 1.25rem;
-  position: sticky;
-  top: 2rem;
 }
 .jco-summary-title {
   font-size: .92rem;
@@ -803,18 +882,98 @@
   const checkoutForm = document.getElementById('checkoutForm');
   const emailInput = document.getElementById('customer_email');
   const emailTestBtn = document.getElementById('emailTestBtn');
-  const emailTestToken = document.getElementById('email_test_token');
   const emailTestStatus = document.getElementById('emailTestStatus');
   const emailConfirmWrap = document.getElementById('emailConfirmWrap');
-  const emailConfirmed = document.getElementById('email_test_confirmed');
+  const emailConfirmationCode = document.getElementById('email_confirmation_code');
+  const emailOtpDigits = Array.from(document.querySelectorAll('[data-otp-digit]'));
+  const emailVerifyBtn = document.getElementById('emailVerifyBtn');
+  const emailVerifiedStatus = document.getElementById('emailVerifiedStatus');
+  const checkoutSubmitBtn = document.getElementById('checkoutSubmitBtn');
+  let emailCodeCooldown = 0;
+  let emailCodeTimer = null;
+  let emailCodeVerified = @json((bool) ($emailCodeVerified ?? false));
+
+  function notifyEmailCode(message, isError = false) {
+    emailTestStatus.textContent = message;
+    if (typeof showToast === 'function') showToast(message, isError);
+  }
+
+  function setEmailCodeVerified(verified) {
+    emailCodeVerified = verified;
+    checkoutSubmitBtn.disabled = !verified;
+    emailVerifiedStatus.hidden = !verified;
+    emailVerifyBtn.hidden = verified;
+    emailOtpDigits.forEach(input => { input.readOnly = verified; });
+  }
+
+  function syncEmailOtp() {
+    const code = emailOtpDigits.map(input => input.value).join('');
+    emailConfirmationCode.value = code;
+    emailOtpDigits.forEach(input => input.classList.toggle('is-filled', input.value !== ''));
+    emailVerifyBtn.disabled = code.length !== 6;
+    if (emailCodeVerified && code.length !== 6) setEmailCodeVerified(false);
+    return code;
+  }
+
+  function fillEmailOtp(code) {
+    const digits = String(code || '').replace(/\D/g, '').slice(0, 6).split('');
+    emailOtpDigits.forEach((input, index) => { input.value = digits[index] || ''; });
+    syncEmailOtp();
+  }
+
+  function clearEmailOtp() {
+    setEmailCodeVerified(false);
+    fillEmailOtp('');
+  }
+
+  function startEmailCodeCooldown(seconds) {
+    window.clearInterval(emailCodeTimer);
+    emailCodeCooldown = Math.max(0, Number.parseInt(seconds, 10) || 0);
+
+    const renderCooldown = () => {
+      if (emailCodeCooldown <= 0) {
+        window.clearInterval(emailCodeTimer);
+        emailTestBtn.disabled = false;
+        emailTestBtn.textContent = 'Kirim Ulang Kode';
+        return;
+      }
+
+      emailTestBtn.disabled = true;
+      emailTestBtn.textContent = 'Kirim ulang dalam ' + emailCodeCooldown + ' detik';
+      emailCodeCooldown -= 1;
+    };
+
+    renderCooldown();
+    if (emailCodeCooldown > 0) emailCodeTimer = window.setInterval(renderCooldown, 1000);
+  }
 
   function resetEmailTest() {
-    emailTestToken.value = '';
-    emailConfirmed.checked = false;
+    clearEmailOtp();
     emailConfirmWrap.hidden = true;
-    emailTestStatus.textContent = 'Kirim email tes setelah alamat email benar.';
-    emailTestStatus.className = 'jco-email-test-status';
+    emailTestStatus.textContent = 'Kirim kode setelah alamat email benar.';
   }
+
+  emailOtpDigits.forEach((input, index) => {
+    input.addEventListener('input', function() {
+      input.value = input.value.replace(/\D/g, '').slice(-1);
+      setEmailCodeVerified(false);
+      syncEmailOtp();
+      if (input.value && emailOtpDigits[index + 1]) emailOtpDigits[index + 1].focus();
+    });
+    input.addEventListener('keydown', function(event) {
+      if (event.key === 'Backspace' && !input.value && emailOtpDigits[index - 1]) {
+        emailOtpDigits[index - 1].focus();
+      }
+    });
+    input.addEventListener('paste', function(event) {
+      const pastedCode = (event.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '').slice(0, 6);
+      if (!pastedCode) return;
+      event.preventDefault();
+      setEmailCodeVerified(false);
+      fillEmailOtp(pastedCode);
+      emailOtpDigits[Math.min(pastedCode.length, 6) - 1].focus();
+    });
+  });
 
   emailInput?.addEventListener('input', resetEmailTest);
   emailTestBtn?.addEventListener('click', async function() {
@@ -823,7 +982,6 @@
     emailTestBtn.disabled = true;
     emailTestBtn.textContent = 'Mengirim...';
     emailTestStatus.textContent = '';
-    emailTestStatus.className = 'jco-email-test-status';
 
     try {
       const response = await fetch(@json(route('jual-beli-akun.email-test')), {
@@ -837,29 +995,74 @@
       });
       const data = await response.json();
 
-      if (!response.ok) throw new Error(data.message || 'Email tes gagal dikirim.');
+      if (!response.ok) {
+        if (data.retry_after) startEmailCodeCooldown(data.retry_after);
+        throw new Error(data.message || 'Kode konfirmasi gagal dikirim.');
+      }
 
-      emailTestToken.value = data.token;
-      emailConfirmed.checked = false;
       emailConfirmWrap.hidden = false;
-      emailTestStatus.textContent = data.message;
-      emailTestStatus.className = 'jco-email-test-status is-success';
+      clearEmailOtp();
+      emailOtpDigits[0]?.focus();
+      notifyEmailCode(data.message);
+      startEmailCodeCooldown(data.retry_after || 60);
     } catch (error) {
-      resetEmailTest();
-      emailTestStatus.textContent = error.message || 'Email tes gagal dikirim.';
-      emailTestStatus.className = 'jco-email-test-status is-error';
+      notifyEmailCode(error.message || 'Kode konfirmasi gagal dikirim.', true);
     } finally {
-      emailTestBtn.disabled = false;
-      emailTestBtn.textContent = 'Kirim Ulang Email Tes';
+      if (emailCodeCooldown <= 0) {
+        emailTestBtn.disabled = false;
+        emailTestBtn.textContent = 'Kirim Kode Konfirmasi';
+      }
+    }
+  });
+
+  const initialEmailCodeRetryAfter = @json((int) ($emailCodeRetryAfter ?? 0));
+  if (initialEmailCodeRetryAfter > 0) startEmailCodeCooldown(initialEmailCodeRetryAfter);
+
+  fillEmailOtp(emailConfirmationCode.value);
+  setEmailCodeVerified(emailCodeVerified);
+
+  emailVerifyBtn?.addEventListener('click', async function() {
+    const code = syncEmailOtp();
+    if (!/^\d{6}$/.test(code)) {
+      notifyEmailCode('Masukkan 6 digit kode konfirmasi.', true);
+      emailOtpDigits.find(input => !input.value)?.focus();
+      return;
+    }
+
+    emailVerifyBtn.disabled = true;
+    emailVerifyBtn.textContent = 'Memverifikasi...';
+
+    try {
+      const response = await fetch(@json(route('jual-beli-akun.email-confirmation.verify')), {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+          'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({email: emailInput.value.trim(), code: code})
+      });
+      const data = await response.json();
+
+      if (!response.ok) throw new Error(data.message || 'Kode konfirmasi tidak valid.');
+
+      setEmailCodeVerified(true);
+      notifyEmailCode(data.message);
+    } catch (error) {
+      setEmailCodeVerified(false);
+      notifyEmailCode(error.message || 'Kode konfirmasi tidak valid.', true);
+    } finally {
+      emailVerifyBtn.textContent = 'Verifikasi Kode';
+      if (!emailCodeVerified) emailVerifyBtn.disabled = syncEmailOtp().length !== 6;
     }
   });
 
   checkoutForm?.addEventListener('submit', function(event) {
-    if (!emailTestToken.value || !emailConfirmed.checked) {
+    if (!emailCodeVerified) {
       event.preventDefault();
-      emailTestStatus.textContent = 'Kirim email tes lalu konfirmasi bahwa email sudah masuk.';
-      emailTestStatus.className = 'jco-email-test-status is-error';
-      emailInput.scrollIntoView({behavior: 'smooth', block: 'center'});
+      emailConfirmWrap.hidden = false;
+      notifyEmailCode('Verifikasi kode konfirmasi terlebih dahulu.', true);
+      emailOtpDigits[0]?.focus();
     }
   });
 })();

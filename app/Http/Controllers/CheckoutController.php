@@ -8,10 +8,8 @@ use App\Models\PaymentMethod;
 use App\Services\CartService;
 use App\Services\BalanceService;
 use App\Services\CheckoutSettlementService;
-use App\Services\DokuService;
 use App\Services\PaymentGatewayService;
 use App\Services\TopupOrderBuilder;
-use App\Services\XenditService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,7 +18,7 @@ use Illuminate\Support\Str;
 class CheckoutController extends Controller
 {
     /**
-     * Minimal nominal per kategori metode, mengikuti batas minimum channel Xendit.
+     * Minimal nominal per kategori metode Ayolinx.
      */
     protected const MIN_AMOUNT = [
         'qris' => 1000,
@@ -33,23 +31,17 @@ class CheckoutController extends Controller
     protected TopupOrderBuilder $builder;
     protected PaymentGatewayService $gateway;
     protected CheckoutSettlementService $checkoutSettlement;
-    protected XenditService $xendit;
-    protected DokuService $doku;
 
     public function __construct(
         CartService $cart,
         TopupOrderBuilder $builder,
         PaymentGatewayService $gateway,
-        CheckoutSettlementService $checkoutSettlement,
-        XenditService $xendit,
-        DokuService $doku
+        CheckoutSettlementService $checkoutSettlement
     ) {
         $this->cart = $cart;
         $this->builder = $builder;
         $this->gateway = $gateway;
         $this->checkoutSettlement = $checkoutSettlement;
-        $this->xendit = $xendit;
-        $this->doku = $doku;
     }
 
     /**
@@ -84,11 +76,15 @@ class CheckoutController extends Controller
      * Buat satu charge untuk seluruh keranjang, lalu satu order anak per item.
      *
      * Semua baris order + charge dibuat dalam satu transaksi: kalau charge ke
-     * Xendit gagal, kuota flash deal yang sempat terpakai ikut kembali.
+     * Ayolinx gagal, kuota flash deal yang sempat terpakai ikut kembali.
      */
     public function store(Request $request, \App\Services\GameAccountService $gameAccount)
     {
         $user = Auth::user();
+        $availablePaymentCodes = $this->gateway
+            ->filterAvailableMethods(PaymentMethod::where('is_active', true)->get())
+            ->pluck('code')
+            ->all();
 
         $request->validate([
             'accounts' => ['required', 'array'],
@@ -96,13 +92,15 @@ class CheckoutController extends Controller
             'accounts.*.zone_id' => ['nullable', 'string', 'max:20', 'regex:/^[A-Za-z0-9]+$/'],
             'email' => ['required', 'email', 'max:100'],
             'phone' => ['nullable', 'string', 'max:30'],
-            'payment_method' => ['nullable', 'string', 'max:50'],
+            'payment_method' => ['required', 'string', \Illuminate\Validation\Rule::in($availablePaymentCodes)],
             'promo_code' => ['nullable', 'string', 'max:32'],
             'use_points' => ['nullable', 'boolean'],
             'points_amount' => ['exclude_unless:use_points,1', 'required', 'integer', 'min:1'],
         ], [
             'accounts.*.customer_number.required' => 'User ID wajib diisi untuk semua game di keranjang.',
             'accounts.*.zone_id.regex' => 'Zone ID hanya boleh berisi huruf dan angka.',
+            'payment_method.required' => 'Pilih metode pembayaran terlebih dahulu.',
+            'payment_method.in' => 'Metode pembayaran yang dipilih tidak tersedia.',
         ]);
 
         $summary = $this->cart->summary($user->id);
@@ -157,7 +155,7 @@ class CheckoutController extends Controller
 
         $email = trim((string) ($request->email ?: $user->email));
         $phone = trim((string) $request->phone);
-        $method = (string) ($request->payment_method ?: config('services.payment.channel', 'qris'));
+        $method = (string) $request->payment_method;
 
         try {
             $checkout = DB::transaction(function () use ($user, $summary, $brandGroups, $accounts, $email, $phone, $method, $request) {
@@ -284,7 +282,7 @@ class CheckoutController extends Controller
                     if (! $charged) {
                         throw new \RuntimeException(
                             ($this->gateway->lastChargeError()
-                                ?: 'Halaman pembayaran Midtrans gagal dibuat. Silakan coba lagi.')
+                                ?: 'Halaman pembayaran Ayolinx gagal dibuat. Silakan coba lagi.')
                             .' (checkout: '.$checkout->checkout_ref.')'
                         );
                     }
@@ -384,84 +382,21 @@ class CheckoutController extends Controller
     }
 
     /**
-     * Baca status charge langsung dari Xendit (cadangan kalau webhook telat).
+     * Status Payment Link Ayolinx diperbarui melalui callback.
      */
     protected function syncFromGateway(Checkout $checkout): void
     {
-        app(\App\Services\MidtransPaymentService::class)->sync($checkout);
-    }
-
-    protected function syncFromLegacyGateway(Checkout $checkout): void
-    {
-        if (data_get($checkout->gateway_extra, 'integration') === 'direct'
-            && data_get($checkout->gateway_extra, 'provider') === 'doku') {
-            app(\App\Services\DokuPaymentSyncService::class)->sync($checkout);
-            return;
-        }
-
-        $id = (string) $checkout->gateway_invoice_id;
-
-        if ($id === '') {
-            return;
-        }
-
-        if ($checkout->gateway_type === 'doku_checkout') {
-            $extra = (array) $checkout->gateway_extra;
-            $invoiceNumber = (string) ($extra['invoice_number'] ?? $checkout->checkout_ref);
-            $data = $this->doku->checkStatus($invoiceNumber);
-            $status = strtoupper((string) data_get($data, 'transaction.status', ''));
-
-            if ($status === 'SUCCESS') {
-                $this->checkoutSettlement->markPaid($checkout);
-            } elseif ($status === 'EXPIRED') {
-                app(\App\Services\PaymentExpirationService::class)->expire($checkout);
-            }
-
-            // Status FAILED pada DOKU Checkout bukan final: pelanggan masih
-            // dapat memilih metode lain pada halaman Checkout yang sama.
-            return;
-        }
-
-        $data = match ($checkout->gateway_type) {
-            'qris' => $this->xendit->getQr($id),
-            'va' => $this->xendit->getVirtualAccount($id),
-            'retail' => $this->xendit->getRetailOutlet($id),
-            'ewallet' => $this->xendit->getEwalletCharge($id),
-            default => $this->xendit->getInvoice($id),
-        };
-
-        if (! $data) {
-            return;
-        }
-
-        $status = strtoupper((string) ($data['status'] ?? ''));
-
-        // INACTIVE pada QR/VA/retail juga bisa berarti kedaluwarsa, bukan bukti lunas.
-        $paid = in_array($status, ['PAID', 'SETTLED', 'SUCCEEDED', 'COMPLETED', 'CAPTURED'], true)
-            && ! in_array($status, ['EXPIRED', 'FAILED', 'CANCELLED'], true);
-
-        if ($paid) {
-            $this->checkoutSettlement->markPaid($checkout);
-        } elseif (in_array($status, ['EXPIRED', 'FAILED', 'CANCELLED'], true)) {
-            if ($status === 'EXPIRED') {
-                app(\App\Services\PaymentExpirationService::class)->expire($checkout);
-            } else {
-                $this->checkoutSettlement->markFailed($checkout, 'Pembayaran '.$status.' di gateway');
-            }
-        }
+        app(\App\Services\AyolinxPaymentService::class)->sync($checkout);
     }
 
     /**
-     * Minimal nominal untuk sebuah metode, mengikuti batas channel Xendit.
+     * Minimal nominal untuk sebuah metode Ayolinx.
      */
     public function minAmountFor(string $method): int
     {
-        return match ($this->gateway->resolve($method)['gateway_type']) {
-            'va' => self::MIN_AMOUNT['va'],
-            'retail' => self::MIN_AMOUNT['convenience_store'],
-            'ewallet' => self::MIN_AMOUNT['ewallet'],
-            default => self::MIN_AMOUNT['qris'],
-        };
+        $category = $this->gateway->resolve($method)['category'];
+
+        return self::MIN_AMOUNT[$category] ?? self::MIN_AMOUNT['qris'];
     }
 
     protected function cleanZone($zoneId): ?string

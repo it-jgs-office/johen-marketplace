@@ -6,9 +6,6 @@ use App\Mail\ContactReplyMail;
 use App\Models\AccountOrder;
 use App\Models\Brand;
 use App\Models\ContactInquiry;
-use App\Models\LiveChatChannel;
-use App\Models\LiveChatOperator;
-use App\Models\LiveChatOperatorSchedule;
 use App\Models\Order;
 use App\Models\OrderAdminAction;
 use App\Models\Product;
@@ -155,7 +152,7 @@ class AdminController extends Controller
         $appUrl = config('app.url');
         $isLocal = in_array(parse_url($appUrl, PHP_URL_HOST), ['localhost', '127.0.0.1', '::1']);
 
-        $midtrans = app(\App\Services\MidtransService::class);
+        $ayolinx = app(\App\Services\AyolinxService::class);
         $paymentGateway = app(\App\Services\PaymentGatewayService::class);
         $gatewayLabel = $paymentGateway->providerLabel();
 
@@ -164,23 +161,23 @@ class AdminController extends Controller
                 'label' => 'Domain/URL publik (bukan localhost)',
                 'ok' => !$isLocal,
                 'detail' => $isLocal
-                    ? 'APP_URL masih "' . $appUrl . '". Webhook Midtrans & Digiflazz tidak dapat menjangkau localhost. Deploy + set APP_URL ke https://domain.'
+                    ? 'APP_URL masih "' . $appUrl . '". Webhook Ayolinx & Digiflazz tidak dapat menjangkau localhost. Deploy + set APP_URL ke https://domain.'
                     : 'APP_URL = ' . $appUrl,
             ],
-            'midtrans_configured' => [
-                'label' => 'Midtrans API key terkonfigurasi',
-                'ok' => $midtrans->isConfigured(),
-                'detail' => $midtrans->isConfigured() ? 'Merchant ID, Client Key, dan Server Key terisi.' : 'Credential MIDTRANS masih kosong.',
+            'ayolinx_configured' => [
+                'label' => 'Ayolinx API terkonfigurasi',
+                'ok' => $ayolinx->isConfigured(),
+                'detail' => $ayolinx->isConfigured() ? 'Client Key dan key Ayolinx lengkap.' : 'Client Key atau key AYOLINX belum lengkap.',
             ],
-            'midtrans_environment' => [
-                'label' => 'Midtrans Sandbox aktif',
-                'ok' => ! $midtrans->isProduction(),
-                'detail' => $midtrans->isProduction() ? 'Production aktif.' : 'Sandbox aktif untuk pengujian.',
+            'ayolinx_environment' => [
+                'label' => 'Environment Ayolinx',
+                'ok' => ! $ayolinx->isProduction(),
+                'detail' => $ayolinx->isProduction() ? 'Production aktif.' : 'Sandbox aktif untuk pengujian.',
             ],
-            'midtrans_signature' => [
-                'label' => 'Verifikasi signature Midtrans',
-                'ok' => $midtrans->isConfigured(),
-                'detail' => (string) config('xendit.callback_token') !== '' ? 'Terkonfigurasi.' : 'XENDIT_CALLBACK_TOKEN kosong Ã¢â‚¬â€ webhook akan ditolak.',
+            'ayolinx_signature' => [
+                'label' => 'Verifikasi callback Ayolinx',
+                'ok' => is_readable((string) config('ayolinx.callback_public_key_path')),
+                'detail' => '',
             ],
             'webhook_route' => [
                 'label' => 'CSRF dikecualikan di webhook',
@@ -204,23 +201,11 @@ class AdminController extends Controller
                     ? 'PAYMENT_SIMULATION=true Ã¢â‚¬â€ order tidak melibatkan pembayaran Digiflazz nyata.'
                     : 'PAYMENT_SIMULATION=false Ã¢â‚¬â€ pembayaran nyata.',
             ],
-            'push_notification' => [
-                'label' => 'Web Push (notifikasi live chat)',
-                'ok' => !empty(config('services.vapid.public_key')) && !empty(config('services.vapid.private_key')),
-                'detail' => !empty(config('services.vapid.public_key')) && !empty(config('services.vapid.private_key'))
-                    ? 'VAPID keys aktif. Pastikan admin & user mengaktifkan notifikasi di browser (tombol "Aktifkan Notifikasi").'
-                    : 'VAPID_PUBLIC_KEY / VAPID_PRIVATE_KEY belum diisi di .env.',
-            ],
         ];
 
-        $checks['midtrans_signature']['detail'] = 'Signature SHA-512 notifikasi Midtrans diverifikasi otomatis.';
-
-        $pushStats = [
-            'configured' => !empty(config('services.vapid.public_key')) && !empty(config('services.vapid.private_key')),
-            'web' => \App\Models\PushSubscription::where('guard', 'web')->count(),
-            'admin' => \App\Models\PushSubscription::where('guard', 'admin')->count(),
-            'lcadmin' => \App\Models\PushSubscription::where('guard', 'lcadmin')->count(),
-        ];
+        $checks['ayolinx_signature']['detail'] = is_readable((string) config('ayolinx.callback_public_key_path'))
+            ? 'Public key callback tersedia.'
+            : 'AYOLINX_CALLBACK_PUBLIC_KEY_PATH belum valid; callback akan ditolak.';
 
         $digiflazzConfigured = $this->digiflazz->isConfigured();
         $balanceResult = $digiflazzConfigured ? $this->digiflazz->checkBalance() : [];
@@ -235,7 +220,6 @@ class AdminController extends Controller
             'isLocal',
             'appUrl',
             'gatewayLabel',
-            'pushStats',
             'digiflazzConfigured',
             'digiflazzBalance',
             'digiflazzBalanceNumber',
@@ -871,27 +855,25 @@ class AdminController extends Controller
     // ---- USERS ----
     public function users()
     {
-        $users = User::with('assignedChannels')->latest()->paginate(20);
+        $users = User::query()->where('is_admin', false)->latest()->paginate(20);
         return view('admin.users.index', compact('users'));
     }
 
     public function usersEdit(User $user)
     {
-        $user->load('assignedChannels');
-        $channels = LiveChatChannel::active()->ordered()->get();
-        return view('admin.users.edit', compact('user', 'channels'));
+        abort_if($user->isAdmin(), 404);
+
+        return view('admin.users.edit', compact('user'));
     }
 
     public function usersUpdate(Request $request, User $user)
     {
+        abort_if($user->isAdmin(), 404);
+
         $validator = validator($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|email|unique:users,email,' . $user->id,
-            'is_admin' => 'boolean',
-            'is_live_chat_admin' => 'boolean',
-            'is_live_chat_cs' => 'boolean',
             'password' => 'nullable|min:6',
-            'channel_id' => 'nullable|integer|exists:live_chat_channels,id',
         ]);
 
         if ($validator->fails()) {
@@ -904,42 +886,14 @@ class AdminController extends Controller
         $data = [
             'name' => $request->name,
             'email' => $request->email,
-            'is_admin' => $request->boolean('is_admin', false),
-            'is_live_chat_admin' => $request->boolean('is_live_chat_admin', false),
-            'is_live_chat_cs' => $request->boolean('is_live_chat_cs', false),
         ];
 
         if ($request->filled('password')) {
             $data['password'] = $request->password;
         }
 
-        DB::beginTransaction();
-
         try {
             $user->update($data);
-
-            LiveChatOperator::where('user_id', $user->id)->delete();
-
-            if ($user->is_live_chat_admin && $request->filled('channel_id')) {
-                $operator = LiveChatOperator::create([
-                    'user_id' => $user->id,
-                    'channel_id' => $request->channel_id,
-                    'is_active' => true,
-                ]);
-
-                $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-                foreach ($days as $day) {
-                    LiveChatOperatorSchedule::create([
-                        'operator_id' => $operator->id,
-                        'day_of_week' => $day,
-                        'start_time' => '07:00',
-                        'end_time' => '23:00',
-                        'is_active' => true,
-                    ]);
-                }
-            }
-
-            DB::commit();
 
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json(['success' => true, 'message' => 'Pengguna berhasil diperbarui']);
@@ -947,75 +901,6 @@ class AdminController extends Controller
 
             return redirect()->route('admin.users')->with('success', 'Pengguna berhasil diperbarui');
         } catch (\Exception $e) {
-            DB::rollBack();
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['errors' => ['error' => [$e->getMessage()]]], 422);
-            }
-            return redirect()->back()->withInput()->withErrors(['error' => 'Gagal menyimpan: ' . $e->getMessage()]);
-        }
-    }
-
-    public function usersStore(Request $request)
-    {
-        $validator = validator($request->all(), [
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email',
-            'username' => 'required|string|max:255|unique:users,username',
-            'password' => 'required|min:6',
-            'is_admin' => 'boolean',
-            'is_live_chat_admin' => 'boolean',
-            'is_live_chat_cs' => 'boolean',
-            'channel_id' => 'nullable|integer|exists:live_chat_channels,id',
-        ]);
-
-        if ($validator->fails()) {
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['errors' => $validator->errors()->messages()], 422);
-            }
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
-
-        DB::beginTransaction();
-
-        try {
-            $user = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'username' => $request->username,
-                'password' => $request->password,
-                'is_admin' => $request->boolean('is_admin', false),
-                'is_live_chat_admin' => $request->boolean('is_live_chat_admin', false),
-                'is_live_chat_cs' => $request->boolean('is_live_chat_cs', false),
-            ]);
-
-            if ($user->is_live_chat_admin && $request->filled('channel_id')) {
-                $operator = LiveChatOperator::create([
-                    'user_id' => $user->id,
-                    'channel_id' => $request->channel_id,
-                    'is_active' => true,
-                ]);
-
-                $days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-                foreach ($days as $day) {
-                    LiveChatOperatorSchedule::create([
-                        'operator_id' => $operator->id,
-                        'day_of_week' => $day,
-                        'start_time' => '07:00',
-                        'end_time' => '23:00',
-                        'is_active' => true,
-                    ]);
-                }
-            }
-
-            DB::commit();
-
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['success' => true, 'message' => 'Pengguna berhasil dibuat']);
-            }
-
-            return redirect()->route('admin.users')->with('success', 'Pengguna berhasil dibuat');
-        } catch (\Exception $e) {
-            DB::rollBack();
             if ($request->ajax() || $request->wantsJson()) {
                 return response()->json(['errors' => ['error' => [$e->getMessage()]]], 422);
             }

@@ -22,12 +22,12 @@
         <div class="card-glass transaction-check-card">
             <div class="transaction-check-heading">
                 <h1>Cek Transaksi</h1>
-                <p>Masukkan ID transaksi atau email kamu untuk melihat status pesanan.</p>
+                <p>Masukkan nomor pesanan topup, joki, keranjang, stock akun, atau email kamu.</p>
             </div>
             <form id="checkForm" class="modal-form transaction-form">
-                <label for="checkInput">ID Transaksi / Email</label>
+                <label for="checkInput">Nomor Pesanan / Email</label>
                 <div class="transaction-input-row">
-                    <input type="text" id="checkInput" required placeholder="JOHEN-XXXXXX atau email" class="input-field">
+                    <input type="text" id="checkInput" required placeholder="JOHEN-XXXXXX, CART-XXXXXX, atau email" class="input-field">
                     <button type="submit" class="btn btn-solid transaction-submit">
                         <i class="fas fa-search" aria-hidden="true"></i> Cek transaksi
                     </button>
@@ -474,7 +474,7 @@
 @media (max-width: 640px) {
     .transaction-page { padding-top: 5.8rem; padding-bottom: 2.5rem; }
     .recent-transactions-caption { margin-bottom: 1.2rem; font-size: .75rem; }
-    .transaction-table-filters { justify-content: flex-start; overflow-x: auto; padding-bottom: .1rem; }
+    .transaction-table-filters { justify-content: center; overflow-x: auto; padding-bottom: .1rem; }
     .transaction-table-filter { flex: 0 0 auto; }
     .recent-transactions--table { border-radius: 13px; }
     .transaction-table th,
@@ -517,7 +517,16 @@ const STATUS_MAP = {
     pending: { cls: 'status-pill pending', label: 'Pending' },
     refund: { cls: 'status-pill refund', label: 'Refund' },
     failed: { cls: 'status-pill failed', label: 'Gagal' },
-    expired: { cls: 'status-pill failed', label: 'Expired' }
+    expired: { cls: 'status-pill failed', label: 'Expired' },
+    cancelled: { cls: 'status-pill failed', label: 'Dibatalkan' },
+    sold_out: { cls: 'status-pill failed', label: 'Produk Terjual' }
+};
+
+const TYPE_MAP = {
+    topup: 'Top Up',
+    joki: 'Joki',
+    checkout: 'Keranjang',
+    account: 'Stock Akun'
 };
 
 function escapeTransactionHtml(value) {
@@ -554,9 +563,10 @@ document.getElementById('checkForm')?.addEventListener('submit', async (event) =
         const heading = '<p style="font-size:.8rem;color:var(--text-dim);margin:0 0 .75rem;">Ditemukan <strong style="color:var(--text)">' + transactions.length + ' transaksi</strong> untuk <strong style="color:var(--text)">' + safeVal + '</strong></p>';
         const list = transactions.map((transaction) => {
             const status = STATUS_MAP[transaction.status] || STATUS_MAP.failed;
+            const typeLabel = TYPE_MAP[transaction.type] || 'Pesanan';
             return '<div class="status-box" style="margin-bottom:.75rem">' +
                 '<div style="display:flex;justify-content:space-between;align-items:center;gap:.5rem;flex-wrap:wrap">' +
-                '<strong style="color:var(--text);font-size:.9rem">' + escapeTransactionHtml(transaction.order_id) + '</strong>' +
+                '<div><span style="display:block;color:var(--text-mute);font-size:.68rem;margin-bottom:.2rem">' + escapeTransactionHtml(typeLabel) + '</span><strong style="color:var(--text);font-size:.9rem">' + escapeTransactionHtml(transaction.order_id) + '</strong></div>' +
                 '<span class="' + status.cls + '">' + status.label + '</span>' +
                 '</div>' +
                 '<p style="font-size:.85rem;color:var(--text-dim);margin:.5rem 0 0">' +

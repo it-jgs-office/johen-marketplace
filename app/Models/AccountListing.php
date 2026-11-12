@@ -71,6 +71,9 @@ class AccountListing extends Model
 
     public function getDetailPhotoUrlsAttribute(): array
     {
+        if (is_array($this->jba_raw)) {
+            return array_values(array_filter($this->jba_raw['screenshots_urls'] ?? [], 'is_string'));
+        }
         $urls = [];
         for ($i = 1; $i <= 4; $i++) {
             $col = "detail_photo_{$i}";

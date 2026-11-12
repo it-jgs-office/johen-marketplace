@@ -20,7 +20,7 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * Keranjang + checkout gabungan: satu charge Xendit menutup banyak order,
+ * Keranjang + checkout gabungan: satu charge Ayolinx menutup banyak order,
  * lalu setiap order anak disettle sendiri lewat Digiflazz.
  *
  * Semua test berjalan di mode simulasi supaya tidak pernah menyentuh API
@@ -663,107 +663,6 @@ class CartCheckoutTest extends TestCase
         $checkout = $this->paidCheckout($user, 1);
 
         $this->actingAs($user)->post(route('checkout.simulate', $checkout))->assertNotFound();
-        $this->assertSame('pending', $checkout->fresh()->status);
-    }
-
-    /* ==================== WEBHOOK XENDIT ==================== */
-
-    private function sendWebhook(array $payload)
-    {
-        return $this->postJson('/payment/notification', $payload, [
-            'x-callback-token' => 'token-test',
-        ]);
-    }
-
-    /**
-     * Xendit mengirim tipe webhook berbeda; reference checkout bisa muncul di
-     * external_id, data.external_id, atau data.id (id invoice).
-     */
-    public function test_checkout_webhook_marks_paid_for_every_payload_shape(): void
-    {
-        config(['xendit.callback_token' => 'token-test']);
-
-        $shapes = [
-            // Invoice V2.
-            fn (string $ref) => ['event' => 'invoice.paid', 'external_id' => $ref, 'status' => 'PAID'],
-            // QRIS: reference di data.external_id.
-            fn (string $ref) => ['event' => 'qr.payment', 'data' => ['external_id' => $ref, 'status' => 'COMPLETED']],
-            // Virtual account / retail: reference + payment_status di level atas.
-            fn (string $ref) => ['event' => 'fva.paid', 'external_id' => $ref, 'payment_status' => 'PAID'],
-            // Hanya id invoice yang dikirim, tanpa reference sama sekali.
-            fn (string $ref, string $invoiceId) => ['event' => 'invoice.paid', 'data' => ['id' => $invoiceId, 'status' => 'SETTLED']],
-        ];
-
-        foreach ($shapes as $index => $shape) {
-            $this->fakeDigiflazz();
-
-            $invoiceId = 'inv-'.$index;
-
-            $user = $this->user();
-            $checkout = $this->paidCheckout($user, 2);
-            $checkout->update(['gateway_invoice_id' => $invoiceId]);
-
-            // Bentuk payload yang hanya membawa id invoice memakai id unik di
-            // iterasi ini, supaya tidak ikut mencocokkan checkout sebelumnya.
-            $payload = $shape($checkout->checkout_ref, $invoiceId);
-
-            $this->sendWebhook($payload)
-                ->assertOk()
-                ->assertJson(['status' => 'ok']);
-
-            $this->assertSame('processing', $checkout->fresh()->status, 'payload #'.$index);
-
-            // Di environment test queue-nya sync, jadi job settlement langsung
-            // jalan dan semua order anak keluar dari status pending.
-            $this->assertSame(0, $checkout->orders()->where('status', 'pending')->count(), 'payload #'.$index);
-            $this->assertSame(2, $checkout->orders()->where('status', 'processing')->count(), 'payload #'.$index);
-        }
-    }
-
-    public function test_checkout_webhook_expired_marks_failed_and_skips_other_orders(): void
-    {
-        Queue::fake();
-        config(['xendit.callback_token' => 'token-test']);
-
-        $user = $this->user();
-        $checkout = $this->paidCheckout($user, 2);
-        $stranger = Order::create([
-            'order_id' => 'TUP-STRANGER',
-            'buyer_sku_code' => 'sku-stranger',
-            'product_name' => 'Diamond',
-            'brand' => 'Mobile Legends',
-            'category' => 'instant',
-            'customer_number' => '999',
-            'price' => 50000,
-            'status' => 'pending',
-        ]);
-
-        $this->sendWebhook([
-            'event' => 'invoice.expired',
-            'data' => ['external_id' => $checkout->checkout_ref, 'status' => 'EXPIRED'],
-        ])->assertOk();
-
-        $this->assertSame('failed', $checkout->fresh()->status);
-        $this->assertSame(2, Order::where('status', 'failed')->count());
-
-        // Order di luar checkout tidak boleh ikut tersentuh.
-        $this->assertSame('pending', $stranger->fresh()->status);
-        Queue::assertNotPushed(SettleCheckoutJob::class);
-    }
-
-    public function test_webhook_with_wrong_callback_token_is_rejected(): void
-    {
-        config(['xendit.callback_token' => 'token-test']);
-
-        $user = $this->user();
-        $checkout = $this->paidCheckout($user, 1);
-
-        $this->postJson('/payment/notification', [
-            'event' => 'invoice.paid',
-            'external_id' => $checkout->checkout_ref,
-            'status' => 'PAID',
-        ], ['x-callback-token' => 'token-salah'])->assertStatus(401);
-
         $this->assertSame('pending', $checkout->fresh()->status);
     }
 

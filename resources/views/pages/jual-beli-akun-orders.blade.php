@@ -4,11 +4,10 @@
 
 @php
 $paymentLabels = [
-    'qris' => 'QRIS', 'gopay' => 'GoPay', 'dana' => 'DANA', 'ovo' => 'OVO', 'shopeepay' => 'ShopeePay', 'linkaja' => 'LinkAja',
+    'qris' => 'QRIS', 'dana' => 'DANA',
     'bca_va' => 'BCA Virtual Account', 'bni_va' => 'BNI Virtual Account', 'bri_va' => 'BRI Virtual Account',
-    'bsi_va' => 'BSI Virtual Account', 'cimb_va' => 'CIMB Virtual Account',
-    'mandiri_va' => 'Mandiri Virtual Account', 'permata_va' => 'Permata Virtual Account',
-    'alfamart' => 'Alfamart', 'indomaret' => 'Indomaret',
+    'bss_va' => 'BSS Virtual Account', 'cimb_va' => 'CIMB Virtual Account',
+    'mandiri_va' => 'Mandiri Virtual Account', 'alfamart' => 'Alfamart',
 ];
 @endphp
 
@@ -41,6 +40,7 @@ $paymentLabels = [
 .aco-status-badge--pending{background:rgba(251,191,36,.15);color:#fbbf24}
 .aco-status-badge--processing{background:rgba(96,165,250,.15);color:#60a5fa}
 .aco-status-badge--failed{background:rgba(248,113,113,.15);color:#f87171}
+.aco-status-badge--sold_out{background:rgba(248,113,113,.15);color:#f87171}
 .aco-meta{display:flex;flex-direction:column;gap:10px;margin-top:6px}
 .aco-meta-item{font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:10px}
 .aco-meta-item svg{width:20px;height:20px;color:var(--text-dim);flex-shrink:0}
@@ -149,6 +149,7 @@ $paymentLabels = [
                   @if($order->status === 'success') SUKSES
                   @elseif($order->status === 'pending') PENDING
                   @elseif($order->status === 'processing') DIPROSES
+                  @elseif($order->status === 'sold_out') PRODUK TERJUAL
                   @elseif($order->status === 'cancelled') BATAL
                   @else GAGAL
                   @endif

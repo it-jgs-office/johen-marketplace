@@ -59,6 +59,7 @@ class VerifyOtpController extends Controller
             'email' => $registerData['email'],
             'password' => Hash::make($registerData['password']),
         ]);
+        $user->forceFill(['email_verified_at' => now()])->save();
 
         event(new Registered($user));
 
@@ -70,7 +71,7 @@ class VerifyOtpController extends Controller
             ->where('email', $user->email)
             ->update(['user_id' => $user->id]);
 
-        return redirect()->route('home')->with('success', 'Registrasi berhasil. Selamat datang!');
+        return redirect()->intended(route('home'))->with('success', 'Registrasi berhasil. Selamat datang!');
     }
 
     public function resend(Request $request): JsonResponse

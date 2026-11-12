@@ -69,8 +69,8 @@
     </span>
     <div class="jba-transfer-marquee-viewport">
       <div class="jba-transfer-marquee-track">
-        <p><strong>Informasi Transfer:</strong> Pembayaran hanya melalui transfer ke rekening <strong>BRI 114101707070565 a/n JOSIA HENDRICO SIMANUNGKALIT</strong>. Kami tidak pernah meminta transfer ke rekening lain.</p>
-        <p aria-hidden="true"><strong>Informasi Transfer:</strong> Pembayaran hanya melalui transfer ke rekening <strong>BRI 114101707070565 a/n JOSIA HENDRICO SIMANUNGKALIT</strong>. Kami tidak pernah meminta transfer ke rekening lain.</p>
+        <p><strong>Informasi Pembayaran:</strong> Pembayaran diproses melalui payment gateway resmi yang tersedia saat checkout. Jangan melakukan pembayaran di luar sistem Johen Gaming.</p>
+        <p aria-hidden="true"><strong>Informasi Pembayaran:</strong> Pembayaran diproses melalui payment gateway resmi yang tersedia saat checkout. Jangan melakukan pembayaran di luar sistem Johen Gaming.</p>
       </div>
     </div>
   </section>
@@ -161,7 +161,7 @@
         <div class="jba-game-btn-overlay"></div>
         <div class="jba-game-btn-info">
           <div class="jba-game-btn-name">{{ $game['name'] }}</div>
-          <div class="jba-game-btn-cat">{{ $game['count'] }} akun tersedia</div>
+          <div class="jba-game-btn-cat">{{ $game['count'] }} tersedia &bull; {{ $game['sold_count'] }} sold</div>
         </div>
       </a>
     @endforeach
@@ -188,6 +188,8 @@
               <span class="jba-stat"><b id="jbaStatRating">{{ $jbaRating }}</b>/5</span>
               <span class="jba-stat-dot"></span>
               <span class="jba-stat"><b id="jbaStatCount">{{ ($listings->get($activeGame) ?? collect())->where('is_sold', false)->count() }}</b> akun tersedia</span>
+              <span class="jba-stat-dot"></span>
+              <span class="jba-stat"><b id="jbaStatSold">{{ ($listings->get($activeGame) ?? collect())->where('is_sold', true)->count() }}</b> sold</span>
               <span class="jba-stat-dot"></span>
               <span class="jba-stat">Garansi 100%</span>
             </div>
@@ -277,7 +279,7 @@
   <div class="jba-results-title">
     <span>Daftar Akun</span>
   </div>
-  <span class="jba-results-count" id="jbaResultCount">{{ $serverTotal }} akun</span>
+  <span class="jba-results-count" id="jbaResultCount">{{ $serverTotal }} akun ({{ $serverAvailable }} tersedia &bull; {{ $serverSold }} sold)</span>
 </div>
 
 {{-- Fallback server-rendered: tetap terlihat walau JavaScript tidak jalan,
@@ -301,7 +303,7 @@
           </div>
         @endif
         @if($isSoldServer)
-          <div class="jba-sold-badge">SOLD</div>
+          <span class="jba-sold-image"><img src="{{ asset('assets/icon/sold.png') }}" alt="Sold" loading="lazy"></span>
         @endif
       </div>
       <div class="jba-card-body">
@@ -327,9 +329,7 @@
     </div>
   @endforelse
 </div>
-<div class="jba-load-more" id="jbaLoadMore" style="display:none">
-  <button type="button" class="jba-load-more-btn" id="jbaLoadMoreButton">Tampilkan akun lainnya</button>
-</div>
+<nav class="jba-pagination" id="jbaPagination" aria-label="Halaman daftar stock akun" hidden></nav>
   </div>
 </div>
 
@@ -686,16 +686,42 @@
   object-position: center;
 }
 .jba-game-layout-background img.is-active { display: block; }
-.jba-load-more { padding-top: 1.25rem; text-align: center; }
-.jba-load-more-btn {
-  padding: .72rem 1.2rem;
+.jba-pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: .4rem;
+  padding-top: 1.35rem;
+}
+.jba-pagination[hidden] { display: none; }
+.jba-page-btn {
+  display: inline-flex;
+  min-width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  gap: .4rem;
+  padding: 0 .75rem;
   border: 1px solid var(--border-strong);
-  border-radius: 10px;
+  border-radius: 11px;
   background: var(--surface-2);
   color: var(--text);
   font: inherit;
-  font-size: .85rem;
+  font-size: .78rem;
   font-weight: 700;
+  cursor: pointer;
+  transition: transform .16s ease, border-color .16s ease, background .16s ease, color .16s ease;
+}
+.jba-page-btn:hover:not(:disabled) { transform: translateY(-1px); border-color: var(--jba-accent); color: var(--jba-accent); }
+.jba-page-btn.is-active { border-color: var(--jba-accent); background: var(--jba-accent); color: #fff; box-shadow: 0 8px 18px -8px var(--jba-accent-glow); }
+.jba-page-btn:disabled { opacity: .38; cursor: not-allowed; }
+.jba-page-btn:focus-visible { outline: 2px solid #93c5fd; outline-offset: 2px; }
+.jba-page-gap { min-width: 26px; color: var(--text-mute); text-align: center; }
+@media (max-width: 560px) {
+  .jba-pagination { gap: .28rem; padding-top: 1rem; }
+  .jba-page-btn { min-width: 36px; height: 36px; padding: 0 .58rem; }
+  .jba-page-label { display: none; }
 }
 @keyframes jbaFadeIn {
   from { opacity: 0; transform: translateY(8px); }
@@ -975,46 +1001,25 @@
 .jba-img-sold {
   filter: grayscale(1) brightness(.55);
 }
-.jba-sold-badge {
+.jba-sold-image {
   position: absolute;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%) rotate(-14deg);
+  transform: translate(-50%, -50%);
   z-index: 4;
-  width: 116px;
-  height: 116px;
-  border-radius: 50%;
+  width: 66%;
+  max-width: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ff6b6b;
-  font-family: var(--font-display);
-  font-weight: 900;
-  font-size: 1.12rem;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-  text-indent: .16em;
-  text-shadow: 0 1px 3px rgba(0,0,0,.25);
-  background: rgba(239,68,68,.13);
-  border: 2px solid rgba(239,68,68,.55);
-  backdrop-filter: blur(3px);
-  box-shadow: 0 0 0 5px rgba(239,68,68,.1), inset 0 0 0 2px rgba(239,68,68,.18), 0 12px 28px -12px rgba(0,0,0,.35);
-  white-space: nowrap;
   pointer-events: none;
 }
-.jba-sold-badge::before {
-  content: '';
-  position: absolute;
-  inset: -7px;
-  border-radius: 50%;
-  border: 2px dashed rgba(239,68,68,.4);
-}
-@media (max-width: 640px) {
-  .jba-sold-badge {
-    width: 88px;
-    height: 88px;
-    font-size: .85rem;
-  }
+.jba-sold-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: contain;
+  filter: none;
 }
 .jba-card-body {
   padding: .85rem 1rem;
@@ -1139,7 +1144,7 @@
   .jba-card-price{font-size:.82rem;line-height:1.2;}
   .jba-card-original{font-size:.62rem;}
   .jba-card-save{padding:.12rem .32rem;font-size:.5rem;}
-  .jba-sold-badge{width:70px;height:70px;font-size:.65rem;}
+  .jba-sold-image{width:66%;}
 }
 .jba-empty h3 {
   font-size: 1.1rem;
@@ -1324,7 +1329,7 @@
 .jba-results-count {
   font-size: .76rem;
   font-weight: 700;
-  color: var(--jba-accent);
+  color: #fff;
   background: rgba(157, 92, 245, .12);
   border: 1px solid rgba(157, 92, 245, .35);
   padding: .28rem .7rem;
@@ -1542,6 +1547,7 @@
   const gameTitle = document.getElementById('jbaGameTitle');
   const gameDesc = document.getElementById('jbaGameDesc');
   const statCount = document.getElementById('jbaStatCount');
+  const statSold = document.getElementById('jbaStatSold');
   const heroBg = document.getElementById('jbaGameHeroBg');
   const layoutBackground = document.getElementById('jbaGameLayoutBackground');
   const layoutBackgroundImages = document.querySelectorAll('[data-game-background]');
@@ -1549,10 +1555,10 @@
   const resultCount = document.getElementById('jbaResultCount');
   const backBtn = document.getElementById('jbaBackBtn');
   const grid = document.getElementById('jbaGrid');
-  const loadMore = document.getElementById('jbaLoadMore');
-  const loadMoreButton = document.getElementById('jbaLoadMoreButton');
+  const pagination = document.getElementById('jbaPagination');
 
   const allListings = @json($clientListings);
+  const soldImageUrl = @json(asset('assets/icon/sold.png'));
   const gameSlugs = @json($gameSlugs);
   const gameBanners = @json($gameBanners);
   const gameBackgrounds = @json($gameBackgrounds);
@@ -1568,13 +1574,20 @@
   let pubgSeller = 'Johen PUBG';
   let budgetId = null;
   let backgroundRequest = 0;
-  let visibleCardLimit = 12;
+  const pageSize = 12;
+  let currentPage = 1;
   let currentRenderedListings = [];
   const budgetRange = {};
 
   function applyFilters(listings) {
     const arr = [...(listings || [])];
     return arr.filter(function(l) {
+      if (l.is_sold) {
+        if (!searchQuery) return true;
+        const soldHaystack = ((l.product_name || '') + ' ' + (l.owner_name || '') + ' ' + (l.game || '')).toLowerCase();
+        return soldHaystack.indexOf(searchQuery.toLowerCase()) !== -1;
+      }
+
       const p = Number(l.price);
       const dt = (l.deal_type || 'normal');
       if (dt !== dealType) return false;
@@ -1600,10 +1613,53 @@
     }).length;
   }
 
-  function renderCards(listings) {
+  function soldListingCount(game) {
+    return (allListings[game] || []).filter(function(listing) {
+      return listing.is_sold;
+    }).length;
+  }
+
+  function pageItems(totalPages) {
+    const pages = [];
+    for (let page = 1; page <= totalPages; page++) {
+      if (page === 1 || page === totalPages || Math.abs(page - currentPage) <= 1) pages.push(page);
+    }
+    return pages;
+  }
+
+  function renderPagination(totalItems) {
+    if (!pagination) return;
+    const totalPages = Math.ceil(totalItems / pageSize);
+    if (totalPages <= 1) {
+      pagination.hidden = true;
+      pagination.innerHTML = '';
+      return;
+    }
+
+    pagination.hidden = false;
+    const pages = pageItems(totalPages);
+    let html = '<button type="button" class="jba-page-btn" data-page="' + (currentPage - 1) + '" ' + (currentPage === 1 ? 'disabled' : '') + ' aria-label="Halaman sebelumnya"><span aria-hidden="true">‹</span><span class="jba-page-label">Sebelumnya</span></button>';
+    let previous = 0;
+    pages.forEach(function(page) {
+      if (previous && page - previous > 1) html += '<span class="jba-page-gap" aria-hidden="true">&hellip;</span>';
+      html += '<button type="button" class="jba-page-btn' + (page === currentPage ? ' is-active' : '') + '" data-page="' + page + '" aria-label="Halaman ' + page + '"' + (page === currentPage ? ' aria-current="page"' : '') + '>' + page + '</button>';
+      previous = page;
+    });
+    html += '<button type="button" class="jba-page-btn" data-page="' + (currentPage + 1) + '" ' + (currentPage === totalPages ? 'disabled' : '') + ' aria-label="Halaman berikutnya"><span class="jba-page-label">Berikutnya</span><span aria-hidden="true">›</span></button>';
+    pagination.innerHTML = html;
+  }
+
+  function renderCards(listings, keepPage) {
+    if (!keepPage) currentPage = 1;
     grid.innerHTML = '';
     currentRenderedListings = listings || [];
-    const pagedListings = currentRenderedListings.slice(0, visibleCardLimit);
+    const availableListings = currentRenderedListings.filter(function(listing) { return !listing.is_sold; });
+    const soldListings = currentRenderedListings.filter(function(listing) { return listing.is_sold; });
+    const orderedListings = availableListings.concat(soldListings);
+    const totalPages = Math.max(1, Math.ceil(orderedListings.length / pageSize));
+    if (currentPage > totalPages) currentPage = totalPages;
+    const pageStart = (currentPage - 1) * pageSize;
+    const pagedListings = orderedListings.slice(pageStart, pageStart + pageSize);
     let visible = 0;
 
     pagedListings.forEach(function(l) {
@@ -1619,7 +1675,7 @@
 
       let badgeHtml = '';
       if (isSold) {
-        badgeHtml = '<div class="jba-sold-badge">SOLD</div>';
+        badgeHtml = '<span class="jba-sold-image"><img src="' + soldImageUrl + '" alt="Sold" loading="lazy"></span>';
       } else if (l.promo_type && l.promo_type !== 'none') {
         let text = '';
         if (l.promo_type === 'diskon' && l.discount_percent) text = '-' + l.discount_percent + '%';
@@ -1660,8 +1716,11 @@
     if (visible === 0) {
       grid.innerHTML = '<div class="jba-empty"><svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="color:#555;margin-bottom:.75rem"><path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg><h3>Tidak Ada Akun</h3><p>Tidak ada akun untuk filter ini.</p></div>';
     }
-    if (resultCount) resultCount.textContent = currentRenderedListings.length + ' akun';
-    if (loadMore) loadMore.style.display = currentRenderedListings.length > visible ? '' : 'none';
+    if (resultCount) {
+      const soldCount = currentRenderedListings.filter(function(listing) { return listing.is_sold; }).length;
+      resultCount.textContent = currentRenderedListings.length + ' akun (' + (currentRenderedListings.length - soldCount) + ' tersedia • ' + soldCount + ' sold)';
+    }
+    renderPagination(orderedListings.length);
   }
 
   function fmtCompact(n) {
@@ -1737,7 +1796,6 @@
 
   function renderFiltered() {
     if (!currentGame) return;
-    visibleCardLimit = 12;
     renderCards(applyFilters(allListings[currentGame] || []));
   }
 
@@ -1781,6 +1839,7 @@
     setGameBackground(selectedSlug);
     gameDesc.textContent = 'Pusat stock akun ' + game + ' resmi tanpa ribet \u2014 terverifikasi, cepat, dan 100% aman dibantu langsung oleh admin.';
     if (statCount) statCount.textContent = availableListingCount(game);
+    if (statSold) statSold.textContent = soldListingCount(game);
     resetFilters();
     if (jbaFilterBar) {
       jbaFilterBar.style.display = String(game).toLowerCase() === 'mobile legends' ? '' : 'none';
@@ -1974,10 +2033,14 @@
     });
   });
 
-  if (loadMoreButton) {
-    loadMoreButton.addEventListener('click', function() {
-      visibleCardLimit += 12;
-      renderCards(currentRenderedListings);
+  if (pagination) {
+    pagination.addEventListener('click', function(event) {
+      const button = event.target.closest('[data-page]');
+      if (!button || button.disabled) return;
+      currentPage = Number(button.dataset.page) || 1;
+      renderCards(currentRenderedListings, true);
+      const top = grid.getBoundingClientRect().top + window.pageYOffset - 110;
+      window.scrollTo({ top: top, behavior: 'smooth' });
     });
   }
 

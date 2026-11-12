@@ -14,8 +14,6 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
-            'live-chat-admin' => \App\Http\Middleware\LiveChatAdminMiddleware::class,
-            'live-chat-cs' => \App\Http\Middleware\LiveChatCsMiddleware::class,
             'jba-api-key' => \App\Http\Middleware\EnsureJbaApiKey::class,
         ]);
 
@@ -25,6 +23,8 @@ return Application::configure(basePath: dirname(__DIR__))
 
         $middleware->validateCsrfTokens(except: [
             'payment/notification',
+            'v1.0/access-token/b2b',
+            'v1.0/transfer-va/payment',
             'digiflazz/callback',
             'service-worker.js',
             'pwa-version.json',

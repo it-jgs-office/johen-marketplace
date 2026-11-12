@@ -6,6 +6,16 @@
 @endpush
 
 @section('content')
+@php
+  $paymentCategories = [
+      'qris' => 'QRIS',
+      'ewallet' => 'E-Wallet',
+      'va' => 'Virtual Account / Bank',
+      'convenience_store' => 'Convenience Store',
+  ];
+  $groupedPayments = $paymentMethods->groupBy(fn ($method) => $method->category);
+  $paymentMinimum = static fn (string $category): int => in_array($category, ['qris', 'ewallet'], true) ? 1000 : 10000;
+@endphp
 <main class="joki-page">
   <section class="hero-section hero-peek-carousel joki-hero-carousel" id="joki" aria-label="Banner Joki Mobile Legends">
     <div class="hero-banner-track{{ $banners->count() === 1 ? ' is-single' : '' }}" data-banners='@json($banners->all())'>
@@ -44,7 +54,7 @@
           <label>Pilih rank</label>
           <div class="rank-options">
             @foreach($rankCalculator as $rank)
-              <button type="button" class="rank-option {{ $loop->first ? 'is-active' : '' }}" data-rank-option data-key="{{ $rank['key'] }}" data-label="{{ $rank['label'] }}" data-price="{{ $rank['price_per_star'] }}" data-package-id="{{ $rank['package_id'] }}">
+              <button type="button" class="rank-option {{ $loop->first ? 'is-active' : '' }}" data-rank-option data-key="{{ $rank['key'] }}" data-label="{{ $rank['label'] }}" data-price="{{ $rank['price_per_star'] }}" data-package-id="{{ $rank['package_id'] }}" data-per-star="1" data-gendong-fee="{{ $rank['gendong_fee'] }}" data-vip-fee="{{ $rank['vip_fee'] }}">
                 <img src="{{ $rank['icon'] }}" alt="">
                 <span>{{ $rank['label'] }}</span>
               </button>
@@ -65,6 +75,12 @@
           <small id="rankEstimateDetail">-</small>
           <button type="button" id="rankChoosePackage">Pilih Paket Rank Ini</button>
         </div>
+        <div class="rank-calculator-field">
+          <label><input type="checkbox" id="jokiGendong" disabled> Joki gendong <small id="jokiGendongFee"></small></label>
+          <label><input type="checkbox" id="jokiVip" disabled> VIP <small id="jokiVipFee"></small></label>
+          <div class="rank-star-input"><button type="button" data-vip-minus aria-label="Kurangi game VIP">&minus;</button><input id="jokiVipGames" type="number" min="1" max="99" value="1" inputmode="numeric" disabled><button type="button" data-vip-plus aria-label="Tambah game VIP">&plus;</button></div>
+          <label><input type="checkbox" id="jokiNoHero" disabled> Tanpa request hero <small>bonus +1 star (minimal 10 star)</small></label>
+        </div>
       </div>
     @endif
   </section>
@@ -78,10 +94,11 @@
         @else
           <div class="joki-packages">
             @foreach($packages as $package)
-              <button type="button" class="joki-package" data-package data-id="{{ $package->id }}" data-name="{{ $package->product_name }}" data-price="{{ (int) $package->selling_price }}">
+              @php($jokiConfig = \App\Services\JokiPricingService::configFor($package))
+              <button type="button" class="joki-package" data-package data-id="{{ $package->id }}" data-name="{{ $package->product_name }}" data-price="{{ (int) $package->selling_price }}" data-per-star="{{ $jokiConfig['per_star'] ?? false ? '1' : '0' }}" data-gendong-fee="{{ $jokiConfig['gendong_fee'] ?? 0 }}" data-vip-fee="{{ $jokiConfig['vip_fee'] ?? 0 }}">
                 @if($package->photo_url)<img src="{{ $package->photo_url }}" alt="">@endif
                 <strong>{{ $package->product_name }}</strong>
-                <span class="joki-package-price">Rp {{ number_format($package->selling_price, 0, ',', '.') }}</span>
+                <span class="joki-package-price">Rp {{ number_format($package->selling_price, 0, ',', '.') }}{{ ($jokiConfig['per_star'] ?? false) ? ' / star' : '' }}</span>
                 <span class="joki-package-time">Estimasi {{ $package->estimated_duration ?: 'menyesuaikan antrean' }}</span>
               </button>
             @endforeach
@@ -108,9 +125,58 @@
           <div class="joki-field"><label for="jokiEmail">Email</label><input id="jokiEmail" type="email" value="{{ auth()->user()?->email }}" placeholder="nama@email.com"></div>
           <div class="joki-field"><label for="jokiPhone">WhatsApp</label><input id="jokiPhone" type="tel" placeholder="0812xxxxxxxx"></div>
         </div>
-        <div class="joki-payments">
-          @foreach($paymentMethods as $method)
-            <label class="joki-payment"><input type="radio" name="joki_payment" value="{{ $method->code }}">@if(payment_logo_asset($method->code))<img src="{{ payment_logo_asset($method->code) }}" alt="">@endif<span>{{ $method->name }}</span></label>
+        <div class="joki-payment-head"><strong>Pilih Pembayaran</strong><span>Diproses aman melalui {{ $gatewayName }}</span></div>
+        <div class="gd-pay-group gd-pay-group--cards" id="jokiPayGroup">
+          @if($paymentMethods->isEmpty())
+            <p class="gd-summary-empty">Metode pembayaran belum tersedia. Silakan hubungi CS.</p>
+          @endif
+          @foreach($paymentCategories as $categoryKey => $categoryLabel)
+            @php($categoryMethods = $groupedPayments->get($categoryKey, collect()))
+            @continue($categoryMethods->isEmpty())
+            <div class="gd-pay-category" data-category="{{ $categoryKey }}">
+              <button type="button" class="gd-pay-cat-head">
+                <span class="gd-pay-cat-label">{{ $categoryLabel }}</span>
+                <svg class="gd-pay-cat-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg>
+              </button>
+              @php($previewLogos = $categoryMethods->map(fn ($method) => payment_logo_asset($method->code))->filter()->values())
+              <div class="gd-pay-cat-preview{{ $previewLogos->count() > 3 ? ' is-marquee' : '' }}" aria-hidden="true">
+                <div class="gd-pay-cat-preview-track">
+                  @foreach($previewLogos as $previewLogo)
+                    <span class="gd-pay-cat-preview-logo"><img src="{{ $previewLogo }}" alt=""></span>
+                  @endforeach
+                  @if($previewLogos->count() > 3)
+                    @foreach($previewLogos as $previewLogo)
+                      <span class="gd-pay-cat-preview-logo"><img src="{{ $previewLogo }}" alt=""></span>
+                    @endforeach
+                  @endif
+                </div>
+              </div>
+              <div class="gd-pay-cat-body">
+                <div class="gd-pay-card-grid">
+                  @foreach($categoryMethods as $method)
+                    @php($minimum = $paymentMinimum((string) $method->category))
+                    <div class="gd-pay-row" data-key="{{ $method->code }}" data-min="{{ $minimum }}" data-payment-name="{{ $method->name }}">
+                      <input type="radio" name="joki_payment" value="{{ $method->code }}" hidden>
+                      <button type="button" class="gd-pay-row-head">
+                        <span class="gd-pay-icon">
+                          @if(payment_logo_asset($method->code))
+                            <img src="{{ payment_logo_asset($method->code) }}" alt="{{ $method->name }}" class="pay-badge-img">
+                          @else
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
+                          @endif
+                        </span>
+                        <span class="gd-pay-label">
+                          <span class="gd-pay-t">{{ $method->name }}</span>
+                          <span class="gd-pay-card-amount" data-joki-pay-amount></span>
+                          @if($minimum > 1000)<span class="gd-pay-min">min. Rp {{ number_format($minimum, 0, ',', '.') }}</span>@endif
+                        </span>
+                        <span class="gd-pay-radio"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></span>
+                      </button>
+                    </div>
+                  @endforeach
+                </div>
+              </div>
+            </div>
           @endforeach
         </div>
       </section>
@@ -119,7 +185,7 @@
     <aside class="joki-panel joki-summary">
       <h3 class="joki-summary-title">Detail Transaksi</h3>
       <div class="joki-summary-art"><img src="{{ $brand->thumbnail_url ?: pwa_asset('assets/joki/mobile-legends/ranks/mythic.png') }}" alt=""><div><span>Joki Mobile Legends</span><strong data-joki-summary="name">Belum ada paket</strong></div></div>
-      <div class="joki-summary-lines"><div class="joki-summary-line"><span>Paket</span><strong data-joki-summary="package">-</strong></div><div class="joki-summary-line"><span>Metode pembayaran</span><strong data-joki-summary="payment">-</strong></div></div>
+      <div class="joki-summary-lines"><div class="joki-summary-line"><span>Paket</span><strong data-joki-summary="package">-</strong></div><div class="joki-summary-line"><span>Opsi</span><strong data-joki-summary="options">-</strong></div><div class="joki-summary-line"><span>Metode pembayaran</span><strong data-joki-summary="payment">-</strong></div></div>
       <div class="joki-summary-total"><span>Total</span><strong data-joki-summary="total">Rp 0</strong></div>
       <button type="button" class="joki-order-btn" data-joki-order {{ $packages->isEmpty() ? 'disabled' : '' }}>Buat Pesanan Joki</button>
     </aside>
@@ -131,6 +197,7 @@
     <div class="joki-mobile-summary-panel-inner">
       <h3>Detail Transaksi</h3>
       <div class="joki-summary-line"><span>Paket</span><strong data-joki-summary="package">-</strong></div>
+      <div class="joki-summary-line"><span>Opsi</span><strong data-joki-summary="options">-</strong></div>
       <div class="joki-summary-line"><span>Metode pembayaran</span><strong data-joki-summary="payment">-</strong></div>
       <div class="joki-summary-total"><span>Total</span><strong data-joki-summary="total">Rp 0</strong></div>
     </div>
@@ -140,9 +207,6 @@
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>
     </button>
     <div class="joki-mobile-summary-info"><span>Total Pembayaran</span><strong data-joki-summary="total">Rp 0</strong></div>
-    <a href="{{ route('cart.index') }}" class="joki-mobile-cart-btn" aria-label="Buka keranjang">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
-    </a>
     <button type="button" class="joki-mobile-order-btn" data-joki-order {{ $packages->isEmpty() ? 'disabled' : '' }}>Pesan Sekarang</button>
   </div>
 </div>
@@ -157,38 +221,108 @@
   const setSummary=(key,value)=>document.querySelectorAll('[data-joki-summary="'+key+'"]').forEach(item=>item.textContent=value);
   const rankOptions=[...document.querySelectorAll('[data-rank-option]')];
   const starInput=one('rankStarAmount');
+  const gendong=one('jokiGendong');
+  const vip=one('jokiVip');
+  const vipGames=one('jokiVipGames');
+  const noHero=one('jokiNoHero');
+  const payGroup=one('jokiPayGroup');
   let selectedRank=rankOptions[0]||null;
-  const updateRankEstimate=()=>{
-    if(!selectedRank||!starInput)return;
-    const stars=Math.max(1,Math.min(1000,Number(starInput.value)||1));
-    starInput.value=stars;
-    one('rankEstimate').textContent=money(Number(selectedRank.dataset.price)*stars);
-    one('rankEstimateDetail').textContent=stars+' star '+selectedRank.dataset.label+' × '+money(selectedRank.dataset.price);
+
+  const selectPaymentRow=row=>{
+    if(!row||row.classList.contains('disabled'))return;
+    payGroup.querySelectorAll('.gd-pay-row').forEach(item=>{item.classList.remove('selected');const radio=item.querySelector('[name="joki_payment"]');if(radio)radio.checked=false;});
+    row.classList.add('selected');
+    const radio=row.querySelector('[name="joki_payment"]');
+    if(radio)radio.checked=true;
+    setSummary('payment',row.dataset.paymentName||'-');
+  };
+
+  const syncPaymentCards=total=>{
+    const rows=[...payGroup.querySelectorAll('.gd-pay-row')];
+    rows.forEach(row=>{
+      const amount=row.querySelector('[data-joki-pay-amount]');
+      if(amount)amount.textContent=selectedPackage?money(total):'';
+      row.classList.toggle('disabled',!!selectedPackage&&total<Number(row.dataset.min||0));
+    });
+    const selected=payGroup.querySelector('.gd-pay-row.selected');
+    if(selected?.classList.contains('disabled'))selectPaymentRow(rows.find(row=>!row.classList.contains('disabled')));
+  };
+
+  const packageData=()=>selectedPackage||selectedRank?.dataset||null;
+  const stars=()=>Math.max(1,Math.min(99,Number(starInput?.value)||1));
+  const games=()=>Math.max(1,Math.min(99,Number(vipGames?.value)||1));
+
+  const syncOptions=()=>{
+    const data=packageData();
+    const perStar=data?.perStar==='1';
+    const gendongFee=Number(data?.gendongFee||0);
+    const vipFee=Number(data?.vipFee||0);
+    if(gendong){gendong.disabled=!perStar||!gendongFee;if(gendong.disabled)gendong.checked=false;}
+    if(vip){vip.disabled=!perStar||!vipFee;if(vip.disabled)vip.checked=false;}
+    if(vipGames){vipGames.disabled=!perStar||!vipFee||!vip?.checked;}
+    if(noHero){noHero.disabled=!perStar||stars()<10;if(noHero.disabled)noHero.checked=false;}
+    one('jokiGendongFee').textContent=gendongFee?'+'+money(gendongFee)+' / star':'';
+    one('jokiVipFee').textContent=vipFee?'+'+money(vipFee)+' / game':'';
+  };
+
+  const updatePricing=()=>{
+    const data=packageData();
+    if(!data||!starInput)return;
+    const perStar=data.perStar==='1';
+    const starCount=perStar?stars():1;
+    starInput.value=starCount;
+    const base=Number(data.price||0)*starCount;
+    const gendongCost=gendong?.checked?Number(data.gendongFee||0)*starCount:0;
+    const vipCost=vip?.checked?Number(data.vipFee||0)*games():0;
+    const bonus=noHero?.checked&&starCount>=10?' + bonus 1 star':'';
+    const total=base+gendongCost+vipCost;
+    const optionLabels=[];
+    if(gendongCost)optionLabels.push('Gendong');
+    if(vipCost)optionLabels.push('VIP '+games()+' game');
+    if(bonus)optionLabels.push('Bonus 1 star');
+    one('rankEstimate').textContent=money(total);
+    one('rankEstimateDetail').textContent=(perStar?starCount+' star ':'')+(data.label||data.name||'')+' × '+money(Number(data.price||0))+bonus;
+    if(selectedPackage){
+      setSummary('total',money(total));
+      setSummary('options',optionLabels.join(', ')||'-');
+    }
+    syncPaymentCards(total);
+    syncOptions();
   };
   rankOptions.forEach(option=>option.addEventListener('click',function(){
     rankOptions.forEach(item=>item.classList.remove('is-active'));
-    this.classList.add('is-active');selectedRank=this;updateRankEstimate();
+    this.classList.add('is-active');selectedRank=this;updatePricing();
   }));
-  document.querySelector('[data-rank-minus]')?.addEventListener('click',()=>{starInput.value=Math.max(1,(Number(starInput.value)||1)-1);updateRankEstimate();});
-  document.querySelector('[data-rank-plus]')?.addEventListener('click',()=>{starInput.value=Math.min(1000,(Number(starInput.value)||1)+1);updateRankEstimate();});
-  starInput?.addEventListener('input',updateRankEstimate);
+  document.querySelector('[data-rank-minus]')?.addEventListener('click',()=>{starInput.value=Math.max(1,(Number(starInput.value)||1)-1);updatePricing();});
+  document.querySelector('[data-rank-plus]')?.addEventListener('click',()=>{starInput.value=Math.min(99,(Number(starInput.value)||1)+1);updatePricing();});
+  document.querySelector('[data-vip-minus]')?.addEventListener('click',()=>{vipGames.value=Math.max(1,(Number(vipGames.value)||1)-1);updatePricing();});
+  document.querySelector('[data-vip-plus]')?.addEventListener('click',()=>{vipGames.value=Math.min(99,(Number(vipGames.value)||1)+1);updatePricing();});
+  starInput?.addEventListener('input',updatePricing);
+  vipGames?.addEventListener('input',updatePricing);
+  gendong?.addEventListener('change',updatePricing);
+  vip?.addEventListener('change',updatePricing);
+  noHero?.addEventListener('change',updatePricing);
   one('rankChoosePackage')?.addEventListener('click',()=>{
     if(!selectedRank)return;
     const packageButton=document.querySelector('[data-package][data-id="'+selectedRank.dataset.packageId+'"]');
     if(packageButton){packageButton.click();packageButton.scrollIntoView({behavior:'smooth',block:'center'});}
   });
-  updateRankEstimate();
+  payGroup?.addEventListener('click',event=>{
+    const categoryHead=event.target.closest('.gd-pay-cat-head');
+    if(categoryHead){categoryHead.closest('.gd-pay-category')?.classList.toggle('open');return;}
+    const paymentHead=event.target.closest('.gd-pay-row-head');
+    if(paymentHead)selectPaymentRow(paymentHead.closest('.gd-pay-row'));
+  });
+  selectPaymentRow(payGroup?.querySelector('.gd-pay-row[data-key="qris"]')||payGroup?.querySelector('.gd-pay-row'));
+  updatePricing();
 
   document.querySelectorAll('[data-package]').forEach(button=>button.addEventListener('click',function(){
     document.querySelectorAll('[data-package]').forEach(item=>item.classList.remove('is-selected'));
     this.classList.add('is-selected');
-    selectedPackage={id:this.dataset.id,name:this.dataset.name,price:Number(this.dataset.price)};
+    selectedPackage={...this.dataset};
     setSummary('name',selectedPackage.name);
     setSummary('package',selectedPackage.name);
-    setSummary('total',money(selectedPackage.price));
-  }));
-  document.querySelectorAll('[name="joki_payment"]').forEach(input=>input.addEventListener('change',function(){
-    setSummary('payment',this.closest('label').querySelector('span').textContent);
+    updatePricing();
   }));
   document.querySelector('[data-joki-summary-toggle]')?.addEventListener('click',function(){
     const summary=one('jokiMobileSummary');
@@ -207,10 +341,13 @@
     const original=this.textContent;this.disabled=true;this.textContent='Memproses...';
     const body=new FormData();
     body.append('_token',document.querySelector('meta[name="csrf-token"]').content);
-    body.append('product_id',selectedPackage.id);body.append('quantity','1');
+    const isPerStar=selectedPackage.perStar==='1';
+    body.append('product_id',selectedPackage.id);body.append('quantity',isPerStar?String(stars()):'1');
     body.append('customer_number',one('jokiUserId').value.trim());body.append('zone_id',one('jokiZoneId').value.trim());
     body.append('joki_login_method',one('jokiLoginMethod').value);body.append('joki_login_identifier',one('jokiLoginId').value.trim());
     body.append('joki_login_password',one('jokiPassword').value);body.append('joki_notes',one('jokiNotes').value.trim());
+    body.append('joki_stars',isPerStar?String(stars()):'1');body.append('joki_gendong',gendong?.checked?'1':'0');
+    body.append('joki_vip_games',vip?.checked?String(games()):'0');body.append('joki_no_hero_request',noHero?.checked?'1':'0');
     body.append('email',one('jokiEmail').value.trim());body.append('phone',one('jokiPhone').value.trim());body.append('payment_method',payment.value);
     try{const response=await fetch(@json(route('orders.store')),{method:'POST',headers:{'Accept':'application/json','X-Requested-With':'XMLHttpRequest'},body});const data=await response.json();if(response.ok&&data.redirect){location.href=data.redirect;return;}showToast(data.message||Object.values(data.errors||{}).flat()[0]||'Pesanan gagal dibuat',false);}catch(error){showToast('Pesanan gagal dibuat. Coba lagi.',false);}this.disabled=false;this.textContent=original;
   }));

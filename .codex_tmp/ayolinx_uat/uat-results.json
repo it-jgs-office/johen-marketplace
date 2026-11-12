@@ -1,0 +1,770 @@
+{
+    "meta": {
+        "environment": "sandbox",
+        "base_host": "sandbox.ayolinx.id",
+        "authenticated": true,
+        "executed_at": "2026-11-09 17:00:57+07:00"
+    },
+    "transfer_va": {
+        "11.1": {
+            "executed": true,
+            "request": {
+                "method": "POST",
+                "url": "https://sandbox.ayolinx.id/v1.0/transfer-va/create-va",
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer [REDACTED]",
+                    "X-TIMESTAMP": "2026-11-09T17:00:57+07:00",
+                    "X-SIGNATURE": "[REDACTED]",
+                    "X-PARTNER-ID": "SC7e\u202646f1",
+                    "X-EXTERNAL-ID": "uat-44667347f33de436ab5fecdd",
+                    "CHANNEL-ID": "H2H"
+                },
+                "body": {
+                    "partnerServiceId": "98829172",
+                    "customerNo": "30000000347246441952",
+                    "virtualAccountNo": "6189018870832663",
+                    "virtualAccountName": "Johen UAT Customer",
+                    "trxId": "920364045954",
+                    "virtualAccountTrxType": "C",
+                    "totalAmount": {
+                        "value": "11500.00",
+                        "currency": "IDR"
+                    },
+                    "additionalInfo": {
+                        "channel": "VIRTUAL_ACCOUNT_BNI"
+                    }
+                }
+            },
+            "response": {
+                "http_status": 200,
+                "body": {
+                    "responseCode": "4012701",
+                    "responseMessage": "Access Token Invalid"
+                }
+            }
+        },
+        "11.2": {
+            "executed": true,
+            "request": {
+                "method": "POST",
+                "url": "https://sandbox.ayolinx.id/v1.0/transfer-va/create-va",
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer [REDACTED]",
+                    "X-TIMESTAMP": "2026-11-09T17:00:58+07:00",
+                    "X-SIGNATURE": "[REDACTED]",
+                    "X-PARTNER-ID": "SC7e\u202646f1",
+                    "X-EXTERNAL-ID": "uat-8bd635f58efc35a0301ac461",
+                    "CHANNEL-ID": "H2H"
+                },
+                "body": {
+                    "partnerServiceId": "98829172",
+                    "customerNo": "30000000347246441952",
+                    "virtualAccountNo": "6189018870832663",
+                    "virtualAccountName": "Johen UAT Customer",
+                    "trxId": "920364045954",
+                    "virtualAccountTrxType": "C",
+                    "totalAmount": {
+                        "value": "11500.00",
+                        "currency": "IDR"
+                    },
+                    "additionalInfo": {
+                        "channel": "VIRTUAL_ACCOUNT_BNI"
+                    }
+                }
+            },
+            "response": {
+                "http_status": 200,
+                "body": {
+                    "responseCode": "4012700",
+                    "responseMessage": "Unauthorized Signature"
+                }
+            }
+        },
+        "11.3": {
+            "executed": true,
+            "request": {
+                "method": "POST",
+                "url": "https://sandbox.ayolinx.id/v1.0/transfer-va/create-va",
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer [REDACTED]",
+                    "X-TIMESTAMP": "2026-11-09T17:00:58+07:00",
+                    "X-SIGNATURE": "[REDACTED]",
+                    "X-PARTNER-ID": "SC7e\u202646f1",
+                    "X-EXTERNAL-ID": "uat-2d99db3ffde62e212d026847",
+                    "CHANNEL-ID": "H2H"
+                },
+                "body": {
+                    "partnerServiceId": "98829172",
+                    "virtualAccountNo": "6189018870832663",
+                    "virtualAccountName": "Johen UAT Customer",
+                    "trxId": "920364045954",
+                    "virtualAccountTrxType": "C",
+                    "totalAmount": {
+                        "value": "11500.00",
+                        "currency": "IDR"
+                    },
+                    "additionalInfo": {
+                        "channel": "VIRTUAL_ACCOUNT_BNI"
+                    }
+                }
+            },
+            "response": {
+                "http_status": 400,
+                "body": {
+                    "responseCode": "4002702",
+                    "responseMessage": "Invalid Mandatory Field customerNo"
+                }
+            }
+        },
+        "11.4": {
+            "executed": true,
+            "request": {
+                "method": "POST",
+                "url": "https://sandbox.ayolinx.id/v1.0/transfer-va/create-va",
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer [REDACTED]",
+                    "X-TIMESTAMP": "2026-11-09T17:00:59+07:00",
+                    "X-SIGNATURE": "[REDACTED]",
+                    "X-PARTNER-ID": "SC7e\u202646f1",
+                    "X-EXTERNAL-ID": "uat-e0a321fedebd80f53a63f89f",
+                    "CHANNEL-ID": "H2H"
+                },
+                "body": {
+                    "partnerServiceId": "98829172",
+                    "customerNo": "30000000347246441952",
+                    "virtualAccountNo": "6189018870832663",
+                    "virtualAccountName": "Johen UAT Customer",
+                    "trxId": "920364045954",
+                    "virtualAccountTrxType": "C",
+                    "totalAmount": {
+                        "value": "invalid",
+                        "currency": "IDR"
+                    },
+                    "additionalInfo": {
+                        "channel": "VIRTUAL_ACCOUNT_BNI"
+                    }
+                }
+            },
+            "response": {
+                "http_status": 500,
+                "body": {
+                    "responseCode": 5002501,
+                    "responseMessage": "Internal Server Error"
+                }
+            }
+        },
+        "11.14": {
+            "executed": true,
+            "request": {
+                "method": "POST",
+                "url": "https://sandbox.ayolinx.id/v1.0/transfer-va/create-va",
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer [REDACTED]",
+                    "X-TIMESTAMP": "2026-11-09T17:01:00+07:00",
+                    "X-SIGNATURE": "[REDACTED]",
+                    "X-PARTNER-ID": "SC7e\u202646f1",
+                    "X-EXTERNAL-ID": "va-duplicate-faead9917190a9ea9999055",
+                    "CHANNEL-ID": "H2H"
+                },
+                "body": {
+                    "partnerServiceId": "98829172",
+                    "customerNo": "30000000347246441952",
+                    "virtualAccountNo": "6189018870832663",
+                    "virtualAccountName": "Johen UAT Customer",
+                    "trxId": "920364045954",
+                    "virtualAccountTrxType": "C",
+                    "totalAmount": {
+                        "value": "11500.00",
+                        "currency": "IDR"
+                    },
+                    "additionalInfo": {
+                        "channel": "VIRTUAL_ACCOUNT_BNI"
+                    }
+                }
+            },
+            "response": {
+                "http_status": 200,
+                "body": {
+                    "responseCode": "2002700",
+                    "responseMessage": "Success",
+                    "virtualAccountData": {
+                        "partnerServiceId": "98829172",
+                        "customerNo": "30000000347246441952",
+                        "virtualAccountNo": "9882107423127511",
+                        "virtualAccountName": "Johen UAT Customer",
+                        "virtualAccountTrxType": "C",
+                        "trxId": "920364045954",
+                        "totalAmount": {
+                            "value": "11500.00",
+                            "currency": "IDR"
+                        },
+                        "additionalInfo": {
+                            "channel": "VIRTUAL_ACCOUNT_BNI"
+                        },
+                        "expiredDate": "2026-11-10T17:01:01+07:00"
+                    }
+                }
+            }
+        },
+        "11.5": {
+            "executed": true,
+            "request": {
+                "method": "POST",
+                "url": "https://sandbox.ayolinx.id/v1.0/transfer-va/create-va",
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer [REDACTED]",
+                    "X-TIMESTAMP": "2026-11-09T17:01:01+07:00",
+                    "X-SIGNATURE": "[REDACTED]",
+                    "X-PARTNER-ID": "SC7e\u202646f1",
+                    "X-EXTERNAL-ID": "va-duplicate-faead9917190a9ea9999055",
+                    "CHANNEL-ID": "H2H"
+                },
+                "body": {
+                    "partnerServiceId": "98829172",
+                    "customerNo": "30000000347246441952",
+                    "virtualAccountNo": "6189018870832663",
+                    "virtualAccountName": "Johen UAT Customer",
+                    "trxId": "920364045954",
+                    "virtualAccountTrxType": "C",
+                    "totalAmount": {
+                        "value": "11500.00",
+                        "currency": "IDR"
+                    },
+                    "additionalInfo": {
+                        "channel": "VIRTUAL_ACCOUNT_BNI"
+                    }
+                }
+            },
+            "response": {
+                "http_status": 200,
+                "body": {
+                    "responseCode": "4092700",
+                    "responseMessage": "Conflict"
+                }
+            }
+        },
+        "11.10": {
+            "executed": false,
+            "reason": "Inbound VA payment endpoint must be provided by the merchant; the project does not expose /v1.0/transfer-va/payment."
+        },
+        "11.11": {
+            "executed": false,
+            "reason": "Inbound VA payment endpoint is not implemented, so an unregistered VA payment cannot be exercised."
+        },
+        "11.12": {
+            "executed": false,
+            "reason": "Inbound VA payment endpoint is not implemented, so invalid paid amount validation cannot be exercised."
+        },
+        "11.17": {
+            "executed": true,
+            "request": {
+                "method": "POST",
+                "url": "https://sandbox.ayolinx.id/v1.0/transfer-va/inquiry-va",
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer [REDACTED]",
+                    "X-TIMESTAMP": "2026-11-09T17:01:01+07:00",
+                    "X-SIGNATURE": "[REDACTED]",
+                    "X-PARTNER-ID": "SC7e\u202646f1",
+                    "X-EXTERNAL-ID": "uat-e7d4d4de4bf6853aa99e0a09",
+                    "CHANNEL-ID": "H2H"
+                },
+                "body": {
+                    "originalPartnerReferenceNo": "920364045954",
+                    "additionalInfo": {
+                        "channel": "VIRTUAL_ACCOUNT_BNI"
+                    }
+                }
+            },
+            "response": {
+                "http_status": 200,
+                "body": {
+                    "responseCode": "2002800",
+                    "responseMessage": "Success",
+                    "virtualAccountData": {
+                        "originalReferenceNo": "hf9XyQMu3LmEd4fEVeqviagm",
+                        "originalPartnerReferenceNo": "920364045954",
+                        "amount": {
+                            "currency": "IDR",
+                            "value": "11500.00"
+                        },
+                        "latestTransactionStatus": "03",
+                        "finishedTime": "2026-11-09T17:01:03+07:00",
+                        "serviceCode": "51",
+                        "additionalInfo": {
+                            "channel": "VIRTUAL_ACCOUNT_BNI",
+                            "paymentNtb": "",
+                            "RRN": ""
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "qr_mpm": {
+        "18.1": {
+            "executed": true,
+            "request": {
+                "method": "POST",
+                "url": "https://sandbox.ayolinx.id/v1.0/qr/qr-mpm-generate",
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer [REDACTED]",
+                    "X-TIMESTAMP": "2026-11-09T17:01:02+07:00",
+                    "X-SIGNATURE": "[REDACTED]",
+                    "X-PARTNER-ID": "SC7e\u202646f1",
+                    "X-EXTERNAL-ID": "uat-a2722076aa8bfe376beeba3f",
+                    "CHANNEL-ID": "H2H"
+                },
+                "body": {
+                    "partnerReferenceNo": "qr-d38824d7ef3292178386e3ec",
+                    "amount": {
+                        "currency": "IDR",
+                        "value": "10001.00"
+                    },
+                    "additionalInfo": {
+                        "channel": "BNC_QRIS"
+                    }
+                }
+            },
+            "response": {
+                "http_status": 200,
+                "body": {
+                    "responseCode": "4014701",
+                    "responseMessage": "Access Token Invalid"
+                }
+            }
+        },
+        "18.2": {
+            "executed": true,
+            "request": {
+                "method": "POST",
+                "url": "https://sandbox.ayolinx.id/v1.0/qr/qr-mpm-generate",
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer [REDACTED]",
+                    "X-TIMESTAMP": "2026-11-09T17:01:02+07:00",
+                    "X-SIGNATURE": "[REDACTED]",
+                    "X-PARTNER-ID": "SC7e\u202646f1",
+                    "X-EXTERNAL-ID": "uat-95eacb55cb71450b5c12043d",
+                    "CHANNEL-ID": "H2H"
+                },
+                "body": {
+                    "partnerReferenceNo": "qr-d38824d7ef3292178386e3ec",
+                    "amount": {
+                        "currency": "IDR",
+                        "value": "10001.00"
+                    },
+                    "additionalInfo": {
+                        "channel": "BNC_QRIS"
+                    }
+                }
+            },
+            "response": {
+                "http_status": 200,
+                "body": {
+                    "responseCode": "4014700",
+                    "responseMessage": "Unauthorized Signature"
+                }
+            }
+        },
+        "18.3": {
+            "executed": true,
+            "request": {
+                "method": "POST",
+                "url": "https://sandbox.ayolinx.id/v1.0/qr/qr-mpm-generate",
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer [REDACTED]",
+                    "X-TIMESTAMP": "2026-11-09T17:01:03+07:00",
+                    "X-SIGNATURE": "[REDACTED]",
+                    "X-PARTNER-ID": "SC7e\u202646f1",
+                    "X-EXTERNAL-ID": "uat-2497bfc1017184d4ecd58560",
+                    "CHANNEL-ID": "H2H"
+                },
+                "body": {
+                    "amount": {
+                        "currency": "IDR",
+                        "value": "10001.00"
+                    },
+                    "additionalInfo": {
+                        "channel": "BNC_QRIS"
+                    }
+                }
+            },
+            "response": {
+                "http_status": 400,
+                "body": {
+                    "responseCode": "4004702",
+                    "responseMessage": "Invalid Mandatory Field partnerReferenceNo"
+                }
+            }
+        },
+        "18.4": {
+            "executed": true,
+            "request": {
+                "method": "POST",
+                "url": "https://sandbox.ayolinx.id/v1.0/qr/qr-mpm-generate",
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer [REDACTED]",
+                    "X-TIMESTAMP": "2026-11-09T17:01:03+07:00",
+                    "X-SIGNATURE": "[REDACTED]",
+                    "X-PARTNER-ID": "SC7e\u202646f1",
+                    "X-EXTERNAL-ID": "uat-a5873bc1e5f3474f112a8834",
+                    "CHANNEL-ID": "H2H"
+                },
+                "body": {
+                    "partnerReferenceNo": "qr-d38824d7ef3292178386e3ec",
+                    "amount": {
+                        "currency": "IDR",
+                        "value": "invalid"
+                    },
+                    "additionalInfo": {
+                        "channel": "BNC_QRIS"
+                    }
+                }
+            },
+            "response": {
+                "http_status": 500,
+                "body": {
+                    "responseCode": 5002501,
+                    "responseMessage": "Internal Server Error"
+                }
+            }
+        },
+        "18.6": {
+            "executed": true,
+            "request": {
+                "method": "POST",
+                "url": "https://sandbox.ayolinx.id/v1.0/qr/qr-mpm-generate",
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer [REDACTED]",
+                    "X-TIMESTAMP": "2026-11-09T17:01:04+07:00",
+                    "X-SIGNATURE": "[REDACTED]",
+                    "X-PARTNER-ID": "SC7e\u202646f1",
+                    "X-EXTERNAL-ID": "qr-duplicate-21296616e0cb751d85f0d55",
+                    "CHANNEL-ID": "H2H"
+                },
+                "body": {
+                    "partnerReferenceNo": "qr-d38824d7ef3292178386e3ec",
+                    "amount": {
+                        "currency": "IDR",
+                        "value": "10001.00"
+                    },
+                    "additionalInfo": {
+                        "channel": "BNC_QRIS"
+                    }
+                }
+            },
+            "response": {
+                "http_status": 500,
+                "body": {
+                    "responseCode": 5002501,
+                    "responseMessage": "Internal Server Error"
+                }
+            }
+        },
+        "18.5": {
+            "executed": true,
+            "request": {
+                "method": "POST",
+                "url": "https://sandbox.ayolinx.id/v1.0/qr/qr-mpm-generate",
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer [REDACTED]",
+                    "X-TIMESTAMP": "2026-11-09T17:01:05+07:00",
+                    "X-SIGNATURE": "[REDACTED]",
+                    "X-PARTNER-ID": "SC7e\u202646f1",
+                    "X-EXTERNAL-ID": "qr-duplicate-21296616e0cb751d85f0d55",
+                    "CHANNEL-ID": "H2H"
+                },
+                "body": {
+                    "partnerReferenceNo": "qr-d38824d7ef3292178386e3ec",
+                    "amount": {
+                        "currency": "IDR",
+                        "value": "10001.00"
+                    },
+                    "additionalInfo": {
+                        "channel": "BNC_QRIS"
+                    }
+                }
+            },
+            "response": {
+                "http_status": 200,
+                "body": {
+                    "responseCode": "4094700",
+                    "responseMessage": "Conflict"
+                }
+            }
+        },
+        "18.7": {
+            "executed": true,
+            "request": {
+                "method": "POST",
+                "url": "https://sandbox.ayolinx.id/v1.0/qr/qr-mpm-generate",
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer [REDACTED]",
+                    "X-TIMESTAMP": "2026-11-09T17:01:05+07:00",
+                    "X-SIGNATURE": "[REDACTED]",
+                    "X-PARTNER-ID": "CKSa\u2026hant",
+                    "X-EXTERNAL-ID": "uat-17b2e7e768adeb8755acb2a2",
+                    "CHANNEL-ID": "H2H"
+                },
+                "body": {
+                    "partnerReferenceNo": "qr-invalid-merchant-d03955991e907f4e",
+                    "amount": {
+                        "currency": "IDR",
+                        "value": "10001.00"
+                    },
+                    "additionalInfo": {
+                        "channel": "BNC_QRIS"
+                    }
+                }
+            },
+            "response": {
+                "http_status": 200,
+                "body": {
+                    "responseCode": "4014701",
+                    "responseMessage": "Access Token Invalid"
+                }
+            }
+        },
+        "18.16": {
+            "executed": true,
+            "request": {
+                "method": "POST",
+                "url": "https://sandbox.ayolinx.id/v1.0/qr/qr-mpm-query",
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer [REDACTED]",
+                    "X-TIMESTAMP": "2026-11-09T17:01:05+07:00",
+                    "X-SIGNATURE": "[REDACTED]",
+                    "X-PARTNER-ID": "SC7e\u202646f1",
+                    "X-EXTERNAL-ID": "uat-e41ec56442199f44c9140f45",
+                    "CHANNEL-ID": "H2H"
+                },
+                "body": {
+                    "originalPartnerReferenceNo": "qr-d38824d7ef3292178386e3ec",
+                    "serviceCode": "51",
+                    "additionalInfo": {
+                        "channel": "BNC_QRIS"
+                    }
+                }
+            },
+            "response": {
+                "http_status": 200,
+                "body": {
+                    "responseCode": "2005100",
+                    "responseMessage": "Successful",
+                    "originalReferenceNo": "a6da7c500fca4e9d8b271c3df89afaff",
+                    "originalPartnerReferenceNo": "qr-d38824d7ef3292178386e3ec",
+                    "amount": {
+                        "currency": "IDR",
+                        "value": "10001.00"
+                    },
+                    "latestTransactionStatus": "06",
+                    "finishedTime": "2026-11-09T17:01:07+07:00",
+                    "serviceCode": "51",
+                    "additionalInfo": {
+                        "channel": "BNC_QRIS",
+                        "paymentNtb": "",
+                        "RRN": ""
+                    }
+                }
+            }
+        },
+        "18.17": {
+            "executed": true,
+            "request": {
+                "method": "POST",
+                "url": "https://sandbox.ayolinx.id/v1.0/qr/qr-mpm-query",
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer [REDACTED]",
+                    "X-TIMESTAMP": "2026-11-09T17:01:06+07:00",
+                    "X-SIGNATURE": "[REDACTED]",
+                    "X-PARTNER-ID": "SC7e\u202646f1",
+                    "X-EXTERNAL-ID": "uat-abe16cb7994150b1d5f81210",
+                    "CHANNEL-ID": "H2H"
+                },
+                "body": {
+                    "originalPartnerReferenceNo": "qr-not-found-fb5406898bb13476d3b974f",
+                    "serviceCode": "51",
+                    "additionalInfo": {
+                        "channel": "BNC_QRIS"
+                    }
+                }
+            },
+            "response": {
+                "http_status": 500,
+                "body": {
+                    "responseCode": 5005503,
+                    "responseMessage": "Query Transaction Not Found"
+                }
+            }
+        },
+        "18.15": {
+            "executed": false,
+            "reason": "A successful QR transaction requires marking the sandbox transaction as paid in the Ayolinx merchant dashboard."
+        },
+        "18.18": {
+            "executed": false,
+            "reason": "Inbound QR notification endpoint /v1.0/qr/qr-mpm-notify is not implemented by the project."
+        },
+        "18.19": {
+            "executed": false,
+            "reason": "Inbound QR notification endpoint /v1.0/qr/qr-mpm-notify is not implemented by the project."
+        },
+        "18.20": {
+            "executed": true,
+            "request": {
+                "method": "POST",
+                "url": "https://sandbox.ayolinx.id/v1.0/qr/qr-mpm-cancel",
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer [REDACTED]",
+                    "X-TIMESTAMP": "2026-11-09T17:01:06+07:00",
+                    "X-SIGNATURE": "[REDACTED]",
+                    "X-PARTNER-ID": "SC7e\u202646f1",
+                    "X-EXTERNAL-ID": "uat-77ae04a0ebd8de66b1496c71",
+                    "CHANNEL-ID": "H2H"
+                },
+                "body": {
+                    "originalPartnerReferenceNo": "qr-d38824d7ef3292178386e3ec",
+                    "additionalInfo": {
+                        "channel": "BNC_QRIS"
+                    },
+                    "reason": "UAT cancellation test"
+                }
+            },
+            "response": {
+                "http_status": 500,
+                "body": {
+                    "responseCode": 5005203,
+                    "responseMessage": "Query Transaction Not Found"
+                }
+            }
+        },
+        "18.21": {
+            "executed": true,
+            "request": {
+                "method": "POST",
+                "url": "https://sandbox.ayolinx.id/v1.0/qr/qr-mpm-cancel",
+                "headers": {
+                    "Content-Type": "application/json",
+                    "Authorization": "Bearer [REDACTED]",
+                    "X-TIMESTAMP": "2026-11-09T17:01:07+07:00",
+                    "X-SIGNATURE": "[REDACTED]",
+                    "X-PARTNER-ID": "SC7e\u202646f1",
+                    "X-EXTERNAL-ID": "uat-44cf651008334bfc87908aa7",
+                    "CHANNEL-ID": "H2H"
+                },
+                "body": {
+                    "originalPartnerReferenceNo": "qr-d38824d7ef3292178386e3ec",
+                    "additionalInfo": {
+                        "channel": "BNC_QRIS"
+                    },
+                    "reason": "UAT cancellation test"
+                }
+            },
+            "response": {
+                "http_status": 500,
+                "body": {
+                    "responseCode": 5005203,
+                    "responseMessage": "Query Transaction Not Found"
+                }
+            }
+        }
+    },
+    "direct_debit": {
+        "19.1": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        },
+        "19.2": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        },
+        "19.3": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        },
+        "19.4": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        },
+        "19.5": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        },
+        "19.6": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        },
+        "19.7": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        },
+        "19.8": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        },
+        "19.9": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        },
+        "19.10": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        },
+        "19.11": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        },
+        "19.12": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        },
+        "19.13": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        },
+        "19.14": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        },
+        "19.15": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        },
+        "19.16": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        },
+        "19.17": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        },
+        "19.18": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        },
+        "19.19": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        },
+        "19.20": {
+            "executed": false,
+            "reason": "Direct Debit is not present in the supplied Ayolinx documentation index and the project has no Direct Debit API implementation or sandbox test accounts."
+        }
+    }
+}

@@ -12,9 +12,10 @@ use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\SocialLoginController;
 use App\Http\Controllers\Auth\VerifyOtpController;
 use App\Http\Controllers\Auth\VerifyEmailController;
+use App\Http\Middleware\AllowCompanyAuthFrame;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware('guest')->group(function () {
+Route::middleware(['guest', AllowCompanyAuthFrame::class])->group(function () {
     Route::get('auth/google', [SocialLoginController::class, 'redirectToGoogle'])
         ->name('auth.google');
     Route::get('auth/google/callback', [SocialLoginController::class, 'handleGoogleCallback']);

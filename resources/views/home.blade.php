@@ -7,12 +7,25 @@
   $banner2 = \App\Models\SiteSetting::get('site_hero_banner_2');
   $banner3 = \App\Models\SiteSetting::get('site_hero_banner_3');
   $banners = array_values(array_filter([$banner, $banner2, $banner3]));
-  $themeBannerUrl = null;
-  if (!empty($activeTheme) && $activeTheme->banner_image) {
-      $themeBannerUrl = media_url($activeTheme->banner_image);
-  }
-  if ($themeBannerUrl) $banners = [$themeBannerUrl];
 @endphp
+
+@push('styles')
+<style>
+.dark-meteor-field{display:none;position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:1}
+html:not([data-theme="light"]) .dark-meteor-field{display:block}
+.dark-meteor-field span{position:absolute;top:var(--meteor-y);left:var(--meteor-x);width:var(--meteor-size);height:clamp(24px,4vw,56px);border-radius:999px;opacity:var(--meteor-opacity);filter:drop-shadow(0 0 3px rgba(0,207,255,.55));transform:translateY(-20vh) rotate(-18deg);transform-origin:bottom;background:linear-gradient(transparent,rgba(0,207,255,.08) 24%,rgba(67,199,244,.62) 72%,#fff);animation:dark-meteor-fall var(--meteor-duration) linear var(--meteor-delay) infinite;will-change:transform}
+.dark-meteor-field span::after{content:"";position:absolute;width:calc(var(--meteor-size) * 3.1);height:calc(var(--meteor-size) * 3.1);right:50%;bottom:-1px;border-radius:50%;background:#fff;transform:translateX(50%);box-shadow:0 0 4px rgba(255,255,255,.78),0 0 8px rgba(0,207,255,.55)}
+@keyframes dark-meteor-fall{from{transform:translateY(-18vh) rotate(-18deg)}to{transform:translate3d(var(--meteor-drift),58vh,0) rotate(-18deg)}}
+@media(max-width:760px){.dark-meteor-field span:nth-child(n+21){display:none}.dark-meteor-field span{filter:none;will-change:auto;height:clamp(20px,7vw,42px)}.dark-meteor-field span::after{box-shadow:0 0 4px rgba(255,255,255,.62)}}
+@media(prefers-reduced-motion:reduce){.dark-meteor-field{display:none!important}}
+</style>
+@endpush
+
+<div class="dark-meteor-field" aria-hidden="true">
+  @for($i = 0; $i < 40; $i++)
+    <span style="--meteor-x:{{ fmod(11 + ($i * 37), 100) }}vw;--meteor-y:{{ fmod(7 + ($i * 53), 100) }}%;--meteor-delay:-{{ round(fmod($i * 1.73, 14), 2) }}s;--meteor-duration:{{ round(7 + fmod($i * 1.19, 8), 2) }}s;--meteor-size:{{ round(.7 + (($i % 3) * .3), 1) }}px;--meteor-drift:{{ 70 + (($i % 7) * 18) }}px;--meteor-opacity:{{ round(.16 + (($i % 5) * .08), 2) }};"></span>
+  @endfor
+</div>
 
 <!-- ===== HERO BANNER ===== -->
 <section class="hero-section hero-peek-carousel" id="joki">
@@ -470,7 +483,7 @@ window.__loadMoreReset();
 @push('styles')
 <link rel="stylesheet" href="{{ pwa_asset('css/articles.css') }}&f={{ filemtime(public_path('css/articles.css')) }}">
 <style>
-.home-journal{width:100%;max-width:var(--layout-max);margin:0 auto;padding:4.5rem var(--layout-gutter) 1rem}.home-journal__head{display:flex;align-items:end;justify-content:space-between;gap:1rem;margin-bottom:1.35rem}.home-journal__head h2{margin:.45rem 0 0;font-family:'Sora',sans-serif;font-size:clamp(1.55rem,3vw,2.3rem);letter-spacing:-.04em}.home-journal__head>a{color:var(--accent);font-size:.78rem;font-weight:800;text-decoration:none}.home-journal__grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.2rem}.home-journal__card{overflow:hidden;border:1px solid var(--border);border-radius:18px;background:var(--surface);transition:transform .25s ease,border-color .25s ease}.home-journal__card:hover{transform:translateY(-4px);border-color:var(--primary)}.home-journal__image{display:block;aspect-ratio:16/9;overflow:hidden;background:linear-gradient(135deg,#10295b,#07142e)}.home-journal__image img{width:100%;height:100%;object-fit:cover;transition:transform .35s ease}.home-journal__card:hover img{transform:scale(1.04)}.home-journal__image span{height:100%;display:grid;place-content:center;color:#fff;font-family:'Sora',sans-serif;font-size:3.5rem;font-weight:800}.home-journal__body{padding:1.1rem 1.2rem 1.25rem}.home-journal__body small{color:var(--accent);font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em}.home-journal__body h3{margin:.55rem 0 .65rem}.home-journal__body h3 a{color:var(--text);font-family:'Sora',sans-serif;font-size:1rem;line-height:1.45;text-decoration:none}.home-journal__body p{display:-webkit-box;margin:0;color:var(--text-dim);font-size:.78rem;line-height:1.6;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}@media(max-width:1320px){.home-journal{padding-right:clamp(.75rem,1.35vw,1.2rem);padding-left:clamp(.75rem,1.35vw,1.2rem)}}@media(max-width:760px){.home-journal{width:100%;padding-top:3rem}.home-journal__grid{grid-template-columns:1fr}.home-journal__head{align-items:flex-start}.home-journal__head>a{margin-top:.45rem;white-space:nowrap}}@media(max-width:640px){.home-journal{padding-right:.85rem;padding-left:.85rem}}
+.home-journal{width:100%;max-width:var(--layout-max);margin:0 auto;padding:4.5rem var(--layout-gutter) 1rem}.home-journal__head{display:flex;align-items:end;justify-content:space-between;gap:1rem;margin-bottom:1.35rem}.home-journal__head h2{margin:.45rem 0 0;font-family:'Sora',sans-serif;font-size:clamp(1.55rem,3vw,2.3rem);letter-spacing:-.04em}.home-journal__head>a{color:var(--accent);font-size:.78rem;font-weight:800;text-decoration:none}.home-journal__grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1.2rem}.home-journal__card{overflow:hidden;border:0;border-radius:18px;background:var(--surface);transition:transform .25s ease,border-color .25s ease}.home-journal__card:hover{transform:translateY(-4px);border-color:var(--primary)}.home-journal__image{display:block;aspect-ratio:16/9;overflow:hidden;background:linear-gradient(135deg,#10295b,#07142e)}.home-journal__image img{width:100%;height:100%;object-fit:cover;transition:transform .35s ease}.home-journal__card:hover img{transform:scale(1.04)}.home-journal__image span{height:100%;display:grid;place-content:center;color:#fff;font-family:'Sora',sans-serif;font-size:3.5rem;font-weight:800}.home-journal__body{padding:1.1rem 1.2rem 1.25rem}.home-journal__body small{color:var(--accent);font-size:.66rem;font-weight:800;text-transform:uppercase;letter-spacing:.07em}.home-journal__body h3{margin:.55rem 0 .65rem}.home-journal__body h3 a{color:var(--text);font-family:'Sora',sans-serif;font-size:1rem;line-height:1.45;text-decoration:none}.home-journal__body p{display:-webkit-box;margin:0;color:var(--text-dim);font-size:.78rem;line-height:1.6;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}@media(max-width:1320px){.home-journal{padding-right:clamp(.75rem,1.35vw,1.2rem);padding-left:clamp(.75rem,1.35vw,1.2rem)}}@media(max-width:760px){.home-journal{width:100%;padding-top:3rem}.home-journal__grid{grid-template-columns:1fr}.home-journal__head{align-items:flex-start}.home-journal__head>a{margin-top:.45rem;white-space:nowrap}}@media(max-width:640px){.home-journal{padding-right:.85rem;padding-left:.85rem}}
 /* Johen Journal: hierarchy and responsive article cards */
 .home-journal{max-width:var(--layout-max);padding-top:clamp(3rem,5vw,4.75rem);padding-bottom:2.2rem}
 @media(min-width:761px){.home-journal{padding-right:var(--layout-gutter);padding-left:var(--layout-gutter)}}

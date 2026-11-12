@@ -2,6 +2,7 @@
   'use strict';
 
   const AUTH_USER = window.LIVECHAT_USER || null;
+  const DUMMY_MODE = false;
   const CHANNELS_API = '/api/live-chat/channels';
   const GUEST_CHANNELS_API = '/api/live-chat/guest/channels';
   const IS_GUEST = !AUTH_USER;
@@ -10,6 +11,8 @@
   const SESSION_TIMEOUT_MS = 5 * 60 * 1000;
   const GUEST_STORAGE_KEY = 'johen_lc_guest';
   const GUEST_NAME_STORAGE_KEY = 'johen_lc_guest_name';
+  const GUEST_EMAIL_STORAGE_KEY = 'johen_lc_guest_email';
+  const GUEST_WHATSAPP_STORAGE_KEY = 'johen_lc_guest_whatsapp';
 
   function getGuestId() {
     let id = null;
@@ -29,14 +32,36 @@
     return name.trim();
   }
 
-  function saveGuestName(name) {
-    try { localStorage.setItem(GUEST_NAME_STORAGE_KEY, String(name).trim()); } catch (e) {}
+  function getGuestEmail() {
+    let email = '';
+    try { email = localStorage.getItem(GUEST_EMAIL_STORAGE_KEY) || ''; } catch (e) {}
+    return email.trim();
+  }
+
+  function getGuestWhatsapp() {
+    let whatsapp = '';
+    try { whatsapp = localStorage.getItem(GUEST_WHATSAPP_STORAGE_KEY) || ''; } catch (e) {}
+    return whatsapp.trim();
+  }
+
+  function hasGuestContact() {
+    return getGuestName().length >= 2 && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(getGuestEmail());
+  }
+
+  function saveGuestContact(name, email, whatsapp) {
+    try {
+      localStorage.setItem(GUEST_NAME_STORAGE_KEY, String(name).trim());
+      localStorage.setItem(GUEST_EMAIL_STORAGE_KEY, String(email).trim().toLowerCase());
+      localStorage.setItem(GUEST_WHATSAPP_STORAGE_KEY, String(whatsapp || '').trim());
+    } catch (e) {}
   }
 
   function resetGuestSession() {
     try { sessionStorage.removeItem(GUEST_STORAGE_KEY); } catch (e) {}
     try { localStorage.removeItem(GUEST_STORAGE_KEY); } catch (e) {}
     try { localStorage.removeItem(GUEST_NAME_STORAGE_KEY); } catch (e) {}
+    try { localStorage.removeItem(GUEST_EMAIL_STORAGE_KEY); } catch (e) {}
+    try { localStorage.removeItem(GUEST_WHATSAPP_STORAGE_KEY); } catch (e) {}
   }
 
   function guestParam() {
@@ -45,6 +70,10 @@
 
   function messagePostUrl() {
     return IS_GUEST ? '/api/live-chat/guest/messages' : '/api/live-chat/messages';
+  }
+
+  function messageActionUrl(id, action = '') {
+    return messagePostUrl() + '/' + id + action + (IS_GUEST ? '?guest_id=' + guestParam() : '');
   }
 
   function touchActivity() {
@@ -92,7 +121,7 @@
     state.sessionEnded = false;
     state.lastActivity = null;
     state.view = 'panel';
-    renderGuestNameForm();
+    renderGuestContactForm();
   }
 
   let state = {
@@ -152,6 +181,23 @@
     return [];
   }
 
+  function mediaUrl(attachment) {
+    return escapeHtml(attachment.media_url || '/media/' + attachment.media_path).replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function chooseGame() {
+    stopPolling();
+    state.view = 'panel';
+    state.conversation = null;
+    state.messages = [];
+    fetchChannels();
+  }
+
+  function companyActionHtml(msg) {
+    return msg.product_data?.action === 'chat_all_game'
+      ? '<button type="button" class="lc-new-session-btn" onclick="window.LiveChat.chooseGame()">Chat Admin CS (Pilih Game)</button>' : '';
+  }
+
   function galleryHtml(msg, messageId) {
     const atts = attachmentsOf(msg);
     if (!atts.length) return '';
@@ -159,24 +205,24 @@
     if (msg.message_type === 'audio') {
       const a = atts[0];
       const dur = a.media_duration ? formatVoiceTime(a.media_duration) : '';
-      return `<div class="lc-msg-media"><div class="lc-voice" data-dur="${a.media_duration || ''}" onclick="window.LiveChat.toggleVoicePlay(this)"><span class="lc-voice-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span><span class="lc-voice-progress"><span class="lc-voice-fill"></span></span><span class="lc-voice-time">${dur}</span><audio src="/media/${a.media_path}" preload="metadata"></audio></div></div>`;
+      return `<div class="lc-msg-media"><div class="lc-voice" data-dur="${a.media_duration || ''}" onclick="window.LiveChat.toggleVoicePlay(this)"><span class="lc-voice-btn"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></span><span class="lc-voice-progress"><span class="lc-voice-fill"></span></span><span class="lc-voice-time">${dur}</span><audio src="${mediaUrl(a)}" preload="metadata"></audio></div></div>`;
     }
 
     if (msg.message_type === 'video') {
       const a = atts[0];
       const posterAttr = a.poster_path ? ` poster="/media/${a.poster_path}"` : '';
-      return `<div class="lc-msg-media lc-video-wrap"><button type="button" class="lc-video-play" onclick="window.LiveChat.playVideoMessage(this)" aria-label="Putar video"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><video src="/media/${a.media_path}" controls preload="none"${posterAttr}></video></div>`;
+      return `<div class="lc-msg-media lc-video-wrap"><button type="button" class="lc-video-play" onclick="window.LiveChat.playVideoMessage(this)" aria-label="Putar video"><svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></button><video src="${mediaUrl(a)}" controls preload="none"${posterAttr}></video></div>`;
     }
 
     const gridCls = atts.length === 1 ? 'lc-msg-gallery lc-grid-1'
       : atts.length === 2 ? 'lc-msg-gallery lc-grid-2'
       : atts.length === 3 ? 'lc-msg-gallery lc-grid-3'
       : 'lc-msg-gallery lc-grid-4';
-    const urlsJson = JSON.stringify(atts.map(a => `/media/${a.media_path}`)).replace(/"/g, '&quot;');
+    const urlsJson = JSON.stringify(atts.map(a => `${mediaUrl(a)}`)).replace(/"/g, '&quot;');
     const visible = atts.slice(0, 4);
     const hiddenCount = atts.length - 4;
     const tiles = visible.map((a, i) => {
-      const url = `/media/${a.media_path}`;
+      const url = `${mediaUrl(a)}`;
       const more = (i === 3 && hiddenCount > 0) ? `<span class="lc-gallery-more">+${hiddenCount}</span>` : '';
       return `<button type="button" class="lc-gallery-item" data-urls="${urlsJson}" onclick="window.LiveChat.openGallery(event, this, ${messageId}, ${i})" aria-label="Buka gambar ukuran penuh"><img src="${url}" alt="Gambar" loading="lazy">${more}</button>`;
     }).join('');
@@ -278,7 +324,7 @@
       quoteHtml = `<div class="lc-msg-quote" onclick="event.stopPropagation();window.LiveChat.scrollToMsg(${msg.reply_to.id})"><div class="lc-quote-bar"></div><div class="lc-quote-content"><div class="lc-quote-sender">${escapeHtml(rSender)}</div><div class="lc-quote-text">${rContent}</div></div></div>`;
     }
 
-    let mediaHtml = galleryHtml(msg, msg.id);
+    let mediaHtml = galleryHtml(msg, msg.id) + companyActionHtml(msg);
 
     const bubbleContent = msg.message ? `<div class="lc-msg-bubble">${escapeHtml(msg.message)}</div>` : '';
 
@@ -329,7 +375,7 @@
     const msg = state.messages.find(m => m.id === msgId);
     if (!msg) return;
 
-    const canDelete = !IS_GUEST && msg.sender_id === AUTH_USER?.id;
+    const canDelete = !!msg.can_delete_everyone;
     const menu = document.createElement('div');
     menu.className = 'lc-context-menu';
     menu.dataset.msgId = msgId;
@@ -365,8 +411,29 @@
     anchorEl.closest('.lc-msg')?.classList.add('lc-msg-has-menu');
   }
 
-  async function toggleStar(id) { const r = await fetch(`/api/live-chat/messages/${id}/star`, { method:'POST', headers:headers() }); if (r.ok) { const d=await r.json(), m=state.messages.find(x=>x.id===id); if(m)m.is_starred=d.is_starred; closeAllMenus(); renderMessages(); } }
-  function showReactions(id, button) { const p=document.createElement('div'); p.className='lc-reaction-picker'; p.innerHTML='👍 ❤️ 😂 😮'; p.onclick=async e=>{const emoji=e.target.textContent.trim(); if(!emoji)return; const r=await fetch(`/api/live-chat/messages/${id}/reaction`,{method:'POST',headers:{...headers(),'Content-Type':'application/json'},body:JSON.stringify({emoji})}); if(r.ok){const d=await r.json(),m=state.messages.find(x=>x.id===id);if(m)m.reaction_summary=d.reaction_summary;closeAllMenus();renderMessages();}}; button.parentElement.appendChild(p); }
+  async function toggleStar(id) {
+    if (DUMMY_MODE) {
+      const message = state.messages.find(item => item.id === id);
+      if (message) message.is_starred = !message.is_starred;
+      closeAllMenus();
+      return;
+    }
+    const r = await fetch(messageActionUrl(id, '/star'), { method:'POST', headers:headers() });
+    if (r.ok) { const d=await r.json(), m=state.messages.find(x=>x.id===id); if(m)m.is_starred=d.is_starred; closeAllMenus(); renderMessages(); }
+  }
+  function showReactions(id, button) {
+    const p=document.createElement('div');
+    p.className='lc-reaction-picker';
+    p.innerHTML='👍 ❤️ 😂 😮';
+    p.onclick=async e=>{
+      const emoji=e.target.textContent.trim();
+      if(!emoji)return;
+      if (DUMMY_MODE) { closeAllMenus(); return; }
+      const r=await fetch(messageActionUrl(id, '/reaction'),{method:'POST',headers:{...headers(),'Content-Type':'application/json'},body:JSON.stringify({emoji})});
+      if(r.ok){const d=await r.json(),m=state.messages.find(x=>x.id===id);if(m)m.reaction_summary=d.reaction_summary;closeAllMenus();renderMessages();}
+    };
+    button.parentElement.appendChild(p);
+  }
   function showDeleteOptions(id, canDelete) {
     closeAllMenus();
     const anchorEl = document.querySelector(`[data-msg-id="${id}"] .lc-msg-anchor`);
@@ -392,7 +459,17 @@
     menu.style.top = top + 'px';
     menu.style.left = left + 'px';
   }
-  async function hideForMe(id) { if(!confirm('Hapus pesan ini hanya dari chat Anda?'))return; const r=await fetch(`/api/live-chat/messages/${id}/hide`,{method:'POST',headers:headers()});if(r.ok){state.messages=state.messages.filter(m=>m.id!==id);closeAllMenus();renderMessages();} }
+  async function hideForMe(id) {
+    if(!confirm('Hapus pesan ini hanya dari chat Anda?'))return;
+    if (DUMMY_MODE) {
+      state.messages=state.messages.filter(m=>m.id!==id);
+      closeAllMenus();
+      renderMessages();
+      return;
+    }
+    const r=await fetch(messageActionUrl(id, '/hide'),{method:'POST',headers:headers()});
+    if(r.ok){state.messages=state.messages.filter(m=>m.id!==id);closeAllMenus();renderMessages();}
+  }
 
   function getSenderName(msg) {
     if (msg.sender_type === 'user') return AUTH_USER?.name || 'Anda';
@@ -401,6 +478,19 @@
   }
 
   async function fetchChannels() {
+    if (DUMMY_MODE) {
+      state.channels = [{
+        id: 0,
+        slug: CS_SLUG,
+        name: 'Johen Gaming',
+        is_online: true,
+        admin_photo: null,
+        has_conversation: false,
+        unread_count: 0,
+      }];
+      renderPanel();
+      return;
+    }
     try {
       const url = IS_GUEST ? GUEST_CHANNELS_API + '?guest_id=' + guestParam() : CHANNELS_API;
       const res = await fetch(url, { headers: headers() });
@@ -409,6 +499,7 @@
       renderPanel();
     } catch (e) {
       console.error('LiveChat: fetch channels error', e);
+      showToast('Chat company belum dapat dihubungi. Silakan coba lagi.', 'error');
     }
   }
 
@@ -429,9 +520,7 @@
       const statusHtml = isOnline
         ? `<div class="lc-game-admin active">Admin online</div>`
         : `<div class="lc-game-admin inactive">Admin belum tersedia</div>`;
-      const clickAttr = isOnline
-        ? `onclick="window.LiveChat.openChannel('${ch.slug}')" style="cursor:pointer"`
-        : `style="cursor:default;opacity:0.55"`;
+      const clickAttr = `onclick="window.LiveChat.openChannel('${ch.slug}')" style="cursor:pointer"`;
       return `
         <div class="lc-game-card" ${clickAttr}>
           ${avatarHtml}
@@ -567,7 +656,7 @@
     }
   }
 
-  function renderGuestNameForm() {
+  function renderGuestContactForm() {
     const container = document.getElementById('lc-body');
     if (!container) return;
     container.innerHTML = `
@@ -575,50 +664,84 @@
         <div class="lc-name-icon">
           <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
         </div>
-        <div class="lc-name-title">Halo! Siapa nama kamu?</div>
-        <div class="lc-name-sub">Masukkan nama untuk memulai chat dengan admin.</div>
-        <input type="text" id="lc-name-input" class="lc-name-input" maxlength="255" placeholder="Nama kamu" autocomplete="off" autocapitalize="words">
-        <div class="lc-name-error" id="lc-name-error" style="display:none">Nama tidak boleh kosong</div>
-        <button type="button" class="lc-name-btn" onclick="window.LiveChat.submitGuestName()">Mulai Chat</button>
+        <div class="lc-name-title">Mulai Chat dengan Admin</div>
+        <div class="lc-name-sub">Isi nama dan email aktif. Nomor WhatsApp bersifat opsional.</div>
+        <input type="text" id="lc-name-input" class="lc-name-input" maxlength="60" placeholder="Nama lengkap" autocomplete="name" autocapitalize="words">
+        <input type="email" id="lc-email-input" class="lc-name-input" maxlength="255" placeholder="Email aktif" autocomplete="email" required>
+        <input type="tel" id="lc-whatsapp-input" class="lc-name-input" maxlength="30" placeholder="No. WhatsApp (opsional)" autocomplete="tel">
+        <div class="lc-name-error" id="lc-name-error" style="display:none"></div>
+        <button type="button" class="lc-name-btn" onclick="window.LiveChat.submitGuestContact()">Mulai Chat</button>
       </div>`;
-    const input = document.getElementById('lc-name-input');
-    if (input) {
-      input.focus();
-      input.addEventListener('keydown', function (e) {
+    const inputs = ['lc-name-input', 'lc-email-input', 'lc-whatsapp-input']
+      .map(id => document.getElementById(id))
+      .filter(Boolean);
+    if (inputs.length) {
+      inputs[0].focus();
+      inputs.forEach(function (input) {
+        input.addEventListener('keydown', function (e) {
         if (e.key === 'Enter') {
           e.preventDefault();
-          window.LiveChat.submitGuestName();
+          window.LiveChat.submitGuestContact();
         }
+      });
       });
     }
   }
 
-  function submitGuestName() {
-    const input = document.getElementById('lc-name-input');
-    if (!input) return;
-    const name = input.value.trim();
+  function submitGuestContact() {
+    const nameInput = document.getElementById('lc-name-input');
+    const emailInput = document.getElementById('lc-email-input');
+    const whatsappInput = document.getElementById('lc-whatsapp-input');
+    if (!nameInput || !emailInput) return;
+    const name = nameInput.value.trim();
+    const email = emailInput.value.trim();
+    const whatsapp = whatsappInput ? whatsappInput.value.trim() : '';
     const errEl = document.getElementById('lc-name-error');
-    if (!name) {
-      if (errEl) errEl.style.display = 'block';
-      input.focus();
+    if (name.length < 2) {
+      if (errEl) { errEl.textContent = 'Nama minimal 2 huruf.'; errEl.style.display = 'block'; }
+      nameInput.focus();
+      return;
+    }
+    if (!emailInput.checkValidity()) {
+      if (errEl) { errEl.textContent = 'Masukkan email aktif yang valid.'; errEl.style.display = 'block'; }
+      emailInput.focus();
       return;
     }
     if (errEl) errEl.style.display = 'none';
-    saveGuestName(name);
+    saveGuestContact(name, email, whatsapp);
     openChannel(CS_SLUG).catch(function () {});
   }
 
   async function openChannel(slug) {
     closeAllMenus();
+    if (DUMMY_MODE) {
+      state.activeChannel = state.channels.find(channel => channel.slug === slug) || {
+        id: 0,
+        slug,
+        name: 'Johen Gaming',
+      };
+      state.conversation = { id: 'dummy', channel: state.activeChannel };
+      state.view = 'chat';
+      state.replyToMsg = null;
+      renderChat({ name: 'Admin Johen', photo: null, schedule: null });
+      renderMessages();
+      return;
+    }
     try {
       const res = IS_GUEST
         ? await fetch('/api/live-chat/guest/conversation', {
             method: 'POST',
             headers: { ...headers(), 'Content-Type': 'application/json' },
-            body: JSON.stringify({ channel_slug: slug, guest_id: getGuestId(), guest_name: getGuestName() || null })
+            body: JSON.stringify({
+              channel_slug: slug,
+              guest_id: getGuestId(),
+              guest_name: getGuestName(),
+              guest_email: getGuestEmail(),
+              guest_whatsapp: getGuestWhatsapp() || null
+            })
           })
         : await fetch(`/api/live-chat/conversation/${slug}`, { headers: headers() });
-      if (!res.ok) throw new Error('Failed');
+      if (!res.ok) throw new Error(await readError(res, 'Chat belum dapat dihubungi.'));
       const data = await res.json();
       state.activeChannel = state.channels.find(c => c.slug === slug);
       if (!state.activeChannel && IS_GUEST) state.activeChannel = { slug, name: data.conversation?.channel?.name || 'Live Chat' };
@@ -633,6 +756,7 @@
         state.lastActivity = anchor ? new Date(anchor).getTime() : Date.now();
       }
       state.conversation = data.conversation;
+      state.messages = [];
       if (data.conversation?.channel) state.activeChannel = data.conversation.channel;
       state.view = 'chat';
       state.replyToMsg = null;
@@ -643,10 +767,12 @@
       updateBadge();
     } catch (e) {
       console.error('LiveChat: open channel error', e);
+      showToast(e.message || 'Chat belum dapat dihubungi.', 'error');
     }
   }
 
   function markConversationRead() {
+    if (DUMMY_MODE) return;
     if (!state.conversation) return;
     if (IS_GUEST) {
       fetch(`/api/live-chat/guest/conversation/${state.conversation.id}/read`, {
@@ -660,6 +786,7 @@
   }
 
   async function fetchMessages() {
+    if (DUMMY_MODE) return;
     if (!state.conversation || state.sessionEnded) return;
     try {
       const after = state.messages.length > 0 ? `after=${state.messages[state.messages.length - 1].id}` : '';
@@ -669,21 +796,20 @@
       const res = await fetch(url, { headers: headers() });
       if (!res.ok) throw new Error('Failed');
       const payload = await res.json();
-      const newMessages = IS_GUEST && payload && !Array.isArray(payload) ? payload.messages || [] : payload;
+      const newMessages = Array.isArray(payload) ? payload : payload.messages || [];
       if (IS_GUEST && payload && !Array.isArray(payload) && payload.channel) {
         applyGuestChannelHeader(payload.channel);
         if (state.activeChannel?.id && payload.channel.id && state.activeChannel.id !== payload.channel.id) {
           state.activeChannel = payload.channel;
         }
       }
-      if (newMessages.length > 0) {
-        touchActivity();
-        state.messages.push(...newMessages);
-        newMessages.forEach(m => appendUserMsg(m));
-        scrollToBottom();
-        setTimeout(scrollToBottom, 100);
-        dismissActiveToast();
+      if (JSON.stringify(state.messages) !== JSON.stringify(newMessages)) {
+        const hasNew = newMessages.some(message => !state.messages.some(old => old.id === message.id));
+        state.messages = newMessages;
+        renderMessages();
+        if (hasNew) { touchActivity(); scrollToBottom(); dismissActiveToast(); }
       }
+      markConversationRead();
       if (!IS_GUEST && state.conversation.user_unread_count > 0) {
         fetch(`/api/live-chat/conversation/${state.conversation.channel?.slug || state.activeChannel?.slug}`, { headers: headers() });
       }
@@ -732,7 +858,7 @@
           </div>`;
       }
 
-      let mediaHtml = galleryHtml(msg, msg.id);
+      let mediaHtml = galleryHtml(msg, msg.id) + companyActionHtml(msg);
 
       const bubbleContent = msg.message
         ? `<div class="lc-msg-bubble">${escapeHtml(msg.message)}</div>`
@@ -1173,6 +1299,19 @@
   }
   async function sendVoiceFile(file, duration) {
     if (!state.conversation) return;
+    if (DUMMY_MODE) {
+      const message = {
+        id: Date.now(),
+        sender_type: 'user',
+        message_type: 'text',
+        message: 'Pesan suara',
+        created_at: new Date().toISOString(),
+      };
+      state.messages.push(message);
+      appendUserMsg(message);
+      scrollToBottom();
+      return;
+    }
     const tempId = Date.now();
     const replyId = state.replyToMsg?.id || null;
     addLoadingMsg(tempId, file);
@@ -1318,6 +1457,26 @@
     const hasText = !!text;
     if (!hasMedia && !hasText) return;
     if (!state.conversation) return;
+
+    if (DUMMY_MODE) {
+      const message = {
+        id: Date.now(),
+        sender_type: 'user',
+        message_type: 'text',
+        message: text || 'Lampiran',
+        created_at: new Date().toISOString(),
+      };
+      state.messages.push(message);
+      if (input) {
+        input.value = '';
+        input.style.height = 'auto';
+      }
+      clearReplyPreview();
+      cancelMediaEditor();
+      appendUserMsg(message);
+      scrollToBottom();
+      return;
+    }
 
     const items = [...state.mediaList];
     const replyId = state.replyToMsg?.id || null;
@@ -1476,8 +1635,13 @@
   async function deleteMsg(id) {
     closeAllMenus();
     if (!confirm('Hapus pesan ini untuk semua orang?')) return;
+    if (DUMMY_MODE) {
+      state.messages = state.messages.filter(message => message.id !== id);
+      renderMessages();
+      return;
+    }
     try {
-      const res = await fetch(`/api/live-chat/messages/${id}`, {
+      const res = await fetch(messageActionUrl(id), {
         method: 'DELETE',
         headers: { 'X-CSRF-TOKEN': getToken(), 'Accept': 'application/json' },
       });
@@ -1511,6 +1675,7 @@
   }
 
   function startPolling() {
+    if (DUMMY_MODE) return;
     stopPolling();
     state.pollingTimer = setInterval(() => {
       if (state.sessionEnded) return;
@@ -1539,13 +1704,16 @@
       overlay?.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
       if (IS_GUEST) {
-        if (getGuestName()) {
+        if (hasGuestContact()) {
           openChannel(CS_SLUG).catch(function () {});
         } else {
-          renderGuestNameForm();
+          renderGuestContactForm();
         }
       } else if (state.view === 'panel') {
         fetchChannels();
+      } else if (state.view === 'chat' && state.conversation) {
+        fetchMessages();
+        startPolling();
       }
     } else {
       popup?.classList.remove('active');
@@ -1573,6 +1741,11 @@
   }
 
   function updateBadge() {
+    if (DUMMY_MODE) {
+      const badge = document.getElementById('lc-fab-badge');
+      if (badge) badge.style.display = 'none';
+      return;
+    }
     if (IS_GUEST) return;
     const badge = document.getElementById('lc-fab-badge');
     if (!badge) return;
@@ -1596,7 +1769,7 @@
     try { urls = JSON.parse(btn.dataset.urls || '[]'); } catch (e) {}
     if (!urls.length) {
       const msg = state.messages.find(m => m.id === messageId);
-      if (msg) urls = attachmentsOf(msg).map(a => `/media/${a.media_path}`);
+      if (msg) urls = attachmentsOf(msg).map(a => `${mediaUrl(a)}`);
     }
     if (!urls.length) return;
     openLightbox(urls, startIndex || 0, messageId);
@@ -1716,12 +1889,12 @@
   }
 
   window.LiveChat = {
-    toggle, close, openChannel, backToList, onKeydown, autoResize,
+    toggle, close, openChannel, backToList, onKeydown, autoResize, chooseGame,
     sendText, onFileSelect, cancelMediaEditor, setActiveIndex, navMedia, removeMediaItem, updateActiveCaption,
     replyTo, cancelReply, deleteMsg, scrollToMsg, showMenu, updateBadge, openImage, openGallery, showReactions, toggleStar, showDeleteOptions, hideForMe, closeMenus: closeAllMenus, playVideoMessage,
     toggleAttachMenu, attachAction, closeAttachMenu,
     startVoiceRec, cancelVoiceRec, finishVoiceRec, toggleVoicePlay,
-    toggleNotif, startNewSession, submitGuestName,
+    toggleNotif, startNewSession, submitGuestContact,
   };
 
   document.addEventListener('DOMContentLoaded', function() {
@@ -1757,10 +1930,10 @@
       overlayEl?.setAttribute('aria-hidden', 'false');
       document.body.style.overflow = 'hidden';
       if (IS_GUEST) {
-        if (getGuestName()) {
+        if (hasGuestContact()) {
           openChannel(CS_SLUG).catch(function () {});
         } else {
-          renderGuestNameForm();
+          renderGuestContactForm();
         }
       } else {
         if (channel) {

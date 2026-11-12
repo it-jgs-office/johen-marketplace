@@ -15,7 +15,7 @@
     </div>
     <div class="faq-item">
       <h3>Pembayaran apa saja yang tersedia?</h3>
-      <p>Kami menerima berbagai metode pembayaran seperti QRIS, GoPay, OVO, Dana, transfer bank, dan lainnya.</p>
+      <p>Kami menerima pembayaran melalui kanal yang tersedia, seperti QRIS, DANA, Virtual Account, dan Alfamart.</p>
     </div>
     <div class="faq-item">
       <h3>Apakah aman bertransaksi di Johen Gaming?</h3>

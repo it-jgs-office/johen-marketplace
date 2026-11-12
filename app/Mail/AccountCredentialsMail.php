@@ -21,7 +21,7 @@ class AccountCredentialsMail extends Mailable
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Data Login Akun '.$this->accountOrder->order_ref.' - Johen Gaming');
+        return new Envelope(subject: 'Data Login Akun Game & Zimbra '.$this->accountOrder->order_ref.' - Johen Gaming');
     }
 
     public function content(): Content

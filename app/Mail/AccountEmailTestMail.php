@@ -14,12 +14,13 @@ class AccountEmailTestMail extends Mailable
 
     public function __construct(
         public string $recipientEmail,
+        public string $confirmationCode,
         public array $business,
     ) {}
 
     public function envelope(): Envelope
     {
-        return new Envelope(subject: 'Tes Email Pengiriman Akun - Johen Gaming');
+        return new Envelope(subject: 'Kode Konfirmasi Pembelian - Johen Gaming');
     }
 
     public function content(): Content

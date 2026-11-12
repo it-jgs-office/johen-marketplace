@@ -1,7 +1,5 @@
 @php
-    $themeEventSlug = !empty($activeTheme) && $activeTheme ? $activeTheme->slug : null;
-    $themeLogo = $activeThemeLogoUrl
-        ?? (\App\Models\SiteSetting::get('site_logo') ? media_url(\App\Models\SiteSetting::get('site_logo')) : null)
+    $themeLogo = (\App\Models\SiteSetting::get('site_logo') ? media_url(\App\Models\SiteSetting::get('site_logo')) : null)
         ?? pwa_asset('logo.png');
     $themeFavicon = asset('favicon.png') . '?v=' . pwa_build();
     $splashName = \App\Models\SiteSetting::get('site_name') ?: 'Johen Gaming';
@@ -25,7 +23,7 @@
     );
 @endphp
 <!DOCTYPE html>
-<html lang="id" data-theme="dark" data-event-theme="{{ $themeEventSlug }}">
+<html lang="id" data-theme="dark">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -48,9 +46,6 @@
 @include('partials.pwa')
   <link rel="stylesheet" href="/css/topup.css?v={{ filemtime(public_path('css/topup.css')) }}">
   <link rel="stylesheet" href="/css/frontend-promo.css?v={{ filemtime(public_path('css/frontend-promo.css')) }}">
-@if(!empty($activeThemeCss))
-<style>:root{{{ $activeThemeCss }}}</style>
-@endif
 @include('partials.splash-head')
 @stack('head')
 @stack('styles')
@@ -58,14 +53,11 @@
 <link rel="stylesheet" href="{{ pwa_asset('css/account-hub.css') }}&f={{ filemtime(public_path('css/account-hub.css')) }}">
 @endif
 </head>
-<body class="{{ $isAccountHubPage ? 'account-hub-layout' : '' }} {{ request()->routeIs('profile.*') ? 'profile-page-layout' : '' }}">
+<body class="{{ $isAccountHubPage ? 'account-hub-layout' : '' }} {{ request()->routeIs('profile.*') ? 'profile-page-layout' : '' }} {{ request()->routeIs('joki.mobile-legends') ? 'joki-payment-page' : '' }}">
 @include('partials.splash')
-@include('partials.floating-decoration')
 @unless($isAccountHubPage || $isInvoicePage)
-<div class="dark-meteor-field" aria-hidden="true">
-  @for($meteor = 0; $meteor < 40; $meteor++)
-    <span style="--meteor-x:{{ (($meteor * 37 + 11) % 100) }}vw;--meteor-y:{{ (($meteor * 53 + 7) % 100) }}%;--meteor-delay:{{ -fmod($meteor * 1.73, 14) }}s;--meteor-duration:{{ 7 + fmod($meteor * 1.19, 8) }}s;--meteor-size:{{ 0.7 + ($meteor % 3) * 0.3 }}px;--meteor-drift:{{ 70 + ($meteor % 7) * 18 }}px;--meteor-opacity:{{ 0.16 + ($meteor % 5) * 0.08 }};"></span>
-  @endfor
+<div class="site-ambient" aria-hidden="true">
+  <span></span><span></span><span></span>
 </div>
 @endunless
 
@@ -73,42 +65,44 @@
 <header class="site-header" id="siteHeader">
   <div class="header-inner">
     <a href="{{ route('home') }}" class="logo">
-      <img src="{{ $themeLogo }}" alt="Johen Gaming" class="logo-img">
-      <span class="logo-wordmark" aria-hidden="true">
-        <span class="logo-wordmark-word">
-          <span style="animation-delay:0ms">J</span><span style="animation-delay:32ms">O</span><span style="animation-delay:64ms">H</span><span style="animation-delay:96ms">E</span><span style="animation-delay:128ms">N</span>
-        </span>
-        <span class="logo-wordmark-word">
-          <span style="animation-delay:192ms">G</span><span style="animation-delay:224ms">A</span><span style="animation-delay:256ms">M</span><span style="animation-delay:288ms">I</span><span style="animation-delay:320ms">N</span><span style="animation-delay:352ms">G</span>
-        </span>
-      </span>
+      <video class="logo-img" autoplay muted loop playsinline aria-label="Johen Gaming">
+        <source src="{{ asset('assets/icon/logo-animasi-transparent.webm') }}" type="video/webm">
+        <source src="{{ asset('assets/icon/logo-animasi.mp4') }}" type="video/mp4">
+      </video>
     </a>
 
-    <div class="search-wrap">
+    <button type="button" class="mobile-search-trigger" id="mobileSearchTrigger" aria-label="Buka pencarian" aria-expanded="false">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20L16.5 16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+    </button>
+
+    <div class="search-wrap" id="headerSearchWrap">
       <svg class="search-icon" viewBox="0 0 24 24" fill="none"><circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/><path d="M20 20L16.5 16.5" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
       <input type="text" id="searchInput" placeholder="Cari Game atau Voucher" autocomplete="off">
+      <button type="button" class="mobile-search-close" id="mobileSearchClose" aria-label="Tutup pencarian">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+      </button>
       <div class="search-suggest" id="searchSuggest"></div>
     </div>
 
     <nav class="main-nav" id="mainNav">
       <a href="{{ route('home') }}" class="{{ request()->routeIs('home') || request()->routeIs('games.show') ? 'active' : '' }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h11L22 9l-10 12L2 9l4.5-6Z"/><path d="M2 9h20M9 3 7 9l5 12 5-12-2-6"/></svg>
+        @include('partials.animated-nav-icon', ['icon' => 'gem'])
         <span>Top Up</span>
       </a>
       <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="10" r="2.2"/><path d="M5.5 17c.45-2 1.75-3 3-3s2.55 1 3 3M14 9h4.5M14 13h4.5M14 17h3"/></svg>
+        @include('partials.animated-nav-icon', ['icon' => 'gamepad'])
         <span>Stock Akun</span>
       </a>
       <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z"/><path d="m8 11 2 2 5-5M8 16h8"/></svg>
+        @include('partials.animated-nav-icon', ['icon' => 'clipboard-clock'])
         <span>Cek Transaksi</span>
       </a>
       <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 3h10v7a5 5 0 0 1-10 0V3Z"/><path d="M7 5H4v3a4 4 0 0 0 4 4M17 5h3v3a4 4 0 0 1-4 4"/></svg>
+        @include('partials.animated-nav-icon', ['icon' => 'trophy'])
         <span>Leaderboard</span>
       </a>
       <a href="{{ route('articles.index') }}" class="{{ request()->routeIs('articles.*') ? 'active' : '' }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        @include('partials.animated-nav-icon', ['icon' => 'paperclip'])
         <span>Artikel</span>
       </a>
     </nav>
@@ -117,10 +111,7 @@
       $cartCount = Auth::check() ? app(\App\Services\CartService::class)->countItems(Auth::id()) : 0;
     @endphp
     <a href="{{ route('cart.index') }}" class="nav-cart-btn {{ request()->routeIs('cart.*') ? 'active' : '' }}" aria-label="Keranjang akun">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-        <circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/>
-        <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>
-      </svg>
+      @include('partials.animated-nav-icon', ['icon' => 'shopping-cart'])
       <span class="nav-cart-badge" data-role="cart-badge" @if($cartCount < 1) hidden @endif>{{ $cartCount > 99 ? '99+' : $cartCount }}</span>
     </a>
 
@@ -159,26 +150,21 @@
       <span>Install App</span>
     </button>
 
-    <button class="nav-theme-btn" id="themeToggle" aria-label="Ganti tema">
-      <svg class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
-      <svg class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1111.21 3 7 7 0 0021 12.79z"/></svg>
-    </button>
-
   </div>
 </header>
 
 <nav class="mobile-bottom-nav" aria-label="Navigasi utama mobile">
   <a href="{{ route('home') }}" class="{{ request()->routeIs('home') || request()->routeIs('games.show') ? 'active' : '' }}" @if(request()->routeIs('home') || request()->routeIs('games.show')) aria-current="page" @endif>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h11L22 9l-10 12L2 9l4.5-6Z"/><path d="M2 9h20M9 3 7 9l5 12 5-12-2-6"/></svg><span>Top Up</span>
+    @include('partials.animated-nav-icon', ['icon' => 'gem'])<span>Top Up</span>
   </a>
   <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}" @if(request()->routeIs('jual-beli-akun*')) aria-current="page" @endif>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8" cy="10" r="2"/><path d="M5 17c.5-2 2-3 3-3s2.5 1 3 3M14 9h5M14 13h5M14 17h4"/></svg><span>Stock Akun</span>
+    @include('partials.animated-nav-icon', ['icon' => 'gamepad'])<span>Stock Akun</span>
   </a>
   <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}" @if(request()->routeIs('check.transaction')) aria-current="page" @endif>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z"/><path d="m8 11 2 2 5-5M8 16h8"/></svg><span>Cek Transaksi</span>
+    @include('partials.animated-nav-icon', ['icon' => 'clipboard-clock'])<span>Cek Transaksi</span>
   </a>
   <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}" @if(request()->routeIs('leaderboard')) aria-current="page" @endif>
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 3h10v7a5 5 0 0 1-10 0zM7 5H4v3a4 4 0 0 0 4 4M17 5h3v3a4 4 0 0 1-4 4"/></svg><span>Ranking</span>
+    @include('partials.animated-nav-icon', ['icon' => 'trophy'])<span>Ranking</span>
   </a>
   <button type="button" id="hamburgerBtn" class="{{ request()->routeIs('cart.*') || request()->routeIs('checkout.*') || request()->routeIs('orders.*') || request()->routeIs('vouchers.*') || request()->routeIs('reviews.*') || request()->routeIs('profile.*') || request()->routeIs('articles.*') ? 'active' : '' }}" aria-label="Buka menu lainnya" aria-controls="mobileMenu" aria-expanded="false">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg><span>Menu</span>
@@ -199,27 +185,27 @@
 
     <nav class="mobile-menu__nav" aria-label="Navigasi mobile">
       <a href="{{ route('home') }}" class="{{ request()->routeIs('home') || request()->routeIs('games.show') ? 'active' : '' }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.5 3h11L22 9l-10 12L2 9l4.5-6Z"/><path d="M2 9h20M9 3 7 9l5 12 5-12-2-6"/></svg>
+        @include('partials.animated-nav-icon', ['icon' => 'gem'])
         <span>Top Up</span>
       </a>
       <a href="{{ route('jual-beli-akun') }}" class="{{ request()->routeIs('jual-beli-akun*') ? 'active' : '' }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="8.5" cy="10" r="2.2"/><path d="M5.5 17c.45-2 1.75-3 3-3s2.55 1 3 3M14 9h4.5M14 13h4.5M14 17h3"/></svg>
+        @include('partials.animated-nav-icon', ['icon' => 'gamepad'])
         <span>Stock Akun</span>
       </a>
       <a href="{{ route('check.transaction') }}" class="{{ request()->routeIs('check.transaction') ? 'active' : '' }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h14v18l-3-2-4 2-4-2-3 2V3Z"/><path d="m8 11 2 2 5-5M8 16h8"/></svg>
+        @include('partials.animated-nav-icon', ['icon' => 'clipboard-clock'])
         <span>Cek Transaksi</span>
       </a>
       <a href="{{ route('leaderboard') }}" class="{{ request()->routeIs('leaderboard') ? 'active' : '' }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 3h10v7a5 5 0 0 1-10 0V3Z"/><path d="M7 5H4v3a4 4 0 0 0 4 4M17 5h3v3a4 4 0 0 1-4 4"/></svg>
+        @include('partials.animated-nav-icon', ['icon' => 'trophy'])
         <span>Leaderboard</span>
       </a>
       <a href="{{ route('articles.index') }}" class="{{ request()->routeIs('articles.*') ? 'active' : '' }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        @include('partials.animated-nav-icon', ['icon' => 'paperclip'])
         <span>Artikel</span>
       </a>
       <a href="{{ route('cart.index') }}" class="mobile-menu__cart {{ request()->routeIs('cart.*') ? 'active' : '' }}">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        @include('partials.animated-nav-icon', ['icon' => 'shopping-cart'])
         <span>Keranjang</span>
         <span class="nav-cart-badge nav-cart-badge--inline" data-role="cart-badge" @if($cartCount < 1) hidden @endif>{{ $cartCount > 99 ? '99+' : $cartCount }}</span>
       </a>
@@ -295,10 +281,7 @@
 <footer class="site-footer">
   <div class="footer-inner">
     <div class="footer-brand">
-      <div class="logo">
-        <img src="{{ $themeLogo }}" alt="Johen Gaming" class="logo-img">
-        <span class="logo-text">JOHEN<span>GAMING</span></span>
-      </div>
+      <img src="{{ asset('assets/icon/logo-footer.png') }}" alt="{{ $biz['name'] }}" class="footer-logo-img">
       <p class="footer-about"><strong>{{ $biz['name'] }}</strong> &mdash; perusahaan digital gaming commerce terpercaya di Bandung. Spesialisasi stock akun game online, top up, jasa joki, live commerce, dan konten digital gaming.</p>
       <p>Top up game &amp; voucher terlaris, murah, aman legal 100% buka 24 jam dengan payment terlengkap Indonesia.</p>
     </div>
@@ -395,27 +378,8 @@
                    style="object-fit:contain;object-position:{{ $popup->image_position ?? 'center' }}">
             @endif
           </div>
-          @if($popup->title || $popup->description)
-            <div class="popup-caption">
-              @if($popup->title)<h3 class="popup-title">{{ $popup->title }}</h3>@endif
-              @if($popup->description)<p class="popup-desc">{{ $popup->description }}</p>@endif
-            </div>
-          @endif
         </div>
       @endforeach
-    </div>
-    @if($popupBanners->count() > 1)
-      <div class="popup-dots" id="popupDots">
-        @foreach($popupBanners as $i => $popup)
-          <button type="button" class="popup-dot {{ $loop->first ? 'active' : '' }}" data-index="{{ $i }}"></button>
-        @endforeach
-      </div>
-    @endif
-    <div class="popup-install-area" hidden>
-      <button type="button" class="pwa-install-btn popup-install-btn" data-pwa-install-trigger aria-label="Install App" hidden>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>
-        <span>Install App</span>
-      </button>
     </div>
     <label class="popup-dont-show">
       <input type="checkbox" id="popupDontShow">
@@ -464,19 +428,20 @@
   --surface: #ffffff;
   --surface-2: #f8fbff;
   --surface-3: #eff6ff;
-  --border: rgba(37,99,235,.12);
-  --border-strong: rgba(37,99,235,.22);
-  --text: color-mix(in srgb, var(--theme-primary, #2563eb) 42%, #000000);
+  --border: rgba(26,79,141,.12);
+  --border-strong: rgba(26,79,141,.22);
+  --text: color-mix(in srgb, var(--theme-primary, #1a4f8d) 42%, #000000);
   --text-dim: color-mix(in srgb, var(--text) 58%, var(--surface));
   --text-mute: color-mix(in srgb, var(--text) 38%, var(--surface));
-  --purple-glow: color-mix(in srgb, var(--theme-primary, #2563eb) 25%, transparent);
-  --shadow-purple: 0 8px 30px -8px color-mix(in srgb, var(--theme-primary, #2563eb) 35%, transparent);
-  --header-bg: rgba(255,255,255,.94);
-  --header-bg-scrolled: rgba(255,255,255,.98);
-  --nav-active-text: color-mix(in srgb, var(--theme-primary-dark, #1a4a9e) 85%, #000000);
+  --purple-glow: color-mix(in srgb, var(--theme-primary, #1a4f8d) 25%, transparent);
+  --shadow-purple: 0 8px 30px -8px color-mix(in srgb, var(--theme-primary, #1a4f8d) 35%, transparent);
+  --header-bg: color-mix(in srgb, var(--theme-primary, #1a4f8d) 72%, transparent);
+  --header-bg-scrolled: color-mix(in srgb, var(--theme-primary, #1a4f8d) 82%, transparent);
+  --nav-active-text: color-mix(in srgb, var(--theme-primary-dark, #103b70) 85%, #000000);
   --bg-card:#ffffff;
 }
 .nav-theme-btn {
+  display: none !important;
   flex-shrink: 0;
   width: 40px;
   height: 40px;
@@ -576,7 +541,7 @@ html:not([data-theme="light"]) .mobile-theme-btn .icon-moon {
     localStorage.setItem('theme', next);
     document.dispatchEvent(new CustomEvent('themeChanged', { detail: { theme: next } }));
   }
-  document.getElementById('themeToggle').addEventListener('click', toggleTheme);
+  document.getElementById('themeToggle')?.addEventListener('click', toggleTheme);
   var mobileBtn = document.getElementById('mobileThemeToggle');
   if (mobileBtn) mobileBtn.addEventListener('click', toggleTheme);
 })();
@@ -631,7 +596,26 @@ html:not([data-theme="light"]) .mobile-theme-btn .icon-moon {
     if (slide) {
       var isPortrait = slide.dataset.orientation === 'portrait';
       modal.classList.toggle('popup-portrait', isPortrait);
+      syncModalToImage(slide);
     }
+  }
+
+  function syncModalToImage(slide) {
+    var image = slide && slide.querySelector('.popup-image');
+    if (!image) return;
+
+    function applySize() {
+      if (!image.naturalWidth || !image.naturalHeight) return;
+      var horizontalPadding = window.innerWidth < 640 ? 24 : 40;
+      var maxWidth = Math.min(520, window.innerWidth - horizontalPadding);
+      var maxImageHeight = Math.max(180, Math.min((window.innerHeight * .88) - 48, window.innerHeight - horizontalPadding - 48));
+      var aspectRatio = image.naturalWidth / image.naturalHeight;
+      var frameWidth = Math.min(maxWidth, maxImageHeight * aspectRatio, image.naturalWidth);
+      modal.style.setProperty('--popup-frame-width', Math.round(frameWidth) + 'px');
+    }
+
+    if (image.complete) applySize();
+    else image.addEventListener('load', applySize, { once: true });
   }
 
   if (dots.length) {
@@ -650,6 +634,7 @@ html:not([data-theme="light"]) .mobile-theme-btn .icon-moon {
   function stopTimer() { if (timer) { clearInterval(timer); timer = null; } }
   modal.addEventListener('mouseenter', stopTimer);
   modal.addEventListener('mouseleave', startTimer);
+  window.addEventListener('resize', function() { handleOrientation(); });
 
   // Closing behavior
   document.getElementById('popupClose').addEventListener('click', closePopup);
@@ -660,9 +645,9 @@ html:not([data-theme="light"]) .mobile-theme-btn .icon-moon {
     else localStorage.removeItem(dontShowKey);
   });
 
-  // Selalu tampil setiap masuk website, kecuali user memilih "Jangan tampilkan lagi"
+  // Tampil saat halaman pertama kali dibuka, kecuali user memilih "Jangan tampilkan lagi".
   if (!localStorage.getItem(dontShowKey)) {
-    setTimeout(openPopup, 1200);
+    openPopup();
     startTimer();
     handleOrientation();
   }

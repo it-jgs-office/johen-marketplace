@@ -7,4 +7,4 @@ Disallow: /orders
 Disallow: /payment
 Disallow: /api/
 
-Sitemap: https://marketplace.johengaming.id/sitemap.xml
+Sitemap: https://johengaming.store/sitemap.xml

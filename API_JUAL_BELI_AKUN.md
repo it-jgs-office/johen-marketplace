@@ -1,9 +1,19 @@
 # Dokumentasi API Jual Beli Akun
 
+## Koneksi company
+
+Gunakan `JBA_API_BASE_URL` untuk alamat API company dan `JBA_API_KEY_MARKETPLACE` yang sama di kedua backend (jangan diletakkan di browser). Company memakai `MARKETPLACE_URL` untuk tujuan checkout `/jual-beli-akun/{id-company}/checkout`. Detail dan harga checkout diambil ulang dari API company; katalog memiliki cache satu menit.
+
+Live chat sudah memakai proxy sesi/CSRF marketplace `/api/live-chat/*` menuju `POST /api/marketplace/chat` company. Pesan diterima admin company sesuai channel resepsionis/game, termasuk lampiran dan balasan melalui polling 3 detik. Endpoint company memeriksa key marketplace serta kepemilikan percakapan/pesan. Lihat dokumentasi API company untuk kontrak backend chat.
+
+Login pelanggan company menggunakan akun marketplace melalui `/company-auth` yang ditampilkan di iframe modal chat. Setelah login/OTP berhasil, marketplace mengirim kode sekali pakai ke parent window. Backend company menukar kode tersebut melalui `POST /api/company-auth/verify` dengan `JBA_API_KEY_MARKETPLACE`. Atur daftar origin company melalui `COMPANY_AUTH_ORIGINS`; password pengguna tidak keluar dari marketplace.
+
+Checkout tetap mengikuti prasyarat yang sudah ada: data login produk harus diisi admin marketplace untuk pengiriman otomatis. Kredensial produk tidak diekspos lewat API publik company.
+
 Dokumentasi ini menjelaskan API katalog akun game dan CRUD admin yang dipakai bersama oleh:
 
 - https://johengaming.id
-- https://marketplace.johengaming.id
+- https://johengaming.store
 - http://localhost:8000
 
 ## Base URL
@@ -17,7 +27,7 @@ https://johengaming.id/api
 Lokal:
 
 ~~~text
-http://localhost:8000/api
+http://localhost:8001/api
 ~~~
 
 Semua respons menggunakan JSON. Request JSON memakai header:
@@ -31,17 +41,17 @@ Request yang mengirim foto, video, atau screenshot harus memakai multipart/form-
 
 ## CORS
 
-Origin yang diizinkan:
+Origin frontend yang diizinkan:
 
 ~~~text
-https://johengaming.id
-https://marketplace.johengaming.id
+http://johengaming.store
+https://johengaming.store
 http://localhost:8000
 ~~~
 
-Method yang diizinkan: GET, POST, PUT, DELETE, dan OPTIONS.
+Method yang diizinkan: GET, POST, PUT, PATCH, DELETE, dan OPTIONS.
 
-Header yang diizinkan: Accept, Authorization, Content-Type, dan X-Requested-With.
+Header yang diizinkan: Accept, Authorization, Content-Type, Origin, X-Requested-With, X-CSRF-TOKEN, dan X-XSRF-TOKEN.
 
 ## Alur autentikasi admin
 

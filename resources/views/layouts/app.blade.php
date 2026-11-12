@@ -15,7 +15,14 @@
 
         @vite(['resources/css/app.css', 'resources/js/app.js'])
         <link rel="stylesheet" href="/css/frontend-promo.css?v={{ filemtime(public_path('css/frontend-promo.css')) }}">
-        <style>@media(max-width:860px){input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea{font-size:16px!important;}}</style>
+        <style>
+            *{scrollbar-width:thin;scrollbar-color:#64748b transparent;}
+            *::-webkit-scrollbar{width:6px;height:6px;}
+            *::-webkit-scrollbar-track{background:transparent;}
+            *::-webkit-scrollbar-thumb{background:#64748b;border:1px solid transparent;border-radius:999px;background-clip:padding-box;}
+            *::-webkit-scrollbar-thumb:hover{background:#334155;}
+            @media(max-width:860px){input:not([type="checkbox"]):not([type="radio"]):not([type="file"]),select,textarea{font-size:16px!important;}}
+        </style>
     </head>
     <body class="font-sans antialiased">
         <div class="min-h-screen bg-gray-100">

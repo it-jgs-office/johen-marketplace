@@ -16,7 +16,7 @@ use Illuminate\Support\Str;
 use Tests\TestCase;
 
 /**
- * Alur settlement topup: Xendit sukses -> saldo naik -> Digiflazz diproses ->
+ * Alur settlement topup: Ayolinx sukses -> saldo naik -> Digiflazz diproses ->
  * sukses / gagal / timeout -> saldo akhirnya dikembalikan atau terpakai.
  *
  * Respons Digiflazz dikendalikan lewat closure yang membaca variabel lokal,

@@ -618,10 +618,12 @@
         .empty-state p { color: var(--text-muted); font-size: 0.82rem; }
 
         /* SCROLLBAR */
-        ::-webkit-scrollbar { width: 6px; }
+        * { scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--accent) 52%, var(--border)) transparent; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: var(--text-dim); }
+        ::-webkit-scrollbar-thumb { background: color-mix(in srgb, var(--accent) 52%, var(--border)); border: 1px solid transparent; border-radius: 999px; background-clip: padding-box; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+        ::-webkit-scrollbar-corner { background: transparent; }
 
         /* IMAGE DROPZONE */
         .admin-image-dropzone {
@@ -696,10 +698,7 @@
                     <i class="fas fa-trophy"></i> Paket Joki MLBB
                 </a>
                 <a href="{{ route('admin.account-listings') }}" class="{{ request()->routeIs('admin.account-listings*') ? 'active' : '' }}">
-                    <i class="fas fa-store"></i> Stock Akun
-                </a>
-                <a href="{{ route('admin.jba-game-cards') }}" class="{{ request()->routeIs('admin.jba-game-cards*') ? 'active' : '' }}">
-                    <i class="fas fa-images"></i> Gambar Card Jual Beli
+                    <i class="fas fa-list"></i> Daftar Produk
                 </a>
                 <div class="nav-section">Event</div>
                 <a href="{{ route('admin.popup-banners') }}" class="{{ request()->routeIs('admin.popup-banners*') ? 'active' : '' }}">
@@ -711,31 +710,11 @@
                 <a href="{{ route('admin.flash-deals') }}" class="{{ request()->routeIs('admin.flash-deals*') ? 'active' : '' }}">
                     <i class="fas fa-bolt"></i> Flash Deal
                 </a>
-                <a href="{{ route('admin.event-themes') }}" class="{{ request()->routeIs('admin.event-themes*') ? 'active' : '' }}">
-                    <i class="fas fa-palette"></i> Tema Event
-                </a>
                 <a href="{{ route('admin.gacha-prizes') }}" class="{{ request()->routeIs('admin.gacha-prizes*') ? 'active' : '' }}">
                     <i class="fas fa-dice"></i> Gacha Voucher
                 </a>
                 <a href="{{ route('admin.vouchers.index') }}" class="{{ request()->routeIs('admin.vouchers*') ? 'active' : '' }}">
                     <i class="fas fa-ticket"></i> Voucher
-                </a>
-
-                <div class="nav-section">Live Chat</div>
-                <a href="{{ route('admin.live-chat.dashboard') }}" class="{{ request()->routeIs('admin.live-chat.dashboard') ? 'active' : '' }}">
-                    <i class="fas fa-comments"></i> Live Chat
-                </a>
-                <a href="{{ route('admin.live-chat.conversations') }}" class="{{ request()->routeIs('admin.live-chat.conversations*') ? 'active' : '' }}">
-                    <i class="fas fa-envelope-open-text"></i> Percakapan
-                </a>
-                <a href="{{ route('admin.live-chat.channels') }}" class="{{ request()->routeIs('admin.live-chat.channels*') ? 'active' : '' }}">
-                    <i class="fas fa-satellite-dish"></i> Channel
-                </a>
-                <a href="{{ route('admin.live-chat.operators') }}" class="{{ request()->routeIs('admin.live-chat.operators*') ? 'active' : '' }}">
-                    <i class="fas fa-user-clock"></i> Admin
-                </a>
-                <a href="{{ route('admin.live-chat.admins') }}" class="{{ request()->routeIs('admin.live-chat.admins*') ? 'active' : '' }}">
-                    <i class="fas fa-user-shield"></i> Admin Chat
                 </a>
 
                 <div class="nav-section">Pengguna</div>
@@ -750,14 +729,14 @@
                 <a href="{{ route('admin.gateway-status') }}" class="{{ request()->routeIs('admin.gateway-status*') ? 'active' : '' }}">
                     <i class="fas fa-plug"></i> Status Gateway
                 </a>
-                @if(\Illuminate\Support\Facades\Route::has('admin.check-providers'))
-                    <a href="{{ route('admin.check-providers') }}" class="{{ request()->routeIs('admin.check-providers*') ? 'active' : '' }}">
-                        <i class="fas fa-user-check"></i> Provider Cek Akun
-                    </a>
-                @endif
                 <a href="{{ route('admin.settings') }}" class="{{ request()->routeIs('admin.settings*') ? 'active' : '' }}">
                     <i class="fas fa-cog"></i> Pengaturan
                 </a>
+                @if(Auth::guard('admin')->user()?->isMainAdmin())
+                <a href="{{ route('admin.two-factor.index') }}" class="{{ request()->routeIs('admin.two-factor.*') ? 'active' : '' }}">
+                    <i class="fas fa-shield-halved"></i> Keamanan Admin
+                </a>
+                @endif
             </nav>
             <div class="sidebar-footer">
                 <form method="POST" action="{{ route('admin.logout') }}">
@@ -1122,6 +1101,5 @@
 
     </script>
     @stack('scripts')
-    @include('partials.push-subscribe', ['pushGuard' => 'admin'])
 </body>
 </html>

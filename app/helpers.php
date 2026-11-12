@@ -123,10 +123,7 @@ if (! function_exists('payment_logo_asset')) {
         $code = strtolower(trim((string) $code));
         $logos = [
             'qris' => 'qris.webp',
-            'gopay' => 'gopay.webp',
             'dana' => 'dana.webp',
-            'ovo' => 'ovo.webp',
-            'linkaja' => 'LinkAja.webp',
             'bca' => 'bca.webp',
             'bca_va' => 'bca.webp',
             'bri_va' => 'bri.webp',
@@ -135,10 +132,7 @@ if (! function_exists('payment_logo_asset')) {
             'cimb_va' => 'cimb.webp',
             'mandiri' => 'mandiri.webp',
             'mandiri_va' => 'mandiri.webp',
-            'permata' => 'permata-bank.webp',
-            'permata_va' => 'permata-bank.webp',
             'alfamart' => 'alfamanrt.webp',
-            'indomaret' => 'Logo_Indomaret.webp',
         ];
 
         $filename = $logos[$code] ?? null;

@@ -3,7 +3,6 @@
 namespace App\Services;
 
 use App\Models\AccountListing;
-use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
@@ -80,38 +79,6 @@ class JbaApiClient
         }
     }
 
-    /** Simpan pengaturan tampilan melalui API key marketplace. */
-    public function updateTampilan(array $data, array $files = []): bool
-    {
-        try {
-            $request = Http::acceptJson()
-                ->withToken((string) config('services.jba_api.clients.marketplace.key'))
-                ->timeout(30);
-
-            foreach ($files as $field => $file) {
-                if ($file instanceof UploadedFile && $file->isValid()) {
-                    $request->attach($field, fopen($file->getRealPath(), 'r'), $file->getClientOriginalName());
-                }
-            }
-
-            $response = $request->post($this->endpoint('/admin/jual-beli-akun/tampilan'), $data);
-
-            if (! $response->successful()) {
-                Log::warning('JBA API tampilan update failed.', ['status' => $response->status()]);
-            }
-
-            if ($response->successful()) {
-                $this->forgetPublicCache();
-            }
-
-            return $response->successful();
-        } catch (\Throwable $e) {
-            Log::warning('JBA API tampilan update failed.', ['exception' => $e->getMessage()]);
-
-            return false;
-        }
-    }
-
     public function find(int $id): ?AccountListing
     {
         try {
@@ -169,51 +136,82 @@ class JbaApiClient
         }
     }
 
-    /** @return array{successful: bool, status: int, json: array} */
-    public function adminCreate(array $data, array $files = []): array
-    {
-        $result = $this->adminPost('/admin/jual-beli-akun', $data, $files);
-
-        if ($result['successful']) {
-            $this->forgetPublicCache();
-        }
-
-        return $result;
-    }
-
-    /** API menerima POST untuk update multipart supaya file dapat dikirim konsisten. */
-    public function adminUpdate(int $id, array $data, array $files = []): array
-    {
-        $result = $this->adminPost('/admin/jual-beli-akun/'.$id, $data, $files);
-
-        if ($result['successful']) {
-            $this->forgetPublicCache();
-        }
-
-        return $result;
-    }
-
-    /** @return array{successful: bool, status: int, json: array} */
-    public function adminDelete(int $id): array
+    public function loginCredentials(int $id): ?string
     {
         try {
-            $response = $this->adminRequest()->delete($this->endpoint('/admin/jual-beli-akun/'.$id));
+            $response = $this->adminRequest()->get($this->endpoint('/admin/jual-beli-akun/'.$id.'/credentials'));
 
-            $result = [
-                'successful' => $response->successful(),
-                'status' => $response->status(),
-                'json' => $response->json() ?: [],
-            ];
+            if (! $response->successful()) {
+                Log::warning('JBA API credentials request failed.', [
+                    'listing_id' => $id,
+                    'status' => $response->status(),
+                ]);
 
-            if ($result['successful']) {
-                $this->forgetPublicCache();
+                return null;
             }
 
-            return $result;
-        } catch (\Throwable $e) {
-            Log::warning('JBA API admin delete failed.', ['listing_id' => $id, 'exception' => $e->getMessage()]);
+            $login = trim((string) $response->json('data.account_login'));
+            $password = (string) $response->json('data.account_password');
+            $zimbraLogin = trim((string) $response->json('data.zimbra_login'));
+            $zimbraPassword = (string) $response->json('data.zimbra_password');
 
-            return ['successful' => false, 'status' => 0, 'json' => []];
+            if ($login === '' || blank($password) || $zimbraLogin === '' || blank($zimbraPassword)) {
+                return null;
+            }
+
+            return "AKUN GAME\nEmail/Username: {$login}\nPassword: {$password}"
+                ."\n\nAKUN ZIMBRA\nEmail: {$zimbraLogin}\nPassword: {$zimbraPassword}";
+        } catch (\Throwable $e) {
+            Log::warning('JBA API credentials request failed.', [
+                'listing_id' => $id,
+                'exception' => $e->getMessage(),
+            ]);
+
+            return null;
+        }
+    }
+
+    /**
+     * Klaim stok di company profile secara atomik.
+     * true = berhasil, false = sudah diklaim pesanan lain, null = koneksi gagal.
+     */
+    public function claimSold(int $id, string $orderRef): ?bool
+    {
+        try {
+            $response = $this->adminRequest()->post(
+                $this->endpoint('/admin/jual-beli-akun/'.$id.'/claim'),
+                ['order_ref' => $orderRef],
+            );
+
+            if ($response->status() === 409) {
+                return false;
+            }
+
+            if (! $response->successful()) {
+                Log::warning('JBA API stock claim failed.', [
+                    'listing_id' => $id,
+                    'status' => $response->status(),
+                ]);
+
+                return null;
+            }
+
+            if (! (bool) $response->json('claimed')) {
+                return false;
+            }
+
+            foreach (array_merge(['all'], array_keys(static::GAME_LABELS)) as $game) {
+                Cache::forget('jba_api.listings.'.$game);
+            }
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::warning('JBA API stock claim failed.', [
+                'listing_id' => $id,
+                'exception' => $e->getMessage(),
+            ]);
+
+            return null;
         }
     }
 
@@ -231,14 +229,14 @@ class JbaApiClient
 
         $listing = new AccountListing([
             'game' => (string) (static::GAME_LABELS[$data['game'] ?? ''] ?? $data['game_label'] ?? $data['game'] ?? 'Game'),
-            'product_name' => (string) ($data['record'] ?? $data['id_game'] ?? 'Akun Game'),
+            'product_name' => (string) (($data['record'] ?? null) ?: ($data['id_game'] ?? 'Akun Game')),
             'specifications' => (string) ($data['deskripsi'] ?? ''),
             'price' => $finalPrice,
             'original_price' => $originalPrice > $finalPrice ? $originalPrice : null,
             'owner_name' => $data['penjual'] ?? null,
             'whatsapp' => $data['wa_beli'] ?? null,
-            'promo_type' => ((int) ($data['diskon'] ?? 0)) > 0 ? 'diskon' : 'none',
-            'discount_percent' => (int) ($data['diskon'] ?? 0) ?: null,
+            'promo_type' => ! empty($data['diskon_aktif']) ? 'diskon' : 'none',
+            'discount_percent' => ! empty($data['diskon_aktif']) ? (int) ($data['diskon'] ?? 0) : null,
             'collector_tier' => $this->collectorTier((string) ($data['kolektor'] ?? '')),
             'deal_type' => ($data['deal_type'] ?? 'normal') === 'bandel' ? 'bundle' : 'normal',
             'is_active' => true,
@@ -248,7 +246,7 @@ class JbaApiClient
             'detail_photo_2' => $screenshots[1] ?? null,
             'detail_photo_3' => $screenshots[2] ?? null,
             'detail_photo_4' => $screenshots[3] ?? null,
-            'video_url' => $data['video'] ?? ($data['video_upload_url'] ?? null),
+            'video_url' => ($data['video'] ?? null) ?: ($data['video_upload_url'] ?? null),
         ]);
 
         $listing->setAttribute('id', (int) ($data['id'] ?? 0));
@@ -289,16 +287,6 @@ class JbaApiClient
         return rtrim((string) config('services.jba_api.base_url'), '/').'/'.ltrim($path, '/');
     }
 
-    private function forgetPublicCache(): void
-    {
-        Cache::forget('jba_api.tampilan');
-        Cache::forget('jba_api.listings.all');
-
-        foreach (array_keys(static::GAME_LABELS) as $game) {
-            Cache::forget('jba_api.listings.'.$game);
-        }
-    }
-
     private function adminRequest()
     {
         return Http::acceptJson()
@@ -306,31 +294,4 @@ class JbaApiClient
             ->timeout(30);
     }
 
-    /** @return array{successful: bool, status: int, json: array} */
-    private function adminPost(string $path, array $data, array $files): array
-    {
-        try {
-            $request = $this->adminRequest();
-
-            foreach ($files as $field => $file) {
-                foreach (is_array($file) ? $file : [$file] as $uploadedFile) {
-                    if ($uploadedFile instanceof UploadedFile && $uploadedFile->isValid()) {
-                        $request->attach($field, fopen($uploadedFile->getRealPath(), 'r'), $uploadedFile->getClientOriginalName());
-                    }
-                }
-            }
-
-            $response = $request->post($this->endpoint($path), $data);
-
-            return [
-                'successful' => $response->successful(),
-                'status' => $response->status(),
-                'json' => $response->json() ?: [],
-            ];
-        } catch (\Throwable $e) {
-            Log::warning('JBA API admin write failed.', ['path' => $path, 'exception' => $e->getMessage()]);
-
-            return ['successful' => false, 'status' => 0, 'json' => []];
-        }
-    }
 }

@@ -6,6 +6,7 @@ use App\Mail\AccountEmailTestMail;
 use App\Models\AccountListing;
 use App\Models\AccountOrder;
 use App\Models\Brand;
+use App\Models\Checkout;
 use App\Models\ContactInquiry;
 use App\Models\FlashDeal;
 use App\Models\FlashSaleBanner;
@@ -15,11 +16,9 @@ use App\Models\Product;
 use App\Models\Review;
 use App\Models\SiteSetting;
 use App\Services\GameAccountService;
-use App\Services\DokuService;
 use App\Services\JbaApiClient;
 use App\Services\ArticleApiClient;
 use App\Services\PaymentGatewayService;
-use App\Services\XenditService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -31,6 +30,8 @@ use Illuminate\Validation\ValidationException;
 
 class HomeController extends Controller
 {
+    private const EMAIL_CONFIRMATION_COOLDOWN_SECONDS = 60;
+
     private const JBA_GAME_SLUGS = [
         'mlbb' => 'Mobile Legends',
         'pubg' => 'PUBG Mobile',
@@ -53,8 +54,12 @@ class HomeController extends Controller
 
     private static function jbaPageData(?string $activeGame = null): array
     {
-        $listings = app(JbaApiClient::class)
-            ->listings($activeGame)
+        $sourceListings = app(JbaApiClient::class)->listings();
+        if ($activeGame) {
+            $sourceListings = $sourceListings->where('game', $activeGame)->values();
+        }
+
+        $listings = $sourceListings
             ->sortBy(fn (AccountListing $listing) => sprintf(
                 '%d|%s|%s',
                 $listing->is_sold ? 1 : 0,
@@ -71,6 +76,8 @@ class HomeController extends Controller
             ? ($listings->get($activeGame) ?? collect())
             : $listings->flatMap(fn ($items) => $items->take(4));
         $serverTotal = $serverSource->count();
+        $serverAvailable = $serverSource->where('is_sold', false)->count();
+        $serverSold = $serverSource->where('is_sold', true)->count();
         $serverListings = $serverSource->take(12)->values();
         $clientListings = $activeGame
             ? $listings->map(fn ($gameListings) => $gameListings->map(fn (AccountListing $listing) => [
@@ -160,6 +167,7 @@ class HomeController extends Controller
                     'slug' => $slug,
                     'name' => $name,
                     'count' => $listings->get($name)?->where('is_sold', false)->count() ?? 0,
+                    'sold_count' => $listings->get($name)?->where('is_sold', true)->count() ?? 0,
                     'thumbnail_url' => $tampilan['thumbnail_url'] ?? $brand?->jba_card_image_url,
                     'urutan' => (int) ($tampilan['urutan'] ?? 999),
                 ];
@@ -191,7 +199,7 @@ class HomeController extends Controller
         $jbaRating = collect($jbaTestis)->filter(fn ($t) => ($t['layanan'] ?? '') === 'jual-beli-akun')->avg('rating');
         $jbaRating = $jbaRating ? round((float) $jbaRating, 1) : 4.9;
 
-        return compact('jbaGames', 'listings', 'clientListings', 'testimonials', 'flashSaleBanners', 'budgetBanners', 'gameSlugs', 'gameBanners', 'gameBackgrounds', 'jbaRating', 'serverListings', 'serverTotal');
+        return compact('jbaGames', 'listings', 'clientListings', 'testimonials', 'flashSaleBanners', 'budgetBanners', 'gameSlugs', 'gameBanners', 'gameBackgrounds', 'jbaRating', 'serverListings', 'serverTotal', 'serverAvailable', 'serverSold');
     }
 
     public function index()
@@ -201,15 +209,20 @@ class HomeController extends Controller
         }
 
         $brands = $this->activeGameBrandsQuery()
-            // Prioritaskan game yang ditandai populer dan sudah memiliki artwork.
-            // Urutan berikutnya tetap memberi keunggulan pada game populer, lalu game
-            // dengan thumbnail, sebelum memakai urutan manual dari admin.
+            // Urutan teratas dipertahankan untuk best seller utama. Setelah itu,
+            // game dengan artwork karakter ditampilkan sebelum game lainnya.
             ->orderByRaw("CASE
-                WHEN LOWER(name) IN ('pubg', 'pubg mobile') THEN -1
-                WHEN is_topup_popular = 1 AND COALESCE(thumbnail, '') <> '' THEN 0
-                WHEN is_topup_popular = 1 THEN 1
-                WHEN COALESCE(thumbnail, '') <> '' THEN 2
-                ELSE 3
+                WHEN LOWER(name) IN ('pubg', 'pubg mobile') THEN 0
+                WHEN LOWER(name) LIKE 'mobile legends%' THEN 1
+                WHEN LOWER(name) LIKE 'magic chess%' THEN 2
+                WHEN LOWER(name) LIKE 'valorant%' THEN 3
+                WHEN LOWER(name) LIKE 'mobile legends adventure%' THEN 4
+                WHEN LOWER(name) = 'call of duty mobile' THEN 5
+                WHEN COALESCE(topup_character_image, '') <> '' THEN 6
+                WHEN is_topup_popular = 1 AND COALESCE(thumbnail, '') <> '' THEN 7
+                WHEN is_topup_popular = 1 THEN 8
+                WHEN COALESCE(thumbnail, '') <> '' THEN 9
+                ELSE 10
             END")
             ->orderBy('sort_order')
             ->orderBy('name')
@@ -516,19 +529,73 @@ class HomeController extends Controller
             ->orderByDesc('created_at')
             ->get();
 
-        if ($orders->isEmpty()) {
+        $accountOrders = AccountOrder::query()
+            ->with('listing:id,product_name,game')
+            ->where(function ($query) use ($q) {
+                $query->where('order_ref', $q)
+                    ->orWhere('customer_email', $q)
+                    ->orWhere('gateway_invoice_id', $q)
+                    ->orWhereHas('user', fn ($uq) => $uq->where('email', $q));
+            })
+            ->orderByDesc('created_at')
+            ->get();
+
+        $checkouts = Checkout::query()
+            ->where(function ($query) use ($q) {
+                $query->where('checkout_ref', $q)
+                    ->orWhere('gateway_invoice_id', $q);
+            })
+            ->orderByDesc('created_at')
+            ->get();
+
+        if ($orders->isEmpty() && $accountOrders->isEmpty() && $checkouts->isEmpty()) {
             return response()->json(['message' => 'Transaksi tidak ditemukan'], 404);
         }
 
+        $topupTransactions = $orders->map(fn ($order) => [
+            'type' => $order->service_type === 'joki' ? 'joki' : 'topup',
+            'order_id' => $order->order_id,
+            'product_name' => $order->product_name,
+            'customer_number' => $order->customer_number,
+            'price' => (float) $order->price,
+            'status' => $order->status,
+            'processed_at' => $order->updated_at?->format('d M Y H:i'),
+            'timestamp' => $order->created_at?->getTimestamp() ?? 0,
+        ]);
+
+        $accountTransactions = $accountOrders->map(fn ($order) => [
+            'type' => 'account',
+            'order_id' => $order->order_ref,
+            'product_name' => $order->listing?->product_name ?: 'Stock Akun',
+            'customer_number' => null,
+            'price' => (float) $order->total_price,
+            'status' => $order->status,
+            'processed_at' => $order->updated_at?->format('d M Y H:i'),
+            'timestamp' => $order->created_at?->getTimestamp() ?? 0,
+        ]);
+
+        $checkoutTransactions = $checkouts->map(fn ($checkout) => [
+            'type' => 'checkout',
+            'order_id' => $checkout->checkout_ref,
+            'product_name' => $checkout->item_count.' item dalam keranjang',
+            'customer_number' => null,
+            'price' => (float) $checkout->total,
+            'status' => $checkout->status,
+            'processed_at' => $checkout->updated_at?->format('d M Y H:i'),
+            'timestamp' => $checkout->created_at?->getTimestamp() ?? 0,
+        ]);
+
         return response()->json([
-            'transactions' => $orders->map(fn ($o) => [
-                'order_id' => $o->order_id,
-                'product_name' => $o->product_name,
-                'customer_number' => $o->customer_number,
-                'price' => (float) $o->price,
-                'status' => $o->status,
-                'processed_at' => $o->updated_at?->format('d M Y H:i'),
-            ])->values(),
+            'transactions' => $topupTransactions
+                ->concat($accountTransactions)
+                ->concat($checkoutTransactions)
+                ->sortByDesc('timestamp')
+                ->map(function (array $transaction) {
+                    unset($transaction['timestamp']);
+
+                    return $transaction;
+                })
+                ->values(),
         ]);
     }
 
@@ -546,7 +613,7 @@ class HomeController extends Controller
                 'product' => $order->product_name,
                 'game' => $order->brand,
                 'phone' => $order->customer_phone
-                    ? static::maskPublicTransactionReference($order->customer_phone, '-')
+                    ? static::maskPublicPhone($order->customer_phone)
                     : '—',
                 'total' => (float) $order->price,
                 'status' => $order->status,
@@ -568,7 +635,7 @@ class HomeController extends Controller
                 'product' => $order->listing?->product_name ?: 'Stock Akun',
                 'game' => $order->listing?->game ?: 'Stock Akun',
                 'phone' => $order->customer_phone
-                    ? static::maskPublicTransactionReference($order->customer_phone, '-')
+                    ? static::maskPublicPhone($order->customer_phone)
                     : '—',
                 'total' => (float) $order->total_price,
                 'status' => $order->status,
@@ -596,6 +663,17 @@ class HomeController extends Controller
         }
 
         return mb_substr($value, 0, 5).'••••'.mb_substr($value, -3);
+    }
+
+    private static function maskPublicPhone(?string $phone): string
+    {
+        $digits = preg_replace('/\D+/', '', (string) $phone);
+
+        if ($digits === '') {
+            return '—';
+        }
+
+        return str_repeat('•', max(4, strlen($digits) - 2)).substr($digits, -2);
     }
 
     public function leaderboard(Request $request)
@@ -841,7 +919,7 @@ class HomeController extends Controller
         return view('pages.jual-beli-akun-detail', compact('listing', 'related', 'gameSlug'));
     }
 
-    public function jualBeliAkunCheckout(int $listing)
+    public function jualBeliAkunCheckout(Request $request, int $listing)
     {
         $listing = app(JbaApiClient::class)->find($listing);
         abort_unless($listing, 404);
@@ -857,8 +935,20 @@ class HomeController extends Controller
         $gatewayName = app(PaymentGatewayService::class)->providerLabel();
 
         $pointBalance = auth()->check() ? app(\App\Services\BalanceService::class)->balanceFor(auth()->id()) : 0;
+        $emailConfirmation = (array) $request->session()->get('jba_email_confirmation', []);
+        $emailCodeRetryAfter = isset($emailConfirmation['sent_at'])
+            ? max(0, self::EMAIL_CONFIRMATION_COOLDOWN_SECONDS - (now()->timestamp - (int) $emailConfirmation['sent_at']))
+            : 0;
+        $emailConfirmationPending = isset($emailConfirmation['email'], $emailConfirmation['code_hash'], $emailConfirmation['expires_at'])
+            && (int) $emailConfirmation['expires_at'] >= now()->timestamp;
+        $emailConfirmationEmail = $emailConfirmationPending ? (string) $emailConfirmation['email'] : null;
+        $oldConfirmationCode = (string) $request->old('email_confirmation_code', '');
+        $emailCodeVerified = $emailConfirmationPending
+            && isset($emailConfirmation['verified_at'])
+            && preg_match('/^\d{6}$/', $oldConfirmationCode) === 1
+            && hash_equals((string) $emailConfirmation['code_hash'], hash('sha256', $oldConfirmationCode));
 
-        return view('pages.jual-beli-akun-checkout', compact('listing', 'paymentMethods', 'gatewayName', 'pointBalance'));
+        return view('pages.jual-beli-akun-checkout', compact('listing', 'paymentMethods', 'gatewayName', 'pointBalance', 'emailCodeRetryAfter', 'emailConfirmationPending', 'emailConfirmationEmail', 'emailCodeVerified'));
     }
 
     public function jualBeliAkunEmailTest(Request $request)
@@ -867,30 +957,79 @@ class HomeController extends Controller
             'email' => ['required', 'email:rfc', 'max:255'],
         ]);
         $email = mb_strtolower(trim($validated['email']));
-        $token = Str::random(48);
+        $existingConfirmation = (array) $request->session()->get('jba_email_confirmation', []);
+        $retryAfter = isset($existingConfirmation['sent_at'])
+            ? max(0, self::EMAIL_CONFIRMATION_COOLDOWN_SECONDS - (now()->timestamp - (int) $existingConfirmation['sent_at']))
+            : 0;
+
+        if ($retryAfter > 0) {
+            return response()->json([
+                'message' => "Kode baru dapat dikirim dalam {$retryAfter} detik.",
+                'retry_after' => $retryAfter,
+            ], 429);
+        }
+
+        $confirmationCode = (string) random_int(100000, 999999);
 
         try {
-            Mail::to($email)->send(new AccountEmailTestMail($email, business_info()));
+            Mail::to($email)->send(new AccountEmailTestMail($email, $confirmationCode, business_info()));
         } catch (\Throwable $exception) {
-            Log::error('Email tes pemesanan akun gagal dikirim', [
+            Log::error('Kode konfirmasi pembelian akun gagal dikirim', [
                 'recipient' => $email,
                 'error' => $exception->getMessage(),
             ]);
 
             return response()->json([
-                'message' => 'Email tes gagal dikirim. Periksa alamat email atau coba lagi.',
+                'message' => 'Kode konfirmasi gagal dikirim. Periksa alamat email atau coba lagi.',
             ], 422);
         }
 
-        $request->session()->put('jba_email_test', [
+        $request->session()->put('jba_email_confirmation', [
             'email' => $email,
-            'token_hash' => hash('sha256', $token),
+            'code_hash' => hash('sha256', $confirmationCode),
             'expires_at' => now()->addMinutes(15)->timestamp,
+            'sent_at' => now()->timestamp,
+            'verify_attempts' => 0,
         ]);
 
         return response()->json([
-            'message' => 'Email tes sudah dikirim. Periksa inbox atau folder spam.',
-            'token' => $token,
+            'message' => 'Kode konfirmasi sudah dikirim. Periksa inbox atau folder spam.',
+            'retry_after' => self::EMAIL_CONFIRMATION_COOLDOWN_SECONDS,
+        ]);
+    }
+
+    public function jualBeliAkunEmailConfirmationVerify(Request $request)
+    {
+        $validated = $request->validate([
+            'email' => ['required', 'email:rfc', 'max:255'],
+            'code' => ['required', 'string', 'regex:/^\d{6}$/'],
+        ]);
+        $emailConfirmation = (array) $request->session()->get('jba_email_confirmation', []);
+        $attempts = (int) ($emailConfirmation['verify_attempts'] ?? 0);
+
+        if ($attempts >= 5) {
+            return response()->json([
+                'message' => 'Kode sudah terlalu sering salah. Kirim kode konfirmasi baru.',
+            ], 422);
+        }
+
+        $valid = isset($emailConfirmation['email'], $emailConfirmation['code_hash'], $emailConfirmation['expires_at'])
+            && (int) $emailConfirmation['expires_at'] >= now()->timestamp
+            && hash_equals((string) $emailConfirmation['email'], mb_strtolower(trim($validated['email'])))
+            && hash_equals((string) $emailConfirmation['code_hash'], hash('sha256', $validated['code']));
+
+        if (! $valid) {
+            $request->session()->put('jba_email_confirmation.verify_attempts', $attempts + 1);
+
+            return response()->json([
+                'message' => 'Kode konfirmasi salah, kedaluwarsa, atau tidak sesuai dengan email.',
+            ], 422);
+        }
+
+        $request->session()->put('jba_email_confirmation.verified_at', now()->timestamp);
+
+        return response()->json([
+            'message' => 'Kode benar. Email berhasil dikonfirmasi.',
         ]);
     }
 
@@ -910,33 +1049,32 @@ class HomeController extends Controller
         $validated = $request->validate([
             'customer_name' => 'required|string|max:255',
             'customer_email' => 'required|email|max:255',
-            'email_test_token' => 'required|string|size:48',
-            'email_test_confirmed' => 'accepted',
+            'email_confirmation_code' => ['required', 'string', 'regex:/^\d{6}$/'],
             'customer_phone' => 'required|string|max:20',
             'payment_method' => ['required', 'string', \Illuminate\Validation\Rule::in($availableCodes)],
             'notes' => 'nullable|string|max:1000',
             'use_points' => 'nullable|boolean',
             'points_amount' => 'exclude_unless:use_points,1|required|integer|min:1',
+        ], [
+            'payment_method.required' => 'Pilih metode pembayaran terlebih dahulu.',
+            'payment_method.in' => 'Metode pembayaran yang dipilih tidak tersedia.',
         ]);
 
-        $emailTest = (array) $request->session()->get('jba_email_test', []);
-        $emailTestValid = isset($emailTest['email'], $emailTest['token_hash'], $emailTest['expires_at'])
-            && (int) $emailTest['expires_at'] >= now()->timestamp
-            && hash_equals((string) $emailTest['email'], mb_strtolower(trim($validated['customer_email'])))
-            && hash_equals((string) $emailTest['token_hash'], hash('sha256', $validated['email_test_token']));
+        $emailConfirmation = (array) $request->session()->get('jba_email_confirmation', []);
+        $emailConfirmationValid = isset($emailConfirmation['email'], $emailConfirmation['code_hash'], $emailConfirmation['expires_at'], $emailConfirmation['verified_at'])
+            && (int) $emailConfirmation['expires_at'] >= now()->timestamp
+            && hash_equals((string) $emailConfirmation['email'], mb_strtolower(trim($validated['customer_email'])))
+            && hash_equals((string) $emailConfirmation['code_hash'], hash('sha256', $validated['email_confirmation_code']));
 
-        if (! $emailTestValid) {
+        if (! $emailConfirmationValid) {
             throw ValidationException::withMessages([
-                'customer_email' => 'Kirim ulang email tes dan konfirmasi bahwa email sudah diterima.',
+                'email_confirmation_code' => 'Kode konfirmasi salah, kedaluwarsa, atau tidak sesuai dengan email.',
             ]);
         }
 
-        $credentialListing = AccountListing::query()
-            ->where('source', 'jba_api')
-            ->where('source_id', (string) $listing->id)
-            ->first();
+        $loginCredentials = app(JbaApiClient::class)->loginCredentials((int) $listing->id);
 
-        if (! $credentialListing || trim((string) $credentialListing->login_credentials) === '') {
+        if (blank($loginCredentials)) {
             return back()
                 ->with('error', 'Produk belum siap dikirim otomatis. Silakan hubungi CS Johen.')
                 ->withInput();
@@ -948,7 +1086,7 @@ class HomeController extends Controller
             : 0;
         $isSimulation = (bool) config('services.payment.simulation');
         $method = strtolower(trim((string) $validated['payment_method']));
-        $orderListing = $this->storeJbaApiOrderSnapshot($listing);
+        $orderListing = $this->storeJbaApiOrderSnapshot($listing, $loginCredentials);
 
         $order = AccountOrder::create([
             'account_listing_id' => $orderListing->id,
@@ -984,7 +1122,7 @@ class HomeController extends Controller
 
             if (! $charged) {
                 $message = $gateway->lastChargeError()
-                    ?: 'Halaman pembayaran Midtrans gagal dibuat. Silakan coba lagi.';
+                    ?: 'Halaman pembayaran Ayolinx gagal dibuat. Silakan coba lagi.';
 
                 app(\App\Services\BalanceService::class)->restorePoints($order, 'Pembuatan pembayaran gagal; Johen Point dikembalikan');
                 $order->delete();
@@ -1000,13 +1138,13 @@ class HomeController extends Controller
             static::settleAccountOrder($order);
         }
 
-        $request->session()->forget('jba_email_test');
+        $request->session()->forget('jba_email_confirmation');
 
         return redirect()->route('jual-beli-akun.payment', $order)
             ->with('success', 'Pesanan berhasil dibuat! Silakan lakukan pembayaran.');
     }
 
-    private function storeJbaApiOrderSnapshot(AccountListing $listing): AccountListing
+    private function storeJbaApiOrderSnapshot(AccountListing $listing, string $loginCredentials): AccountListing
     {
         return AccountListing::updateOrCreate([
             'source' => 'jba_api',
@@ -1020,6 +1158,7 @@ class HomeController extends Controller
             'original_price' => $listing->original_price,
             'owner_name' => $listing->owner_name,
             'whatsapp' => $listing->whatsapp,
+            'login_credentials' => $loginCredentials,
             'promo_type' => $listing->promo_type,
             'discount_percent' => $listing->discount_percent,
             'collector_tier' => $listing->collector_tier,
@@ -1044,20 +1183,7 @@ class HomeController extends Controller
         }
 
         $isSimulation = (bool) config('services.payment.simulation');
-        $gatewayType = $accountOrder->gateway_type ?: 'qris';
-        // QRIS dinamis (Xendit) dianggap aktif bila qr_string terisi
-        // → nominal otomatis saat scan. Selain itu pakai QRIS statis (gambar QR milik toko).
-        $isDynamic = ! empty($accountOrder->qr_string);
-        $qrString = $accountOrder->qr_string;
-        // QRIS statis (gambar QR milik toko) sebagai fallback.
-        $qrisImage = (string) SiteSetting::get('qris_image', '');
-
-        $vaNumber = $accountOrder->va_number;
-        $paymentCode = $accountOrder->payment_code;
-        $checkoutUrl = $accountOrder->checkout_url;
         $invoiceUrl = $accountOrder->gateway_invoice_url;
-        $gatewayExtra = $accountOrder->gateway_extra ?: [];
-        $gatewayName = app(PaymentGatewayService::class)->providerLabel();
 
         // Label & logo metode dari tabel payment_methods (map code → nama).
         $paymentMethod = PaymentMethod::where('code', strtolower((string) $accountOrder->payment_method))->first();
@@ -1070,9 +1196,38 @@ class HomeController extends Controller
             : mb_strtolower(trim($accountOrder->customer_email)) === mb_strtolower(trim($reviewUser->email)));
 
         return view('pages.jual-beli-akun-payment', compact(
-            'accountOrder', 'listing', 'isSimulation', 'isDynamic', 'qrString', 'qrisImage',
-            'gatewayType', 'vaNumber', 'paymentCode', 'checkoutUrl', 'invoiceUrl', 'gatewayExtra', 'paymentMethod', 'gatewayName', 'hasReviewed', 'canReview'
+            'accountOrder', 'listing', 'isSimulation', 'invoiceUrl', 'paymentMethod', 'hasReviewed', 'canReview'
         ));
+    }
+
+    public function jualBeliAkunSimulatePayment(AccountOrder $accountOrder)
+    {
+        abort_unless((bool) config('services.payment.simulation'), 404);
+
+        if (! in_array($accountOrder->status, ['pending', 'processing'], true)) {
+            return redirect()->route('jual-beli-akun.payment', $accountOrder);
+        }
+
+        $gatewayExtra = (array) $accountOrder->gateway_extra;
+        $gatewayExtra['payment_status'] = 'SUCCESS';
+        $gatewayExtra['simulation'] = true;
+        $gatewayExtra['paid_at'] = now()->toIso8601String();
+
+        $accountOrder->update([
+            'status' => 'processing',
+            'gateway_extra' => $gatewayExtra,
+        ]);
+
+        $delivered = static::settleAccountOrder($accountOrder->fresh());
+        $accountOrder->refresh();
+
+        if ($delivered) {
+            return redirect()->route('jual-beli-akun.payment', $accountOrder)
+                ->with('success', 'Pembayaran simulasi berhasil. Data login akun sedang dikirim ke email.');
+        }
+
+        return redirect()->route('jual-beli-akun.payment', $accountOrder)
+            ->with('error', $accountOrder->credentials_email_error ?: 'Pembayaran diterima dan pesanan sedang diproses.');
     }
 
     /**
@@ -1088,104 +1243,17 @@ class HomeController extends Controller
         }
 
         if ($accountOrder->status === 'pending') {
-            app(\App\Services\MidtransPaymentService::class)->sync($accountOrder);
+            app(\App\Services\AyolinxPaymentService::class)->sync($accountOrder);
             $accountOrder->refresh();
         }
 
         return response()->json([
             'status' => $accountOrder->status,
             'payment_status' => data_get($accountOrder->gateway_extra, 'payment_status', 'PENDING'),
+            'message' => $accountOrder->status === 'sold_out'
+                ? 'Maaf, akun ini lebih dahulu dibayar oleh pembeli lain dan sudah terjual.'
+                : null,
         ])->header('Cache-Control', 'no-store, private');
-    }
-
-    public function jualBeliAkunPaymentStatusLegacy(AccountOrder $accountOrder)
-    {
-        if ($accountOrder->status === 'processing' && ! $accountOrder->credentials_email_sent_at) {
-            app(\App\Services\AccountDeliveryService::class)->deliver($accountOrder);
-            $accountOrder->refresh();
-        }
-
-        if (data_get($accountOrder->gateway_extra, 'integration') === 'direct'
-            && data_get($accountOrder->gateway_extra, 'provider') === 'doku') {
-            app(\App\Services\DokuPaymentSyncService::class)->sync($accountOrder);
-
-            return response()->json([
-                'status' => $accountOrder->status,
-                'payment_status' => data_get($accountOrder->gateway_extra, 'payment_status', 'PENDING'),
-            ])->header('Cache-Control', 'no-store, private');
-        }
-
-        if ($accountOrder->status === 'pending'
-            && ! empty($accountOrder->gateway_invoice_id)
-            && app(PaymentGatewayService::class)->isConfigured()) {
-            $type = $accountOrder->gateway_type ?: 'qris';
-            $paid = false;
-            $failed = null;
-
-            if ($type === 'doku_checkout') {
-                $extra = (array) $accountOrder->gateway_extra;
-                $invoiceNumber = (string) ($extra['invoice_number'] ?? $accountOrder->order_ref);
-                $data = app(DokuService::class)->checkStatus($invoiceNumber);
-                $status = strtoupper((string) data_get($data, 'transaction.status', ''));
-                $paid = $status === 'SUCCESS';
-                // FAILED bukan final untuk DOKU Checkout; user masih dapat
-                // mencoba kanal pembayaran lain pada URL yang sama.
-                $failed = $status === 'EXPIRED' ? 'failed' : null;
-            } else {
-                $xendit = app(XenditService::class);
-
-                if ($type === 'qris' || ! empty($accountOrder->qr_string)) {
-                    $qr = $xendit->getQr($accountOrder->gateway_invoice_id);
-
-                    if ($qr && ! empty($qr['status'])) {
-                        $status = strtoupper($qr['status']);
-                        $paid = in_array($status, ['INACTIVE', 'COMPLETED'], true);
-                        $failed = in_array($status, ['FAILED', 'EXPIRED'], true) ? 'failed' : null;
-                    }
-                } elseif ($type === 'va') {
-                    $va = $xendit->getVirtualAccount($accountOrder->gateway_invoice_id);
-
-                    if ($va && ! empty($va['status'])) {
-                        $status = strtoupper($va['status']);
-                        $paid = $status === 'INACTIVE';
-                        $failed = in_array($status, ['FAILED', 'EXPIRED'], true) ? 'failed' : null;
-                    }
-                } elseif ($type === 'retail') {
-                    $retail = $xendit->getRetailOutlet($accountOrder->gateway_invoice_id);
-
-                    if ($retail && ! empty($retail['status'])) {
-                        $status = strtoupper($retail['status']);
-                        $paid = $status === 'INACTIVE';
-                        $failed = in_array($status, ['FAILED', 'EXPIRED'], true) ? 'failed' : null;
-                    }
-                } elseif ($type === 'ewallet') {
-                    $charge = $xendit->getEwalletCharge($accountOrder->gateway_invoice_id);
-
-                    if ($charge && ! empty($charge['status'])) {
-                        $status = strtoupper($charge['status']);
-                        $paid = in_array($status, ['SUCCEEDED', 'COMPLETED', 'CAPTURED'], true);
-                        $failed = in_array($status, ['FAILED', 'EXPIRED', 'CANCELLED'], true) ? 'failed' : null;
-                    }
-                } else {
-                    $invoice = $xendit->getInvoice($accountOrder->gateway_invoice_id);
-
-                    if ($invoice && ! empty($invoice['status'])) {
-                        $status = strtoupper($invoice['status']);
-                        $paid = in_array($status, ['PAID', 'SETTLED'], true);
-                        $failed = $status === 'EXPIRED' ? 'failed' : null;
-                    }
-                }
-            }
-
-            if ($paid) {
-                static::settleAccountOrder($accountOrder);
-            } elseif ($failed) {
-                $accountOrder->update(['status' => $failed]);
-                app(\App\Services\BalanceService::class)->restorePoints($accountOrder, 'Pembayaran gagal; Johen Point dikembalikan');
-            }
-        }
-
-        return response()->json(['status' => $accountOrder->status]);
     }
 
     /**

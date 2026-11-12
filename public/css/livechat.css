@@ -1841,8 +1841,19 @@
     height: min(760px, calc(100dvh - var(--mobile-nav-height, 68px) - 24px));
     max-height: calc(100dvh - var(--mobile-nav-height, 68px) - 24px);
   }
-  body:has(.gd-mobile-bar) .lc-fab { bottom: calc(var(--mobile-nav-height, 68px) + 82px); }
-  body:has(.gd-mobile-bar) .lc-fab-greeting { bottom: calc(var(--mobile-nav-height, 68px) + 94px); }
+  body:has(.gd-mobile-bar) .lc-fab,
+  body:has(.joki-mobile-summary) .lc-fab { bottom: calc(var(--mobile-nav-height, 68px) + 82px); }
+  body:has(.gd-mobile-bar) .lc-fab-greeting,
+  body:has(.joki-mobile-summary) .lc-fab-greeting { bottom: calc(var(--mobile-nav-height, 68px) + 94px); }
   body:has(.mobile-menu.open) .lc-fab,
   body:has(.mobile-menu.open) .lc-fab-greeting { visibility: hidden; }
+}
+
+@media (max-width: 1024px) {
+  body.joki-payment-page .lc-fab {
+    bottom: calc(var(--mobile-nav-height, 68px) + 82px) !important;
+  }
+  body.joki-payment-page .lc-fab-greeting {
+    bottom: calc(var(--mobile-nav-height, 68px) + 94px) !important;
+  }
 }

@@ -80,6 +80,7 @@
                     'convenience_store' => 'Convenience Store',
                 ];
                 $groupedPay = $paymentMethods->groupBy('category');
+                $defaultPayment = $paymentMethods->firstWhere('code', 'qris')?->code ?? $paymentMethods->first()?->code;
             @endphp
             @foreach($categories as $catKey => $catLabel)
                 @php $catMethods = $groupedPay->get($catKey, collect()); @endphp
@@ -90,7 +91,7 @@
                         @foreach($catMethods as $pm)
                         <label class="flex items-center gap-3 p-3 rounded-lg border border-gray-700 bg-gray-700/40 cursor-pointer hover:border-purple-500 transition payment-method-option" data-provider="{{ $pm->gateway_provider }}" data-gateway-code="{{ $pm->gateway_code }}">
                             <input type="radio" name="payment_method" value="{{ $pm->code }}"
-                                   @if(old('payment_method', $paymentMethods->first()?->code) === $pm->code) checked @endif
+                                   @if(old('payment_method', $defaultPayment) === $pm->code) checked @endif required
                                    class="accent-purple-500">
                             @if(payment_logo_asset($pm->code))
                                 <img src="{{ payment_logo_asset($pm->code) }}" alt="{{ $pm->name }}" class="h-7 object-contain">

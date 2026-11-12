@@ -11,8 +11,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
-#[Fillable(['name', 'username', 'email', 'password', 'is_admin', 'is_live_chat_admin', 'is_live_chat_cs', 'google_id', 'avatar'])]
-#[Hidden(['password', 'remember_token'])]
+#[Fillable(['name', 'username', 'email', 'password', 'is_admin', 'google_id', 'avatar'])]
+#[Hidden(['password', 'remember_token', 'two_factor_secret'])]
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
@@ -24,8 +24,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
-            'is_live_chat_admin' => 'boolean',
-            'is_live_chat_cs' => 'boolean',
+            'two_factor_secret' => 'encrypted',
+            'two_factor_confirmed_at' => 'datetime',
         ];
     }
 
@@ -49,52 +49,17 @@ class User extends Authenticatable
         return (bool) $this->is_admin;
     }
 
-    public function isLiveChatAdmin(): bool
+    public function isMainAdmin(): bool
     {
-        return (bool) ($this->is_live_chat_admin && ! $this->is_admin);
+        return $this->isAdmin()
+            && hash_equals((string) config('admin.main_username'), (string) $this->username);
     }
 
-    public function isLiveChatCs(): bool
+    public function hasTwoFactorAuthentication(): bool
     {
-        return (bool) ($this->is_live_chat_cs && ! $this->is_admin);
+        return $this->isAdmin()
+            && filled($this->two_factor_secret)
+            && $this->two_factor_confirmed_at !== null;
     }
 
-    public function isSuperAdmin(): bool
-    {
-        return (bool) $this->is_admin;
-    }
-
-    public function liveChatConversations(): HasMany
-    {
-        return $this->hasMany(LiveChatConversation::class, 'user_id');
-    }
-
-    public function liveChatMessages(): HasMany
-    {
-        return $this->hasMany(LiveChatMessage::class, 'sender_id');
-    }
-
-    public function assignedOperators(): HasMany
-    {
-        return $this->hasMany(LiveChatOperator::class, 'user_id');
-    }
-
-    public function assignedChannels()
-    {
-        return $this->belongsToMany(LiveChatChannel::class, 'live_chat_operators', 'user_id', 'channel_id');
-    }
-
-    public function liveChatAdmin()
-    {
-        return $this->hasOne(LiveChatAdmin::class, 'user_id');
-    }
-
-    public function getAssignedChannelNames(): string
-    {
-        if ($this->is_admin) {
-            return 'Semua Channel';
-        }
-
-        return $this->assignedChannels()->pluck('name')->implode(', ') ?: 'Belum ditugaskan';
-    }
 }

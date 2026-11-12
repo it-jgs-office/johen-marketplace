@@ -28,9 +28,9 @@
 
 <script>
 window.LIVECHAT_USER = @json(auth('web')->check() ? ['id' => auth('web')->id(), 'name' => auth('web')->user()->name] : null);
-window.LIVECHAT_CS_SLUG = '{{ \App\Models\LiveChatChannel::CS_SLUG }}';
+window.LIVECHAT_CS_SLUG = 'johen-cs';
 </script>
-<script src="{{ pwa_asset('js/livechat.js') }}"></script>
+<script src="{{ pwa_asset('js/livechat.js') }}&amp;f={{ filemtime(public_path('js/livechat.js')) }}"></script>
 
 <script>
 (function() {

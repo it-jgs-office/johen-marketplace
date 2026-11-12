@@ -9,40 +9,9 @@ use App\Models\PushSubscription;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Schema;
 
 class PushSubscriptionController extends Controller
 {
-    public function subscribe(Request $request, string $guard): JsonResponse
-    {
-        $userId = Auth::guard('admin')->id();
-        if (! $userId) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-
-        if (! in_array($guard, ['admin', 'lcadmin', 'csadmin'], true)) {
-            return response()->json(['error' => 'Invalid guard'], 422);
-        }
-
-        return $this->storeSubscription($request, $userId, $guard);
-    }
-
-    public function unsubscribe(Request $request, string $guard): JsonResponse
-    {
-        $userId = Auth::guard('admin')->id();
-
-        if ($userId) {
-            $endpoint = $request->input('endpoint');
-            PushSubscription::query()
-                ->where('user_id', $userId)
-                ->where('guard', $guard)
-                ->when($endpoint, fn ($q) => $q->where('endpoint', $endpoint))
-                ->delete();
-        }
-
-        return response()->json(['ok' => true]);
-    }
-
     protected function storeSubscription(Request $request, $userId, string $guard): JsonResponse
     {
         $valid = $request->validate([
@@ -76,25 +45,6 @@ class PushSubscriptionController extends Controller
             ->delete();
 
         return response()->json(['ok' => true]);
-    }
-
-    public function status(Request $request, string $guard): JsonResponse
-    {
-        $userId = Auth::guard('admin')->id();
-        if (! $userId) {
-            return response()->json(['error' => 'Unauthorized'], 401);
-        }
-
-        if (! in_array($guard, ['admin', 'lcadmin', 'csadmin'], true)) {
-            return response()->json(['error' => 'Invalid guard'], 422);
-        }
-
-        $count = PushSubscription::query()
-            ->where('user_id', $userId)
-            ->where('guard', $guard)
-            ->count();
-
-        return response()->json(['ok' => true, 'registered' => $count > 0, 'count' => $count]);
     }
 
     public function statusWeb(Request $request): JsonResponse
@@ -139,7 +89,7 @@ class PushSubscriptionController extends Controller
     }
 
     /**
-     * Kirim notifikasi uji ke semua perangkat admin/lcadmin yang terdaftar.
+     * Kirim notifikasi uji ke perangkat admin yang terdaftar.
      */
     public function test(Request $request, string $guard): JsonResponse
     {
@@ -148,15 +98,11 @@ class PushSubscriptionController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        if (! in_array($guard, ['admin', 'lcadmin', 'csadmin'], true)) {
+        if ($guard !== 'admin') {
             return response()->json(['error' => 'Invalid guard'], 422);
         }
 
-        $url = $guard === 'lcadmin'
-            ? '/lcadmin/conversations'
-            : ($guard === 'csadmin'
-                ? '/csadmin/conversations'
-                : '/admin/live-chat/conversations');
+        $url = '/admin';
 
         $sent = app(\App\Services\PushService::class)->sendToTargets(
             [
@@ -210,6 +156,8 @@ class PushSubscriptionController extends Controller
      */
     public function latestNotification(): JsonResponse
     {
+        return response()->json(['error' => 'Live chat masih dalam mode dummy'], 404);
+
         if (Auth::guard('web')->check()) {
             return $this->latestForWeb();
         }
@@ -251,51 +199,7 @@ class PushSubscriptionController extends Controller
 
     protected function latestForAdmin(): JsonResponse
     {
-        $admin = Auth::guard('admin')->user();
-        $guard = $admin && $admin->isLiveChatCs()
-            ? 'csadmin'
-            : ($admin && $admin->isLiveChatAdmin() ? 'lcadmin' : 'admin');
-
-        $query = LiveChatConversation::query()
-            ->with(['user', 'channel', 'lastMessage.sender'])
-            ->where('admin_unread_count', '>', 0)
-            ->orderByDesc('last_message_at');
-
-        if (Schema::hasColumn('live_chat_conversations', 'archived_at')) {
-            $query->whereNull('archived_at');
-        }
-
-        if ($guard === 'lcadmin') {
-            $channelIds = $admin->assignedOperators()->pluck('channel_id');
-            $query->whereIn('channel_id', $channelIds);
-        }
-
-        if ($guard === 'csadmin') {
-            $query->whereNotNull('guest_id');
-        }
-
-        $conversation = $query->first();
-
-        if (! $conversation || ! $conversation->lastMessage) {
-            return response()->json(['error' => 'Tidak ada pesan baru'], 404);
-        }
-
-        $url = $guard === 'lcadmin'
-            ? '/lcadmin/conversations?open='.$conversation->id
-            : ($guard === 'csadmin'
-                ? '/csadmin/conversations?open='.$conversation->id
-                : '/admin/live-chat/conversations/'.$conversation->id);
-
-        return response()->json([
-            'title' => $conversation->isGuest() ? ($conversation->guest_name ?? 'Guest') : ($conversation->user?->name ?? 'User'),
-            'body' => $this->messagePreview($conversation->lastMessage),
-            'url' => $url,
-            'app_name' => config('services.vapid.notif_brand', 'Johen Gaming'),
-            'conversation_id' => $conversation->id,
-            'channel_slug' => $conversation->channel?->slug,
-            'target_guard' => $guard,
-            'icon' => asset('logo-96.png'),
-        ]);
+        return response()->json(['error' => 'Live chat admin tidak aktif'], 404);
     }
 
     protected function messagePreview(LiveChatMessage $message): string

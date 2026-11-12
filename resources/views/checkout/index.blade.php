@@ -4,25 +4,15 @@
 
 @section('content')
 @php
-    // Mapping channel code -> kategori, sama dengan halaman detail game supaya
-    // tampilan metode pembayaran tidak berbeda.
-    $channelCategory = function (string $code): string {
-        $code = strtolower($code);
-        if (in_array($code, ['qris'], true)) return 'qris';
-        if ($code === 'akulaku') return 'paylater';
-        if (str_ends_with($code, '_va')) return 'va';
-        if (in_array($code, ['alfamart', 'indomaret'], true)) return 'convenience_store';
-        return 'ewallet';
-    };
     $categories = [
         'qris' => 'QRIS',
         'ewallet' => 'E-Wallet',
-        'paylater' => 'PayLater',
         'va' => 'Virtual Account / Bank',
         'convenience_store' => 'Convenience Store',
     ];
-    $groupedPay = $paymentMethods->groupBy(fn ($m) => $channelCategory($m->code));
-    $selectedPay = (string) old('payment_method', '');
+    $groupedPay = $paymentMethods->groupBy(fn ($m) => $m->category);
+    $defaultPayment = $paymentMethods->firstWhere('code', 'qris')?->code ?? $paymentMethods->first()?->code;
+    $selectedPay = (string) old('payment_method', $defaultPayment);
     $checkoutError = session('error');
     $errAll = $errors->all();
 @endphp
@@ -209,7 +199,7 @@
                         <div><div class="gd-step-title">Pilih Pembayaran</div><div class="gd-step-subtitle">Diproses aman melalui {{ $gatewayName }}</div></div>
                     </div>
 
-                    <input type="hidden" name="payment_method" id="payInput" value="{{ $selectedPay }}">
+                    <input type="hidden" name="payment_method" id="payInput" value="{{ $selectedPay }}" required>
 
                     @if($paymentMethods->isEmpty())
                         <div class="gd-summary-empty">Belum ada metode pembayaran aktif. Hubungi CS kami.</div>

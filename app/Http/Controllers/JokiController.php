@@ -8,6 +8,7 @@ use App\Models\Product;
 use App\Models\SiteSetting;
 use App\Services\MediaStore;
 use App\Services\PaymentGatewayService;
+use App\Services\JokiPricingService;
 use Illuminate\Support\Facades\Storage;
 
 class JokiController extends Controller
@@ -30,15 +31,13 @@ class JokiController extends Controller
         $paymentMethods = $gateway->filterAvailableMethods(
             PaymentMethod::where('is_active', true)->get()
         );
+        $gatewayName = $gateway->providerLabel();
 
-        $activeTheme = view()->shared('activeTheme');
-        $bannerPaths = $activeTheme?->banner_image
-            ? [$activeTheme->banner_image]
-            : [
-                SiteSetting::get('site_hero_banner'),
-                SiteSetting::get('site_hero_banner_2'),
-                SiteSetting::get('site_hero_banner_3'),
-            ];
+        $bannerPaths = [
+            SiteSetting::get('site_hero_banner'),
+            SiteSetting::get('site_hero_banner_2'),
+            SiteSetting::get('site_hero_banner_3'),
+        ];
 
         $banners = collect($bannerPaths)->filter(function ($path) {
             if (! $path) {
@@ -70,43 +69,29 @@ class JokiController extends Controller
             $banners->push(pwa_asset('assets/joki/mobile-legends/banner.png'));
         }
 
-        $rankDefinitions = [
-            'honor' => ['label' => 'Mythic Honor', 'icon' => 'honor.png'],
-            'glory' => ['label' => 'Mythic Glory', 'icon' => 'glory.png'],
-            'immortal' => ['label' => 'Mythic Immortal', 'icon' => 'immortal.png'],
-            'mythic' => ['label' => 'Mythic', 'icon' => 'mythic.png'],
-            'legend' => ['label' => 'Legend', 'icon' => 'legend.png'],
-            'epic' => ['label' => 'Epic', 'icon' => 'epic.png'],
-        ];
-
-        $rankCalculator = $packages->map(function (Product $package) use ($rankDefinitions) {
-            $name = mb_strtolower($package->product_name);
-            $rankKey = collect(array_keys($rankDefinitions))->first(
-                fn (string $key) => str_contains($name, $key)
-            );
-
-            if (! $rankKey) {
+        $rankCalculator = $packages->map(function (Product $package) {
+            $config = JokiPricingService::configFor($package);
+            if (! $config || ! $config['per_star']) {
                 return null;
             }
 
-            $definition = $rankDefinitions[$rankKey];
-            preg_match('/(\d+)\s*star/i', $package->product_name, $starMatch);
-            $packageStars = max(1, (int) ($starMatch[1] ?? 1));
-
             return [
-                'key' => $rankKey,
-                'label' => $definition['label'],
-                'icon' => $package->photo_url ?: pwa_asset('assets/joki/mobile-legends/ranks/'.$definition['icon']),
+                'key' => $package->buyer_sku_code,
+                'label' => $config['label'],
+                'icon' => $package->photo_url ?: pwa_asset('assets/joki/mobile-legends/ranks/'.$config['icon']),
                 'package_id' => $package->id,
                 'package_name' => $package->product_name,
-                'price_per_star' => (int) ceil((float) $package->selling_price / $packageStars),
+                'price_per_star' => (int) $package->selling_price,
+                'gendong_fee' => $config['gendong_fee'],
+                'vip_fee' => $config['vip_fee'],
             ];
-        })->filter()->unique('key')->values();
+        })->filter()->values();
 
         return view('joki.mobile-legends', compact(
             'brand',
             'packages',
             'paymentMethods',
+            'gatewayName',
             'banners',
             'rankCalculator'
         ));

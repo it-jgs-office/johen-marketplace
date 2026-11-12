@@ -5,10 +5,16 @@
         && $gachaService->activePrizes()->isNotEmpty();
 @endphp
 @if($gachaVisible)
-<link rel="stylesheet" href="{{ pwa_asset('css/gacha.css') }}">
+<link rel="stylesheet" href="{{ pwa_asset('css/gacha.css') }}&amp;f={{ filemtime(public_path('css/gacha.css')) }}">
 <style>
 /* Critical state: modal tetap tersembunyi selama CSS widget sedang dimuat. */
 #gc-overlay:not(.active),#gc-modal:not(.active){opacity:0!important;visibility:hidden!important;pointer-events:none!important}
+/* Pengunci layout mobile agar cache stylesheet lama tidak mengembalikan dua kolom. */
+@media screen and (max-width:800px){
+  #gc-modal .gc-layout{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:8px!important}
+  #gc-modal .gc-wheel-panel{grid-column:1!important;grid-row:1!important;min-height:0!important}
+  #gc-modal .gc-info-panel{grid-column:1!important;grid-row:2!important;min-height:0!important}
+}
 </style>
 
 <div id="gc-overlay" class="gc-overlay" aria-hidden="true"></div>
@@ -20,15 +26,15 @@
         <img src="{{ pwa_asset('assets/icon/gacha.png') }}" width="42" height="42" alt="" decoding="async">
       </span>
       <div class="gc-header-text">
-        <span class="gc-eyebrow">DAILY REWARD</span>
-        <h3 id="gcTitle">Gacha Voucher</h3>
-        <p>Putar roda dan menangkan voucher setiap hari.</p>
+        <span class="gc-eyebrow">UNDIAN HARIAN</span>
+        <h3 id="gcTitle">Putar Voucher</h3>
+        <p>Satu putaran per hari. Hadiah langsung masuk ke akunmu.</p>
       </div>
     </div>
     <div class="gc-header-actions">
       <span class="gc-daily-badge">
         <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>
-        1 kesempatan / hari
+        1 putaran / hari
       </span>
       <button class="gc-header-close" type="button" onclick="window.Gacha.close()" aria-label="Tutup">
         <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -40,8 +46,8 @@
     <div class="gc-layout">
       <section class="gc-wheel-panel" aria-label="Roda hadiah">
         <div class="gc-section-heading">
-          <span>PUTAR &amp; MENANGKAN</span>
-          <p>Hadiah ditentukan otomatis dan langsung tersimpan.</p>
+          <span>RODA HADIAH</span>
+          <p>Tekan tombol Putar untuk memulai undian.</p>
         </div>
 
         <div class="gc-stage">
@@ -59,7 +65,7 @@
 
         <div class="gc-wheel-note">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.6-2.8 7.8-7 10-4.2-2.2-7-5.4-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg>
-          Voucher tersimpan otomatis dan aman digunakan saat checkout.
+          Voucher pemenang tersimpan otomatis dan dapat dipakai saat checkout.
         </div>
       </section>
 
@@ -88,10 +94,10 @@
         <div class="gc-prizes-block">
           <div class="gc-prizes-heading">
             <div>
-              <span>PRIZE POOL</span>
-              <h4>Hadiah tersedia</h4>
+              <span>DAFTAR HADIAH</span>
+              <h4>Voucher yang bisa didapat</h4>
             </div>
-            <span class="gc-live-badge"><i></i> Live</span>
+            <span class="gc-live-badge"><i></i> Aktif</span>
           </div>
           <div class="gc-prizes" id="gcPrizes"></div>
         </div>
@@ -110,7 +116,7 @@
 
 <button id="gc-fab" class="gc-fab" type="button" onclick="window.Gacha.open()" aria-label="Gacha Voucher">
   <img class="gc-fab-logo" src="{{ pwa_asset('assets/icon/gacha.png') }}" width="52" height="52" alt="Gacha Voucher" decoding="async">
-  <span class="gc-fab-label" aria-hidden="true">GACHA</span>
+  <span class="gc-fab-label" aria-hidden="true">Gacha harian</span>
   <span class="gc-fab-dot" id="gcFabDot" hidden title="Voucher baru tersedia"></span>
 </button>
 
@@ -123,5 +129,5 @@
     login: @json(route('login'))
   };
 </script>
-<script src="{{ pwa_asset('js/gacha.js') }}" defer></script>
+<script src="{{ pwa_asset('js/gacha.js') }}&amp;f={{ filemtime(public_path('js/gacha.js')) }}" defer></script>
 @endif

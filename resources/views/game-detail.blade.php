@@ -71,26 +71,15 @@
 
       return trim((string) $cleanName) !== '' ? trim((string) $cleanName) : $originalName;
   };
-  // Mapping eksplisit channel code -> kategori. Tidak bergantung pada kolom
-  // `category` di DB (jika data hosting kategori-nya kosong/salah, grouping
-  // tetap benar). Daftar ini hanya berisi channel Midtrans yang lolos filter gateway.
-  $channelCategory = function (string $code): string {
-      $code = strtolower($code);
-      if (in_array($code, ['qris'], true)) return 'qris';
-      if ($code === 'akulaku') return 'paylater';
-      if (str_ends_with($code, '_va')) return 'va';
-      if (in_array($code, ['alfamart', 'indomaret'], true)) return 'convenience_store';
-      return 'ewallet';
-  };
-  // Minimal nominal per kategori channel Midtrans (IDR).
+  // Minimal nominal per kategori pembayaran (IDR).
   $channelMinAmount = function (string $cat): int {
       return match ($cat) {
           'qris', 'ewallet' => 1000,
           default => 10000,
       };
   };
-  $payData = $paymentMethods->map(function ($m) use ($channelCategory, $channelMinAmount) {
-      $cat = $channelCategory($m->code);
+  $payData = $paymentMethods->map(function ($m) use ($channelMinAmount) {
+      $cat = (string) $m->category;
 
       return [
           'key' => $m->code,
@@ -106,11 +95,10 @@
   $categories = [
       'qris' => 'QRIS',
       'ewallet' => 'E-Wallet',
-      'paylater' => 'PayLater',
       'va' => 'Virtual Account / Bank',
       'convenience_store' => 'Convenience Store',
   ];
-  $groupedPay = $paymentMethods->groupBy(fn($m) => $channelCategory($m->code));
+  $groupedPay = $paymentMethods->groupBy(fn($m) => $m->category);
 @endphp
 
 @section('content')
@@ -420,7 +408,7 @@
                   <span class="gd-pay-label">
                     <span class="gd-pay-t">{{ $pm->name }}</span>
                     <span class="gd-pay-card-amount" data-pay-amount></span>
-                    @php($pmMin = $channelMinAmount($channelCategory($pm->code)))
+                    @php($pmMin = $channelMinAmount((string) $pm->category))
                     @if($pmMin > 1000)
                       <span class="gd-pay-min">min. Rp {{ number_format($pmMin, 0, ',', '.') }}</span>
                     @endif
@@ -520,6 +508,7 @@
           <div class="gd-summary-line"><span>Harga</span><strong id="sumHargaDesktop">Rp 0</strong></div>
           <div class="gd-summary-line"><span>Jumlah Pembelian</span><strong id="sumQtyDesktop">1</strong></div>
           <div class="gd-summary-line"><span>Biaya Layanan</span><strong id="sumFeeDesktop">Rp 0</strong></div>
+          <div class="gd-summary-line gd-summary-voucher-discount" id="sumVoucherDiscountDesktop" style="display:none"><span>Potongan diskon voucher</span><strong id="sumVoucherValueDesktop">-Rp 0</strong></div>
           <div class="gd-summary-total"><span>Total Pembayaran</span><span id="sumTotalDesktop">Rp 0</span></div>
         </div>
         <div style="margin-top:1rem;">
@@ -554,6 +543,7 @@
         <div class="gd-summary-line"><span>Harga</span><strong id="sumHarga">Rp 0</strong></div>
         <div class="gd-summary-line"><span>Jumlah Pembelian</span><strong id="sumQty">1</strong></div>
         <div class="gd-summary-line"><span>Biaya Layanan</span><strong id="sumFee">Rp 0</strong></div>
+        <div class="gd-summary-line gd-summary-voucher-discount" id="sumVoucherDiscount" style="display:none"><span>Potongan diskon voucher</span><strong id="sumVoucherValue">-Rp 0</strong></div>
         <div class="gd-summary-total"><span>Total Pembayaran</span><span id="sumTotal">Rp 0</span></div>
       </div>
     </div>
@@ -1048,12 +1038,17 @@ function updateSummary() {
     $('#sumQty').textContent = qty;
     $('#sumFee').textContent = rupiah(selectedPayFee);
     $('#sumTotal').textContent = rupiah(total);
+    const hasVoucherDiscount = promoDiscount > 0;
+    $('#sumVoucherDiscount').style.display = hasVoucherDiscount ? '' : 'none';
+    $('#sumVoucherValue').textContent = '-' + rupiah(promoDiscount);
     // desktop sidebar
     if ($('#sumPkgNameDesktop')) $('#sumPkgNameDesktop').textContent = selectedPkg.label;
     if ($('#sumHargaDesktop')) $('#sumHargaDesktop').textContent = rupiah(selectedPkg.price);
     if ($('#sumQtyDesktop')) $('#sumQtyDesktop').textContent = qty;
     if ($('#sumFeeDesktop')) $('#sumFeeDesktop').textContent = rupiah(selectedPayFee);
     if ($('#sumTotalDesktop')) $('#sumTotalDesktop').textContent = rupiah(total);
+    if ($('#sumVoucherDiscountDesktop')) $('#sumVoucherDiscountDesktop').style.display = hasVoucherDiscount ? '' : 'none';
+    if ($('#sumVoucherValueDesktop')) $('#sumVoucherValueDesktop').textContent = '-' + rupiah(promoDiscount);
 
     updateMobileTotal(total);
 }
@@ -1099,6 +1094,11 @@ async function handleOrder(btn) {
     }
     if (!okEmail || !okWa) {
       showToast('Periksa kembali Detail Kontak kamu', false);
+      return;
+    }
+    const selectedPaymentRow = document.querySelector('.gd-pay-row.selected:not(.disabled)');
+    if (!selectedPayKey || !selectedPaymentRow || selectedPaymentRow.dataset.key !== selectedPayKey) {
+      showToast('Pilih metode pembayaran terlebih dahulu', false);
       return;
     }
     btn.disabled = true; btn.textContent = 'Memproses...';

@@ -48,6 +48,11 @@
         }
 
         *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+        *{scrollbar-width:thin;scrollbar-color:color-mix(in srgb,var(--auth-primary) 62%,transparent) transparent;}
+        *::-webkit-scrollbar{width:6px;height:6px;}
+        *::-webkit-scrollbar-track{background:transparent;}
+        *::-webkit-scrollbar-thumb{background:color-mix(in srgb,var(--auth-primary) 62%,transparent);border:1px solid transparent;border-radius:999px;background-clip:padding-box;}
+        *::-webkit-scrollbar-thumb:hover{background:var(--auth-primary);}
         html{scroll-behavior:smooth;}
         body{
             font-family:'Poppins',sans-serif;

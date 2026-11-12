@@ -10,9 +10,9 @@ use Illuminate\Support\Facades\Log;
 /**
  * Jembatan antara pembayaran satu charge gabungan dan settlement per item.
  *
- * Satu charge Xendit menutup banyak order sekaligus, tapi setiap order anak
+ * Satu charge Ayolinx menutup banyak order sekaligus, tapi setiap order anak
  * tetap butuh satu panggilan top-up Digiflazz. Pemanggilan itu dikirim ke
- * queue supaya webhook Xendit tidak perlu menunggu beberapa HTTP call
+ * queue supaya callback Ayolinx tidak perlu menunggu beberapa HTTP call
  * berurutan (bisa melewati batas waktu webhook).
  */
 class CheckoutSettlementService
@@ -28,7 +28,7 @@ class CheckoutSettlementService
      * Checkout sudah dibayar gateway. Antrikan pekerjaan settlement per item.
      *
      * Idempoten: checkout yang sudah `processing` atau `success` diabaikan,
-     * jadi webhook Xendit yang terkirim berulang aman.
+     * jadi callback Ayolinx yang terkirim berulang aman.
      */
     public function markPaid(Checkout $checkout): void
     {

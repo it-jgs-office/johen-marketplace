@@ -2,14 +2,10 @@
   $promoPaymentLogos = [
     'qris' => payment_logo_asset('qris'),
     'dana' => payment_logo_asset('dana'),
-    'ovo' => payment_logo_asset('ovo'),
-    'linkaja' => payment_logo_asset('linkaja'),
     'bca' => payment_logo_asset('bca'),
     'bni' => payment_logo_asset('bni'),
     'mandiri' => payment_logo_asset('mandiri'),
-    'permata' => payment_logo_asset('permata'),
     'alfamart' => payment_logo_asset('alfamart'),
-    'indomaret' => payment_logo_asset('indomaret'),
   ];
 @endphp
 

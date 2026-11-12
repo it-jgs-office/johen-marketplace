@@ -3,22 +3,38 @@
 @section('title', 'Pembayaran - ' . $listing->product_name . ' - ' . config('app.name'))
 
 @section('content')
-<div class="jpay-wrap invoice-theme" id="jpayInvoiceTheme" data-invoice-state="{{ $accountOrder->status === 'success' ? 'success' : (in_array($accountOrder->status, ['failed', 'expired', 'cancelled']) ? 'failed' : 'pending') }}">
-  <div class="jpay-header">
-    <div class="jpay-header-badge">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-    </div>
-    <div>
-      <h1 class="jpay-title">Detail Pembayaran</h1>
-      <p class="jpay-sub">Selesaikan pembayaran untuk melanjutkan pemesanan akun</p>
+<div class="jpay-wrap pd-wrap invoice-theme" id="jpayInvoiceTheme" data-invoice-state="{{ $accountOrder->status === 'success' ? 'success' : (in_array($accountOrder->status, ['failed', 'expired', 'cancelled', 'sold_out']) ? 'failed' : 'pending') }}">
+  <nav class="pd-breadcrumb">
+    <a href="{{ route('jual-beli-akun') }}">Stock Akun</a>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
+    <span>Detail Pembayaran</span>
+  </nav>
+
+  <div class="pd-header">
+    <div class="pd-header-titles">
+      <h1 class="pd-title">Detail Pembayaran</h1>
+      <p class="pd-sub">Selesaikan pembayaran sebelum waktu habis.</p>
     </div>
   </div>
 
-  <div class="jpay-grid">
-    <div class="jpay-left">
+  <div class="jpay-grid pd-grid pd-grid-single">
+    <div class="jpay-left pd-left">
 
-      <div class="jpay-card">
-        <div class="jpay-card-head">
+      <div class="jpay-card pd-card">
+        <div class="jpay-card-head pd-card-head">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          <span>Progress Status</span>
+        </div>
+        <div class="pd-steps">
+          <div class="pd-step" id="jpayStepA" data-state="active"><div class="pd-step-dot"><span class="pd-step-num">1</span></div><div class="pd-step-label">Menunggu Pembayaran</div></div>
+          <div class="pd-step" id="jpayStepB" data-state="pending"><div class="pd-step-dot"><span class="pd-step-num">2</span></div><div class="pd-step-label">Pembayaran Diterima</div></div>
+          <div class="pd-step" id="jpayStepC" data-state="pending"><div class="pd-step-dot"><span class="pd-step-num">3</span></div><div class="pd-step-label">Data Akun Dikirim</div></div>
+          <div class="pd-step" id="jpayStepD" data-state="pending"><div class="pd-step-dot"><span class="pd-step-num">4</span></div><div class="pd-step-label">Pesanan Selesai</div></div>
+        </div>
+      </div>
+
+      <div class="jpay-card pd-card pd-status-card">
+        <div class="jpay-card-head pd-card-head">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
           <span>Status Pembayaran</span>
         </div>
@@ -54,8 +70,8 @@
         </div>
       </div>
 
-      <div class="jpay-card">
-        <div class="jpay-card-head">
+      <div class="jpay-card pd-card">
+        <div class="jpay-card-head pd-card-head">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
           <span>Metode Pembayaran</span>
         </div>
@@ -78,103 +94,24 @@
               </div>
             </div>
 
-            @if($gatewayType === 'qris')
-            <div class="jpay-method-qr-wrap">
-              <div class="jpay-method-qr">
-                <div class="jpay-qr-dummy">
-                  @if(data_get($gatewayExtra, 'qr_image_url'))
-                    <img src="{{ data_get($gatewayExtra, 'qr_image_url') }}" alt="QRIS" width="220" height="220" style="display:block;border-radius:6px;background:#fff" loading="lazy">
-                  @elseif($isDynamic && $qrString)
-                    <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data={{ urlencode($qrString) }}" alt="QRIS" width="220" height="220" style="display:block;border-radius:6px;background:#fff" loading="lazy">
-                  @elseif($qrisImage)
-                    <img src="{{ media_url($qrisImage) }}" alt="QRIS" width="220" height="220" style="display:block;border-radius:6px;">
-                  @else
-                    <div class="jpay-qr-empty">
-                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="var(--text-mute)" stroke-width="1.2"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/></svg>
-                      <p>QRIS belum diatur admin. Silakan hubungi admin.</p>
-                    </div>
-                  @endif
-                </div>
-              </div>
-              <p class="jpay-method-hint">Scan QR code menggunakan aplikasi e-wallet atau mobile banking</p>
-            </div>
-
-            <div class="jpay-money-box">
-              <div class="jpay-nominal-label">Nominal Pembayaran</div>
-              <div class="jpay-nominal-value">Rp {{ number_format($accountOrder->cash_amount, 0, ',', '.') }}</div>
-              @if($isDynamic || data_get($gatewayExtra, 'integration') === 'core_api')
-                <p class="jpay-nominal-note" style="color:#34d399;font-weight:600">Nominal otomatis sudah terisi pada QRIS ketika kamu scan &mdash; tanpa perlu memasukkan angka secara manual.</p>
-              @else
-                <p class="jpay-nominal-note">Nominal sudah dihitung otomatis dari harga akun. Masukkan angka ini saat membayar.</p>
-              @endif
-            </div>
-            @elseif($gatewayType === 'va')
-            <div class="jpay-money-box">
-              <div class="jpay-money-label">Nomor Virtual Account</div>
-              <div class="jpay-money-value" id="jpayMoneyValue">{{ $vaNumber }}</div>
-              @if(data_get($gatewayExtra, 'biller_code'))
-                <div class="jpay-money-note">Kode Biller Mandiri: {{ data_get($gatewayExtra, 'biller_code') }}</div>
-              @endif
-              @if($gatewayExtra['bank_code'] ?? null)
-                <div class="jpay-money-note">{{ $gatewayExtra['bank_code'] }} Virtual Account</div>
-              @endif
-              <button class="jpay-copy-btn jpay-copy-big" data-copy="{{ $vaNumber }}">Salin Nomor VA</button>
-            </div>
-            <div class="jpay-nominal-box">
-              <div class="jpay-nominal-label">Total Pembayaran</div>
-              <div class="jpay-nominal-value">Rp {{ number_format($accountOrder->cash_amount, 0, ',', '.') }}</div>
-              <p class="jpay-nominal-note">Transfer tepat nominal ini ke nomor VA di atas (dibatasi jumlah).</p>
-            </div>
-            <p class="jpay-next-step">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-mute)" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-              <span>Bayar melalui m-banking / ATM / internet banking. Setelah transfer, status di halaman ini ter-update otomatis.</span>
-            </p>
-            @elseif($gatewayType === 'retail')
-            <div class="jpay-money-box">
-              <div class="jpay-money-label">Kode Pembayaran</div>
-              <div class="jpay-money-value" id="jpayMoneyValue">{{ $paymentCode }}</div>
-              <div class="jpay-money-note">{{ $gatewayExtra['label'] ?? 'Minimarket' }}</div>
-              <button class="jpay-copy-btn jpay-copy-big" data-copy="{{ $paymentCode }}">Salin Kode</button>
-            </div>
-            <div class="jpay-nominal-box">
-              <div class="jpay-nominal-label">Total Pembayaran</div>
-              <div class="jpay-nominal-value">Rp {{ number_format($accountOrder->cash_amount, 0, ',', '.') }}</div>
-              <p class="jpay-nominal-note">Tunjukkan kode ini ke kasir di gerai {{ $gatewayExtra['label'] ?? 'minimarket' }} terdekat.</p>
-            </div>
-            <p class="jpay-next-step">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-mute)" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-              <span>Setelah membayar di kasir, status di halaman ini ter-update otomatis.</span>
-            </p>
-            @elseif($gatewayType === 'ewallet')
-            <div class="jpay-money-box">
-              <div class="jpay-money-label">Total Pembayaran</div>
-              <div class="jpay-nominal-value">Rp {{ number_format($accountOrder->cash_amount, 0, ',', '.') }}</div>
-            </div>
-            @if($checkoutUrl)
-              <a href="{{ $checkoutUrl }}" class="jpay-pay-btn" id="jpayPayBtn">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                Lanjut ke Pembayaran
-              </a>
-              <p class="jpay-next-step">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-mute)" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                <span>Kamu akan dialihkan ke halaman aman {{ $gatewayName }}. Setelah selesai, status di halaman ini ter-update otomatis.</span>
-              </p>
-            @endif
-            @else
             <div class="jpay-money-box">
               <div class="jpay-money-label">Total Pembayaran</div>
               <div class="jpay-nominal-value">Rp {{ number_format($accountOrder->cash_amount, 0, ',', '.') }}</div>
             </div>
             @if($invoiceUrl)
               <a href="{{ $invoiceUrl }}" class="jpay-pay-btn" id="jpayPayBtn">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
-                Bayar Sekarang
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M7 15h4"/></svg>
+                Lanjut Pembayaran
               </a>
-              <p class="jpay-next-step">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--text-mute)" stroke-width="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                <span>Kamu akan dialihkan ke halaman pembayaran. Setelah selesai, status di halaman ini ter-update otomatis.</span>
-              </p>
-            @endif
+            @elseif(($isSimulation ?? false) && $accountOrder->status === 'pending')
+              <form method="POST" action="{{ route('jual-beli-akun.payment.simulate', $accountOrder) }}" class="jpay-simulation-form">
+                @csrf
+                <button type="submit" class="jpay-pay-btn" id="jpayPayBtn">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/><path d="M7 15h4"/></svg>
+                  Lanjut Pembayaran
+                </button>
+                <span class="jpay-simulation-note">Mode simulasi aktif — tidak ada transaksi pembayaran nyata.</span>
+              </form>
             @endif
 
             <div class="jpay-method-trans-id">
@@ -187,7 +124,7 @@
 
           <div class="jpay-method-success" id="jpayMethodSuccess" style="display:none">
             <div class="jpay-success-icon">
-              <img class="jpay-success-lordicon" src="https://media.lordicon.com/icons/wired/flat/2607-credit-card-shield.gif" alt="Pembayaran berhasil">
+              <img class="jpay-success-lordicon" src="{{ asset('assets/icon/payment-succes.gif') }}" alt="Pembayaran berhasil">
             </div>
             <div class="jpay-success-label" id="jpaySuccessLabel">Pembayaran Berhasil</div>
             <div class="jpay-success-sub" id="jpaySuccessSub">Data login akun sedang dikirim ke email kamu.</div>
@@ -203,9 +140,9 @@
       </div>
     </div>
 
-    <div class="jpay-right">
-      <div class="jpay-card jpay-card-sticky">
-        <div class="jpay-card-head">
+    <div class="jpay-right pd-right">
+      <div class="jpay-card pd-card">
+        <div class="jpay-card-head pd-card-head">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
           <span>Ringkasan Pemesanan</span>
         </div>
@@ -395,6 +332,8 @@
 .jpay-pay-btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; width: 100%; padding: .85rem 1.5rem; border: none; border-radius: 12px; background: linear-gradient(135deg, #2563eb, #0ea5e9); color: #fff; font-weight: 700; font-size: .95rem; cursor: pointer; transition: transform .2s, box-shadow .2s; box-shadow: 0 4px 20px -4px rgba(37,99,235,.45); font-family: var(--font-body); text-decoration: none; box-sizing: border-box; }
 .jpay-pay-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px -4px rgba(37,99,235,.6); }
 .jpay-pay-btn:active { transform: translateY(0); }
+.jpay-simulation-form { display: grid; gap: .45rem; margin-bottom: 1rem; }
+.jpay-simulation-note { color: var(--text-mute); font-size: .7rem; line-height: 1.45; text-align: center; }
 
 .jpay-method-qr-wrap { display: flex; flex-direction: column; align-items: center; margin-bottom: 1rem; }
 .jpay-method-qr { background: #fff; border-radius: 10px; padding: 10px; display: inline-flex; margin-bottom: .5rem; }
@@ -501,6 +440,11 @@
 
 .spin-slow { animation: spin 1.2s linear infinite; }
 @keyframes spin { 100% { transform: rotate(360deg); } }
+
+@include('payment.partials.detail-consistency-styles')
+.jpay-grid{grid-template-columns:minmax(0,1fr);gap:0;}
+.jpay-right{min-width:0;}
+.jpay-card-sticky{position:static;}
 </style>
 
 @push('scripts')
@@ -508,9 +452,6 @@
 (function() {
   const statusUrl = @json(route('jual-beli-akun.payment.status', $accountOrder));
   const initialStatus = @json($accountOrder->status);
-  const gatewayType = @json($gatewayType);
-  const checkoutUrl = @json($checkoutUrl);
-  const invoiceUrl = @json($invoiceUrl);
   const jpayFailedAnimationUrl = @json(asset('assets/icon/payment-failed.svg'));
   const jpayExpiredAnimationUrl = @json(asset('assets/icon/payment-expired.svg'));
   const jpayPendingTerminalMarkup = document.getElementById('jpayStatusIcon').innerHTML;
@@ -520,6 +461,7 @@
   const accountCanReview = @json($canReview);
   const accountReviewShownKey = 'account_review_shown_' + @json($accountOrder->order_ref);
   let accountReviewPrompted = sessionStorage.getItem(accountReviewShownKey) === '1';
+  let soldOutNotified = initialStatus === 'sold_out';
 
   function openAccountReviewModal() {
     const modal = document.getElementById('accountReviewModal');
@@ -555,19 +497,36 @@
     const dot = document.getElementById('jpaySummaryDot');
     const txt = document.getElementById('jpaySummaryStatus');
     if (!dot || !txt) return;
-    dot.className = 'jpay-dot ' + (type === 'success' || type === 'processing' ? type : (type === 'failed' || type === 'expired' || type === 'cancelled' ? 'failed' : 'pending'));
+    dot.className = 'jpay-dot ' + (type === 'success' || type === 'processing' ? type : (type === 'failed' || type === 'expired' || type === 'cancelled' || type === 'sold_out' ? 'failed' : 'pending'));
     txt.textContent =
       type === 'success' ? 'Selesai' :
       type === 'processing' ? 'Diproses' :
+      type === 'sold_out' ? 'Terjual' :
       type === 'failed' || type === 'expired' || type === 'cancelled' ? 'Gagal' : 'Pending';
   }
 
+  function updateProgressSteps(type) {
+    const states = type === 'success'
+      ? ['done', 'done', 'done', 'done']
+      : type === 'processing'
+        ? ['done', 'done', 'active', 'pending']
+        : ['failed', 'expired', 'cancelled', 'sold_out'].includes(type)
+          ? ['done', 'active', 'pending', 'pending']
+          : ['active', 'pending', 'pending', 'pending'];
+
+    ['jpayStepA', 'jpayStepB', 'jpayStepC', 'jpayStepD'].forEach(function(id, index) {
+      const step = document.getElementById(id);
+      if (step) step.dataset.state = states[index];
+    });
+  }
+
   function updateStatus(type) {
+    updateProgressSteps(type);
     const invoiceTheme = document.getElementById('jpayInvoiceTheme');
     if (invoiceTheme) {
       invoiceTheme.dataset.invoiceState = type === 'success'
         ? 'success'
-        : ['failed', 'expired', 'cancelled'].includes(type) ? 'failed' : 'pending';
+        : ['failed', 'expired', 'cancelled', 'sold_out'].includes(type) ? 'failed' : 'pending';
     }
     const icon = document.getElementById('jpayStatusIcon');
     const label = document.getElementById('jpayStatusLabel');
@@ -580,7 +539,7 @@
 
     icon.classList.toggle('jpay-status-icon-terminal', type === 'pending' || type === 'processing');
     icon.classList.toggle('jpay-status-icon-success', type === 'success');
-    icon.classList.toggle('jpay-status-icon-failed', type === 'failed' || type === 'expired' || type === 'cancelled');
+    icon.classList.toggle('jpay-status-icon-failed', type === 'failed' || type === 'expired' || type === 'cancelled' || type === 'sold_out');
 
     if (type === 'processing') {
       icon.innerHTML = jpayPendingTerminalMarkup;
@@ -595,7 +554,7 @@
       if (methodFailed) methodFailed.style.display = 'none';
       setSummaryStatus('processing');
     } else if (type === 'success') {
-      icon.innerHTML = '<img class="jpay-success-lordicon" src="https://media.lordicon.com/icons/wired/flat/2607-credit-card-shield.gif" alt="Pembayaran berhasil">';
+      icon.innerHTML = '<img class="jpay-success-lordicon" src="{{ asset('assets/icon/payment-succes.gif') }}" alt="Pembayaran berhasil">';
       label.textContent = 'Pesanan Selesai';
       sub.textContent = 'Data login akun sudah dikirim ke email kamu.';
       pill.textContent = 'BERHASIL';
@@ -607,15 +566,16 @@
       if (methodFailed) methodFailed.style.display = 'none';
       setSummaryStatus('success');
       maybeShowAccountReview('success');
-    } else if (type === 'failed' || type === 'expired' || type === 'cancelled') {
+    } else if (type === 'failed' || type === 'expired' || type === 'cancelled' || type === 'sold_out') {
       const cancelled = type === 'cancelled';
       const expired = type === 'expired';
+      const soldOut = type === 'sold_out';
       const terminalAnimationUrl = expired ? jpayExpiredAnimationUrl : jpayFailedAnimationUrl;
-      const terminalAnimationAlt = expired ? 'Waktu pembayaran habis' : (cancelled ? 'Pesanan dibatalkan' : 'Pembayaran gagal');
+      const terminalAnimationAlt = soldOut ? 'Produk sudah terjual' : (expired ? 'Waktu pembayaran habis' : (cancelled ? 'Pesanan dibatalkan' : 'Pembayaran gagal'));
       icon.innerHTML = '<img class="jpay-failed-lordicon" src="' + terminalAnimationUrl + '" alt="' + terminalAnimationAlt + '">';
-      label.textContent = cancelled ? 'Pesanan Dibatalkan' : expired ? 'Pembayaran Expired' : 'Pembayaran Gagal';
-      sub.textContent = cancelled ? 'Pesanan dibatalkan tanpa proses refund.' : expired ? 'Batas waktu pembayaran telah habis.' : 'Silakan coba lagi atau hubungi admin.';
-      pill.textContent = cancelled ? 'PESANAN DIBATALKAN' : expired ? 'PEMBAYARAN EXPIRED' : 'PEMBAYARAN GAGAL';
+      label.textContent = soldOut ? 'Produk Sudah Terjual' : (cancelled ? 'Pesanan Dibatalkan' : expired ? 'Pembayaran Expired' : 'Pembayaran Gagal');
+      sub.textContent = soldOut ? 'Pembeli lain lebih dahulu menyelesaikan pembayaran. Jangan lanjutkan pembayaran pesanan ini.' : (cancelled ? 'Pesanan dibatalkan tanpa proses refund.' : expired ? 'Batas waktu pembayaran telah habis.' : 'Silakan coba lagi atau hubungi admin.');
+      pill.textContent = soldOut ? 'PRODUK TERJUAL' : (cancelled ? 'PESANAN DIBATALKAN' : expired ? 'PEMBAYARAN EXPIRED' : 'PEMBAYARAN GAGAL');
       pill.style.background = 'rgba(248,113,113,.15)';
       pill.style.color = '#f87171';
       if (methodResult) methodResult.style.display = 'none';
@@ -627,8 +587,8 @@
           methodFailedIcon.src = terminalAnimationUrl;
           methodFailedIcon.alt = terminalAnimationAlt;
         }
-        methodFailed.querySelector('.jpay-failed-label').textContent = cancelled ? 'Pesanan Dibatalkan' : expired ? 'Pembayaran Expired' : 'Pembayaran Gagal';
-        methodFailed.querySelector('.jpay-failed-sub').textContent = cancelled ? 'Pesanan ini tidak dilanjutkan.' : expired ? 'Batas waktu pembayaran telah habis.' : 'Silakan coba lagi atau hubungi admin.';
+        methodFailed.querySelector('.jpay-failed-label').textContent = soldOut ? 'Produk Sudah Terjual' : (cancelled ? 'Pesanan Dibatalkan' : expired ? 'Pembayaran Expired' : 'Pembayaran Gagal');
+        methodFailed.querySelector('.jpay-failed-sub').textContent = soldOut ? 'Pembeli lain lebih dahulu menyelesaikan pembayaran. Jangan lanjutkan pembayaran pesanan ini.' : (cancelled ? 'Pesanan ini tidak dilanjutkan.' : expired ? 'Batas waktu pembayaran telah habis.' : 'Silakan coba lagi atau hubungi admin.');
       }
       setSummaryStatus('failed');
     }
@@ -645,6 +605,12 @@
       .then(r => { if (!r.ok) throw new Error('Status unavailable'); return r.json(); })
       .then(data => {
         document.dispatchEvent(new CustomEvent('payment:updated', {detail: data}));
+        if (data.status === 'sold_out' && !soldOutNotified) {
+          soldOutNotified = true;
+          const message = data.message || 'Produk sudah terjual kepada pembeli lain.';
+          if (typeof showToast === 'function') showToast(message, true);
+          else window.alert(message);
+        }
         if (data.status !== 'pending') {
           updateStatus(data.status);
           if (data.status !== 'processing') return;

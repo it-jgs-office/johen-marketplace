@@ -4,7 +4,6 @@ namespace App\Console\Commands;
 
 use App\Models\AccountListing;
 use App\Models\Brand;
-use App\Models\EventTheme;
 use App\Models\FlashDeal;
 use App\Models\Media;
 use App\Models\PaymentMethod;
@@ -120,14 +119,6 @@ class SyncMedia extends Command
 
         foreach (PopupBanner::all(['image']) as $row) {
             $paths[] = $row->image;
-        }
-
-        foreach (EventTheme::all(['logo_override', 'banner_image', 'decorative_images']) as $row) {
-            $paths[] = $row->logo_override;
-            $paths[] = $row->banner_image;
-            foreach ((array) ($row->decorative_images ?: []) as $img) {
-                $paths[] = $img;
-            }
         }
 
         foreach (SiteSetting::all(['key', 'value', 'type']) as $row) {

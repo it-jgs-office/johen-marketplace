@@ -1,51 +1,20 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="color-scheme" content="light">
-    <meta name="supported-color-schemes" content="light">
-    <title>Balasan Pesan - {{ config('app.name') }}</title>
-</head>
-<body style="margin:0;padding:0;width:100%;background-color:#ffffff !important;-webkit-text-size-adjust:100%;-ms-text-size-adjust:100%;font-family:'Inter',Arial,sans-serif;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="#ffffff" style="background-color:#ffffff !important;">
-        <tr>
-            <td align="center" style="padding:40px 16px;background-color:#ffffff !important;">
-                <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:600px;background-color:#ffffff !important;">
-                    <tr>
-                        <td align="center" style="padding:32px 40px 0;background-color:#ffffff !important;">
-                            <img src="{{ $message->embed(public_path('logo.png')) }}" alt="Johen Gaming" width="56" style="display:block;width:56px;height:auto;margin:0 auto 16px;border-radius:12px;">
-                            <h1 style="margin:0;font-family:'Sora',Arial,sans-serif;font-size:20px;font-weight:800;color:#111827;letter-spacing:-0.02em;"><span style="color:#2563eb;">JOHENGAMING</span></h1>
-                            <p style="margin:8px 0 0;font-size:13px;color:#6B7280;">Balasan Pesan</p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="left" style="padding:28px 40px;">
-                            <p style="margin:0 0 14px;font-size:15px;color:#111827;">Halo <strong>{{ $inquiry->name }}</strong>,</p>
-                            <p style="margin:0 0 24px;font-size:14px;line-height:1.6;color:#6B7280;">Terima kasih telah menghubungi Johen Gaming. Berikut balasan dari tim CS kami:</p>
-                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f9fafb !important;border:1px solid #E5E7EB;border-radius:12px;margin-bottom:24px;">
-                                <tr>
-                                    <td align="left" style="padding:20px 24px;">
-                                        <p style="margin:0;font-size:14px;line-height:1.7;color:#111827;white-space:pre-wrap;">{{ $reply }}</p>
-                                    </td>
-                                </tr>
-                            </table>
-                            <p style="margin:0;font-size:13px;line-height:1.6;color:#6B7280;">Jika Anda memiliki pertanyaan lebih lanjut, jangan ragu untuk menghubungi kami kembali melalui halaman kontak di website.</p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="left" style="padding:0 40px 24px;">
-                            <p style="margin:0;font-size:13px;color:#6B7280;">Salam,<br><strong style="color:#2563eb;">Tim Customer Service</strong></p>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td align="left" style="padding:20px 40px;border-top:1px solid #E5E7EB;">
-                            <p style="margin:0;font-size:12px;color:#9CA3AF;">© {{ date('Y') }} Johen Gaming. All Rights Reserved.</p>
-                        </td>
-                    </tr>
-                </table>
-            </td>
-        </tr>
-    </table>
-</body>
-</html>
+@php
+    $emailBadgeColor = '#dbeafe';
+    $emailBadgeBackground = 'rgba(96,165,250,.2)';
+@endphp
+@extends('emails.layout')
+
+@section('title', 'Balasan Customer Service')
+@section('preheader', 'Tim Johen Gaming telah membalas pesan kamu.')
+@section('badge', 'BALASAN CS')
+
+@section('content')
+<p style="margin:0 0 8px;color:#52677f;font-size:14px;">Halo <strong style="color:#10243e;">{{ $inquiry->name }}</strong>,</p>
+<h1 class="jg-title" style="margin:0 0 10px;color:#102a43;font-size:25px;line-height:1.3;letter-spacing:-.02em;">Balasan dari Customer Service</h1>
+<p style="margin:0 0 22px;color:#64748b;font-size:13px;line-height:1.7;">Terima kasih telah menghubungi Johen Gaming. Berikut jawaban dari tim kami:</p>
+
+<div style="margin-bottom:20px;padding:18px;border:1px solid #d9e4ef;border-left:4px solid #2388df;background:#f8fbff;color:#183b56;font-size:13px;line-height:1.75;white-space:pre-wrap;word-break:break-word;">{{ $reply }}</div>
+
+<p style="margin:0;color:#64748b;font-size:12px;line-height:1.65;">Jika masih memerlukan bantuan, hubungi kami kembali melalui kanal Customer Service resmi Johen Gaming.</p>
+<p style="margin:24px 0 0;color:#52677f;font-size:13px;line-height:1.65;">Salam,<br><strong style="color:#1267b0;">Tim Customer Service Johen Gaming</strong></p>
+@endsection

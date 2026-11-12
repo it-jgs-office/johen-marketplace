@@ -46,7 +46,7 @@ return [
     | Simulasi Pembayaran
     |--------------------------------------------------------------------------
     |
-    | Saat PAYMENT_SIMULATION=true: transaksi Midtrans tidak dibuat dan
+    | Saat PAYMENT_SIMULATION=true: transaksi Ayolinx tidak dibuat dan
     | transaksi Digiflazz (topUp/checkStatus) dijawab secara lokal.
     |
     */
@@ -54,14 +54,13 @@ return [
     'payment' => [
         'simulation' => env('APP_ENV', 'production') !== 'production'
             && env('PAYMENT_SIMULATION', false),
-        'gateway' => 'midtrans',
+        'gateway' => 'ayolinx',
         /*
         |--------------------------------------------------------------------------
         | Saluran Pembayaran
         |--------------------------------------------------------------------------
         |
-        | 'invoice' → pelanggan diarahkan ke halaman invoice yang di-hosting Xendit.
-        | 'qris'    → QRIS dibuat dan dibayar langsung di halaman sendiri (embed QR).
+        | 'invoice' → pelanggan diarahkan ke Payment Link Ayolinx.
         |
         */
     ],
@@ -89,6 +88,13 @@ return [
                 'name' => env('JBA_API_NAME_MARKETPLACE', 'Marketplace API'),
             ],
         ],
+    ],
+
+    'company_auth' => [
+        'allowed_origins' => array_values(array_filter(array_map(
+            'trim',
+            explode(',', (string) env('COMPANY_AUTH_ORIGINS', 'https://johengaming.id,http://localhost:8001,http://127.0.0.1:8001'))
+        ))),
     ],
 
     'article_api' => [

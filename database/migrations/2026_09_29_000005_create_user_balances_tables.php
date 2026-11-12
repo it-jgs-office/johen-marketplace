@@ -28,7 +28,7 @@ return new class extends Migration
             $table->json('meta')->nullable();
 
             // Kunci idempotensi: satu aksi bisnis hanya boleh dicatat sekali
-            // walau webhook Xendit/Digiflazz terkirim berulang.
+            // walau callback Ayolinx/Digiflazz terkirim berulang.
             $table->string('idempotency_key')->nullable()->unique();
 
             $table->timestamps();
