@@ -159,14 +159,14 @@ Route::post('/account-reviews/{accountOrder}', [ReviewController::class, 'storeA
 
 Route::post('/digiflazz/callback', [PaymentController::class, 'digiflazzCallback'])->name('payment.digiflazz.callback');
 
-Route::get('/admin', function () {
+Route::get('/johen-admin-secret', function () {
     if (Auth::guard('admin')->check()) {
         return redirect()->route('admin.dashboard');
     }
     return view('admin.auth.login');
 })->name('admin.index');
 
-Route::middleware(['auth:admin', 'admin'])->prefix('admin')->name('admin.')->group(function () {
+Route::middleware(['auth:admin', 'admin'])->prefix('johen-admin-secret')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminController::class, 'dashboard'])->name('dashboard');
 
     Route::get('/products', [AdminController::class, 'products'])->name('products');
@@ -291,19 +291,19 @@ Route::prefix('api')->name('api.')->group(function () {
 
 });
 
-Route::get('/admin/login', [AdminAuthController::class, 'showLoginForm'])
+Route::get('/johen-admin-secret/login', [AdminAuthController::class, 'showLoginForm'])
     ->middleware('guest:admin')
     ->name('admin.login');
-Route::post('/admin/login', [AdminAuthController::class, 'login'])
+Route::post('/johen-admin-secret/login', [AdminAuthController::class, 'login'])
     ->middleware('guest:admin');
 
-Route::get('/admin/two-factor-challenge', [AdminAuthController::class, 'showTwoFactorChallenge'])
+Route::get('/johen-admin-secret/two-factor-challenge', [AdminAuthController::class, 'showTwoFactorChallenge'])
     ->middleware('guest:admin')
     ->name('admin.two-factor.challenge');
-Route::post('/admin/two-factor-challenge', [AdminAuthController::class, 'twoFactorChallenge'])
+Route::post('/johen-admin-secret/two-factor-challenge', [AdminAuthController::class, 'twoFactorChallenge'])
     ->middleware('guest:admin');
 
-Route::post('/admin/logout', [AdminAuthController::class, 'logout'])
+Route::post('/johen-admin-secret/logout', [AdminAuthController::class, 'logout'])
     ->name('admin.logout');
 
 require __DIR__.'/auth.php';

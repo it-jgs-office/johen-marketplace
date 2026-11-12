@@ -42,7 +42,7 @@
 function openJokiPackage(data){
  const form=document.getElementById('jokiPackageForm');form.reset();
  document.getElementById('jp_stock').value=9999;document.getElementById('jp_active').checked=true;
- if(data){form.action=@json(url('/admin/joki-packages'))+'/'+data.id;document.getElementById('jokiPackageMethod').value='PUT';document.getElementById('jokiPackageTitle').textContent='Edit Paket';document.getElementById('jp_name').value=data.product_name;document.getElementById('jp_price').value=parseInt(data.selling_price);document.getElementById('jp_duration').value=data.estimated_duration||'';document.getElementById('jp_sort').value=data.joki_sort_order||0;document.getElementById('jp_stock').value=data.stock;document.getElementById('jp_active').checked=!!data.is_active;}
+ if(data){form.action=@json(url('/johen-admin-secret/joki-packages'))+'/'+data.id;document.getElementById('jokiPackageMethod').value='PUT';document.getElementById('jokiPackageTitle').textContent='Edit Paket';document.getElementById('jp_name').value=data.product_name;document.getElementById('jp_price').value=parseInt(data.selling_price);document.getElementById('jp_duration').value=data.estimated_duration||'';document.getElementById('jp_sort').value=data.joki_sort_order||0;document.getElementById('jp_stock').value=data.stock;document.getElementById('jp_active').checked=!!data.is_active;}
  else{form.action=@json(route('admin.joki-packages.store'));document.getElementById('jokiPackageMethod').value='POST';document.getElementById('jokiPackageTitle').textContent='Tambah Paket';}
  document.getElementById('jokiPackageModal').style.display='flex';
 }

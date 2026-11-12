@@ -102,7 +102,7 @@ class PushSubscriptionController extends Controller
             return response()->json(['error' => 'Invalid guard'], 422);
         }
 
-        $url = '/admin';
+        $url = '/johen-admin-secret';
 
         $sent = app(\App\Services\PushService::class)->sendToTargets(
             [

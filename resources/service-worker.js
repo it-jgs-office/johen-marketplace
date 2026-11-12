@@ -76,7 +76,7 @@ function normalizePayload(raw) {
 
   if (!url && conversationId) {
     if (data.target_guard === 'lcadmin') url = `/lcadmin/conversations?open=${conversationId}`;
-    else if (data.target_guard === 'admin') url = `/admin/live-chat/conversations/${conversationId}`;
+    else if (data.target_guard === 'admin') url = `/johen-admin-secret/live-chat/conversations/${conversationId}`;
     else if (channelSlug) url = `/?chat=1&channel=${encodeURIComponent(channelSlug)}`;
   }
 
@@ -257,7 +257,7 @@ self.addEventListener('notificationclick', (event) => {
   // Fallback deteksi notifikasi admin via pola URL untuk notifikasi lama.
   if (!isAdminNotif) {
     const path = target.pathname || '';
-    if (path === '/admin/' || path.startsWith('/admin/') || path === '/lcadmin/' || path.startsWith('/lcadmin/')) {
+    if (path === '/johen-admin-secret/' || path.startsWith('/johen-admin-secret/') || path === '/lcadmin/' || path.startsWith('/lcadmin/')) {
       isAdminNotif = true;
     }
   }
@@ -274,7 +274,7 @@ self.addEventListener('notificationclick', (event) => {
     }
     // Belum ada jendela web terbuka: admin/lcadmin diarahkan ke halaman login,
     // bukan ke beranda.
-    const openUrl = isAdminNotif ? '/admin/login' : target.href;
+    const openUrl = isAdminNotif ? '/johen-admin-secret/login' : target.href;
     return self.clients.openWindow(openUrl);
   })());
 });

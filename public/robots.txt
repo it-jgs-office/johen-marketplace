@@ -1,5 +1,5 @@
 User-agent: *
-Disallow: /admin
+Disallow: /johen-admin-secret
 Disallow: /lcadmin
 Disallow: /csadmin
 Disallow: /profile

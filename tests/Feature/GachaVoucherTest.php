@@ -407,11 +407,11 @@ class GachaVoucherTest extends TestCase
         $admin = User::factory()->create(['is_admin' => true]);
 
         $this->actingAs($admin, 'admin')
-            ->get('/admin/gacha-prizes')
+            ->get('/johen-admin-secret/gacha-prizes')
             ->assertOk();
 
         $this->actingAs($admin, 'admin')
-            ->postJson('/admin/gacha-prizes', [
+            ->postJson('/johen-admin-secret/gacha-prizes', [
                 'label' => 'Diskon 15%',
                 'discount_type' => 'percent',
                 'discount_value' => 15,
@@ -428,7 +428,7 @@ class GachaVoucherTest extends TestCase
         $this->assertSame('15%', $prize->value_label);
 
         $this->actingAs($admin, 'admin')
-            ->postJson('/admin/gacha-prizes/settings', ['gacha_enabled' => '0', 'gacha_daily_limit' => 3])
+            ->postJson('/johen-admin-secret/gacha-prizes/settings', ['gacha_enabled' => '0', 'gacha_daily_limit' => 3])
             ->assertOk()
             ->assertJsonPath('enabled', false)
             ->assertJsonPath('daily_limit', 3);
@@ -437,7 +437,7 @@ class GachaVoucherTest extends TestCase
         $this->assertSame('3', SiteSetting::get('gacha_daily_limit'));
 
         $this->actingAs($admin, 'admin')
-            ->get('/admin/vouchers')
+            ->get('/johen-admin-secret/vouchers')
             ->assertOk();
     }
 
@@ -447,7 +447,7 @@ class GachaVoucherTest extends TestCase
 
         $this->actingAs($admin, 'admin')
             ->withHeaders(['Accept' => 'application/json'])
-            ->postJson('/admin/gacha-prizes', [
+            ->postJson('/johen-admin-secret/gacha-prizes', [
                 'label' => 'Kelewat',
                 'discount_type' => 'percent',
                 'discount_value' => 250,
@@ -465,7 +465,7 @@ class GachaVoucherTest extends TestCase
         $admin = User::factory()->create(['is_admin' => true]);
 
         $this->actingAs($admin, 'admin')
-            ->postJson('/admin/vouchers', [
+            ->postJson('/johen-admin-secret/vouchers', [
                 'discount_type' => 'fixed',
                 'discount_value' => 15000,
                 'quota' => 3,
@@ -487,7 +487,7 @@ class GachaVoucherTest extends TestCase
 
         $this->actingAs($admin, 'admin')
             ->withHeaders(['Accept' => 'application/json'])
-            ->postJson('/admin/vouchers', [
+            ->postJson('/johen-admin-secret/vouchers', [
                 'code' => 'jhn-dup0001',
                 'discount_type' => 'percent',
                 'discount_value' => 5,
@@ -508,7 +508,7 @@ class GachaVoucherTest extends TestCase
         ]);
 
         $this->actingAs($admin, 'admin')
-            ->putJson('/admin/vouchers/'.$voucher->id, [
+            ->putJson('/johen-admin-secret/vouchers/'.$voucher->id, [
                 'code' => 'jhn-edit0002',
                 'label' => 'Koreksi admin',
                 'discount_type' => 'fixed',
@@ -541,7 +541,7 @@ class GachaVoucherTest extends TestCase
         ]);
 
         $this->actingAs($admin, 'admin')
-            ->putJson('/admin/vouchers/'.$voucher->id, [
+            ->putJson('/johen-admin-secret/vouchers/'.$voucher->id, [
                 'code' => 'JHN-KEEP0001',
                 'discount_type' => 'percent',
                 'discount_value' => 8,
