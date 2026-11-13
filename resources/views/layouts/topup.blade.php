@@ -10,8 +10,7 @@
         'points.*',
         'jual-beli-akun.orders',
         'vouchers.*',
-        'reviews.my',
-        'my-inquiries'
+        'reviews.my'
     );
     $isInvoicePage = request()->routeIs(
         'orders.show',
@@ -242,7 +241,9 @@
   </aside>
 
 @php
-    $popupBanners = \App\Models\PopupBanner::activeBanners();
+    $popupBanners = request()->routeIs('home')
+        ? \App\Models\PopupBanner::activeBanners()
+        : collect();
 @endphp
 
 <main>
@@ -288,14 +289,14 @@
       <h4>Peta Situs</h4>
       <a href="{{ route('home') }}">Beranda</a>
       <a href="{{ route('check.transaction') }}">Cek Transaksi</a>
-      <a href="{{ route('kontak') }}">Hubungi Kami</a>
+      <a href="#live-chat" data-open-live-chat>Live Chat</a>
       <a href="{{ route('testimoni') }}">Ulasan</a>
       <a href="{{ route('articles.index') }}">Artikel</a>
       <a href="{{ route('vouchers.index') }}">Voucher Saya</a>
     </div>
     <div class="footer-col">
       <h4>Dukungan</h4>
-      <a href="{{ route('kontak') }}">Contact Us</a>
+      <a href="#live-chat" data-open-live-chat>Live Chat</a>
       <a href="{{ route('faq') }}">FAQ</a>
     </div>
     <div class="footer-col">
@@ -380,10 +381,6 @@
         </div>
       @endforeach
     </div>
-    <label class="popup-dont-show">
-      <input type="checkbox" id="popupDontShow">
-      <span>Jangan tampilkan lagi</span>
-    </label>
   </div>
 </div>
 @endif
@@ -427,16 +424,16 @@
   --surface: #ffffff;
   --surface-2: #f8fbff;
   --surface-3: #eff6ff;
-  --border: rgba(96,165,250,.16);
-  --border-strong: rgba(96,165,250,.28);
-  --text: color-mix(in srgb, var(--theme-primary, #60a5fa) 35%, #07172a);
+  --border: rgba(47,115,225,.18);
+  --border-strong: rgba(47,115,225,.32);
+  --text: color-mix(in srgb, var(--theme-primary, #2f73e1) 35%, #07172a);
   --text-dim: color-mix(in srgb, var(--text) 58%, var(--surface));
   --text-mute: color-mix(in srgb, var(--text) 38%, var(--surface));
-  --purple-glow: color-mix(in srgb, var(--theme-primary, #60a5fa) 25%, transparent);
-  --shadow-purple: 0 8px 30px -8px color-mix(in srgb, var(--theme-primary, #60a5fa) 35%, transparent);
-  --header-bg: color-mix(in srgb, var(--theme-primary, #60a5fa) 30%, #17445a);
-  --header-bg-scrolled: color-mix(in srgb, var(--theme-primary, #60a5fa) 38%, #12384d);
-  --nav-active-text: #07172a;
+  --purple-glow: color-mix(in srgb, var(--theme-primary, #2f73e1) 28%, transparent);
+  --shadow-purple: 0 8px 30px -8px color-mix(in srgb, var(--theme-primary, #2f73e1) 38%, transparent);
+  --header-bg: linear-gradient(100deg, #174bb8, #0c318b);
+  --header-bg-scrolled: linear-gradient(100deg, #12366c, #081f4d);
+  --nav-active-text: #ffffff;
   --bg-card:#ffffff;
 }
 .nav-theme-btn {
@@ -551,6 +548,15 @@ html:not([data-theme="light"]) .mobile-theme-btn .icon-moon {
   // Dipakai topup.js untuk menyegarkan angka keranjang tanpa reload halaman.
   window.CART_STATE_URL = @json(\Illuminate\Support\Facades\Route::has('cart.state') ? route('cart.state') : null);
 </script>
+<script>
+  document.addEventListener('click', function(event) {
+    const trigger = event.target.closest('[data-open-live-chat]');
+    if (!trigger) return;
+
+    event.preventDefault();
+    window.LiveChat?.open();
+  });
+</script>
   <script src="/js/topup.js?v={{ filemtime(public_path('js/topup.js')) }}"></script>
   <script src="{{ pwa_asset('js/frontend-promo.js') }}" defer></script>
 
@@ -560,9 +566,6 @@ html:not([data-theme="light"]) .mobile-theme-btn .icon-moon {
   var overlay = document.getElementById('popupOverlay');
   var modal = document.getElementById('popupModal');
   if (!overlay) return;
-
-  var dontShow = document.getElementById('popupDontShow');
-  var dontShowKey = 'popup_banner_dont_show_v1';
 
   function openPopup() {
     overlay.classList.add('show');
@@ -639,13 +642,9 @@ html:not([data-theme="light"]) .mobile-theme-btn .icon-moon {
   document.getElementById('popupClose').addEventListener('click', closePopup);
   overlay.addEventListener('click', function(e) { if (e.target === overlay) closePopup(); });
   document.addEventListener('keydown', function(e) { if (e.key === 'Escape') closePopup(); });
-  dontShow.addEventListener('change', function() {
-    if (dontShow.checked) localStorage.setItem(dontShowKey, '1');
-    else localStorage.removeItem(dontShowKey);
-  });
-
-  // Tampil saat halaman pertama kali dibuka, kecuali user memilih "Jangan tampilkan lagi".
-  if (!localStorage.getItem(dontShowKey)) {
+  // Jangan menutupi Live Chat yang dibuka dari tautan bantuan.
+  if (new URLSearchParams(window.location.search).get('chat') !== '1') {
+    // Hanya pada beranda: tampil saat awal halaman dimuat, termasuk saat refresh.
     openPopup();
     startTimer();
     handleOrientation();

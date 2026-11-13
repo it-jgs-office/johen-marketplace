@@ -15,24 +15,24 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
     <style>
         :root {
-            --sidebar: #01203c;
-            --sidebar-hover: #052a48;
-            --sidebar-active: #3b82f6;
-            --bg-main: #020D2E;
-            --bg-card: #0A1E50;
-            --bg-input: #0d2448;
-            --border: #0a2e5c;
-            --accent: #60a5fa;
-            --accent-hover: #3b82f6;
-            --brand-cyan: #bfdbfe;
-            --brand-purple: #3b82f6;
-            --brand-gradient: linear-gradient(135deg, var(--accent), var(--brand-purple));
-            --text: #f0f4ff;
-            --text-muted: #94a3b8;
-            --text-dim: #64748b;
-            --card-shadow: 0 4px 24px -8px rgba(0,0,0,0.3);
-            --glass-bg: rgba(10,30,80,0.68);
-            --glass-border: rgba(255,255,255,0.06);
+            --sidebar: #0f2a5f;
+            --sidebar-hover: rgba(255,255,255,0.12);
+            --sidebar-active: #2563eb;
+            --bg-main: #09152b;
+            --bg-card: #102442;
+            --bg-input: #0c1b35;
+            --border: #284268;
+            --accent: #2563eb;
+            --accent-hover: #1d4ed8;
+            --brand-cyan: #dbeafe;
+            --brand-purple: #1d4ed8;
+            --brand-gradient: linear-gradient(135deg, #2563eb, #1d4ed8);
+            --text: #eef5ff;
+            --text-muted: #a6b8d4;
+            --text-dim: #7187aa;
+            --card-shadow: 0 12px 30px rgba(0,0,0,0.22);
+            --glass-bg: rgba(16,36,66,0.92);
+            --glass-border: #233d65;
             --success: #10b981;
             --warning: #f59e0b;
             --error: #ef4444;
@@ -645,6 +645,78 @@
         .admin-image-dropzone__action { margin-left: auto; padding: .3rem .45rem; border: 1px solid var(--glass-border); border-radius: 6px; color: var(--text-muted); font-size: .63rem; font-weight: 600; white-space: nowrap; }
         .admin-image-dropzone.has-file .admin-image-dropzone__icon { background: rgba(16,185,129,.16); color: #6ee7b7; }
         @media (max-width: 480px) { .admin-image-dropzone__action { display: none; } }
+
+        /* Johen admin shell */
+        body { background: #09152b; color: var(--text); }
+        .orb { display: none; }
+        .sidebar {
+            top: 16px; bottom: 16px; left: 16px; width: 264px;
+            border: 0; border-radius: 20px;
+            background: linear-gradient(180deg, #2b5baf 0%, #1e478a 52%, #0f2a5f 100%);
+            box-shadow: 0 20px 45px rgba(15,42,95,.25);
+        }
+        .sidebar-brand { min-height: 80px; padding: 18px 20px; border-color: rgba(255,255,255,.15); }
+        .sidebar-brand .brand-logo-box { width: 40px; height: 40px; border: 0; border-radius: 12px; background: #fff; box-shadow: 0 4px 12px rgba(15,42,95,.16); }
+        .sidebar-brand .brand-logo-box img { width: 30px; height: 30px; }
+        .sidebar-brand .brand-name { font-size: 14px; }
+        .sidebar-brand .brand-sub { color: #dbeafe; }
+        .sidebar-nav { padding: 16px 14px; }
+        .sidebar-nav .nav-section { padding: 16px 10px 6px; color: rgba(219,234,254,.76); font-size: 9px; }
+        .sidebar-nav .nav-section:first-child { padding-top: 2px; }
+        .sidebar-nav a, .sidebar-nav form button { min-height: 44px; height: auto; padding: 6px 10px; border-radius: 12px; color: #dbeafe; font-size: 12px; font-weight: 600; }
+        .sidebar-nav a i, .sidebar-nav form button i { display: inline-flex; align-items: center; justify-content: center; width: 30px; height: 30px; border-radius: 9px; background: rgba(255,255,255,.1); color: #fff; font-size: 13px; opacity: 1; }
+        .sidebar-nav a:hover, .sidebar-nav form button:hover { background: rgba(255,255,255,.1); color: #fff; }
+        .sidebar-nav a.active { background: #fff; color: #1d4ed8; box-shadow: 0 8px 18px rgba(15,42,95,.2); }
+        .sidebar-nav a.active i { background: #2563eb; color: #fff; }
+        .sidebar-nav a.active::before { display: none; }
+        .sidebar-footer { margin: 0 14px 14px; padding: 12px; border: 1px solid rgba(255,255,255,.15); border-radius: 14px; background: rgba(255,255,255,.1); backdrop-filter: blur(8px); }
+        .sidebar-user { display: flex; align-items: center; gap: 9px; min-width: 0; padding: 0 2px 10px; }
+        .sidebar-user .user-avatar { width: 34px; height: 34px; border-radius: 10px; background: #fff; color: #1d4ed8; }
+        .sidebar-user-copy { min-width: 0; }
+        .sidebar-user-copy strong, .sidebar-user-copy span { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        .sidebar-user-copy strong { color: #fff; font-size: 11px; }
+        .sidebar-user-copy span { margin-top: 2px; color: #dbeafe; font-size: 9px; }
+        .sidebar-footer .logout-btn { justify-content: center; height: 36px; border-radius: 9px; background: #fff; color: #dc2626; font-size: 11px; font-weight: 700; }
+        .sidebar-footer .logout-btn:hover { background: #fef2f2; }
+        .main-area { margin-left: 296px; padding: 16px 16px 0 0; }
+        .header { min-height: 88px; padding: 18px 28px; border: 0; border-radius: 20px; background: linear-gradient(115deg, #2b5baf 0%, #1e478a 56%, #0f2a5f 100%); box-shadow: 0 14px 30px rgba(15,42,95,.14); }
+        .header-left { gap: 12px; }
+        .header-left .page-title { color: #fff; font-size: 1.2rem; letter-spacing: -.02em; }
+        .header-right { gap: 10px; }
+        .theme-toggle { display: none; }
+        .user-menu { padding: 4px 8px 4px 4px; border-color: rgba(255,255,255,.2); background: rgba(255,255,255,.1); }
+        .user-menu:hover { border-color: rgba(255,255,255,.46); }
+        .user-avatar { border-radius: 50%; background: #fff; color: #1d4ed8; }
+        .user-name { color: #fff; font-size: .76rem; }
+        .user-dropdown { background: #102442; border-color: #284268; box-shadow: 0 16px 36px rgba(0,0,0,.3); }
+        .user-dropdown a, .user-dropdown button { color: #a6b8d4; }
+        .user-dropdown a:hover, .user-dropdown button:hover { background: #182f54; color: #fff; }
+        .main-content { width: 100%; max-width: 1600px; margin: 0 auto; padding: 24px 28px 36px; }
+        .card-glass, .table-wrap, .stat-card { border-color: #233d65; box-shadow: var(--card-shadow); }
+        .card-glass:hover { transform: none; box-shadow: 0 14px 32px rgba(0,0,0,.28); }
+        .table-wrap thead th { background: #0d1d38; border-color: #233d65; }
+        .table-wrap tbody tr { border-color: #1c3458; }
+        .table-wrap tbody tr:hover { background: #132a4b; transform: none; }
+        .input-field { border-color: #284268; background: #0c1b35; color: #eef5ff; }
+        .input-field:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37,99,235,.12); }
+        .btn-primary { background: linear-gradient(135deg, #2563eb, #1d4ed8); }
+        .btn-ghost { border-color: #284268; color: #a6b8d4; }
+        .btn-ghost:hover { background: #182f54; color: #dbeafe; }
+        .modal-box { box-shadow: 0 24px 64px rgba(15,42,95,.22); }
+        @media (max-width: 1023px) {
+            .sidebar { top: 12px; bottom: 12px; left: 12px; }
+            .sidebar.open { transform: translateX(0); }
+            .main-area { padding: 0; }
+            .header { min-height: 68px; padding: 12px 18px; border-radius: 0; box-shadow: none; }
+            .hamburger { width: 38px; height: 38px; border-radius: 10px; background: rgba(255,255,255,.12); color: #fff; }
+            .main-content { padding: 18px; }
+        }
+        @media (max-width: 479px) {
+            .header { padding: 10px 12px; }
+            .main-content { padding: 14px 12px 24px; }
+            .header-left .page-title { font-size: 1rem; }
+            .user-menu { padding: 3px; border: 0; background: transparent; }
+        }
     </style>
     @stack('styles')
 </head>
@@ -719,10 +791,10 @@
 
                 <div class="nav-section">Pengguna</div>
                 <a href="{{ route('admin.users') }}" class="{{ request()->routeIs('admin.users*') ? 'active' : '' }}">
-                    <i class="fas fa-users"></i> Kelola Akun
+                    <i class="fas fa-users"></i> Kelola Akun User
                 </a>
-                <a href="{{ route('admin.contact-inquiries') }}" class="{{ request()->routeIs('admin.contact-inquiries*') ? 'active' : '' }}">
-                    <i class="fas fa-inbox"></i> Pesan Masuk
+                <a href="{{ route('admin.live-chat') }}" class="{{ request()->routeIs('admin.live-chat') ? 'active' : '' }}" target="_blank" rel="noopener">
+                    <i class="fas fa-comments"></i> Live Chat <i class="fas fa-arrow-up-right-from-square" style="margin-left:auto;font-size:.68rem"></i>
                 </a>
 
                 <div class="nav-section">Sistem</div>
@@ -739,6 +811,13 @@
                 @endif
             </nav>
             <div class="sidebar-footer">
+                <div class="sidebar-user">
+                    <x-user-avatar :user="Auth::user()" :size="34" radius="10px" class="user-avatar" />
+                    <div class="sidebar-user-copy">
+                        <strong>{{ Auth::user()->name }}</strong>
+                        <span>{{ Auth::user()->email }}</span>
+                    </div>
+                </div>
                 <form method="POST" action="{{ route('admin.logout') }}">
                     @csrf
                     <button type="submit" class="logout-btn">
@@ -758,9 +837,6 @@
                     <h1 class="page-title">@yield('title', 'Dashboard')</h1>
                 </div>
                 <div class="header-right">
-                    <button class="theme-toggle" id="themeToggle" title="Ganti tema" aria-label="Ganti tema gelap/terang">
-                        <i class="fas fa-moon" id="themeIcon"></i>
-                    </button>
                     <div class="user-menu" id="userMenu" role="button" aria-haspopup="true" aria-expanded="false" tabindex="0">
                         <x-user-avatar :user="Auth::user()" :size="36" radius="10px" class="user-avatar" />
                         <span class="user-name">{{ Auth::user()->name }}</span>
@@ -798,30 +874,6 @@
     </div>
 
     <script>
-        // ===== THEME TOGGLE =====
-        function applyTheme(theme) {
-            document.documentElement.setAttribute('data-theme', theme);
-            localStorage.setItem('admin-theme', theme);
-            const icon = document.getElementById('themeIcon');
-            if (theme === 'light') {
-                icon.className = 'fas fa-sun';
-                document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#f8fafc');
-            } else {
-                icon.className = 'fas fa-moon';
-                document.querySelector('meta[name="theme-color"]')?.setAttribute('content', '#01203c');
-            }
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            const saved = localStorage.getItem('admin-theme') || 'dark';
-            applyTheme(saved);
-
-            document.getElementById('themeToggle')?.addEventListener('click', function () {
-                const current = document.documentElement.getAttribute('data-theme');
-                applyTheme(current === 'dark' ? 'light' : 'dark');
-            });
-        });
-
         // ===== SIDEBAR =====
         (function preserveSidebarScrollPosition() {
             const sidebarNav = document.getElementById('adminSidebarNav');

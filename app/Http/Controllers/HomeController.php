@@ -7,7 +7,6 @@ use App\Models\AccountListing;
 use App\Models\AccountOrder;
 use App\Models\Brand;
 use App\Models\Checkout;
-use App\Models\ContactInquiry;
 use App\Models\FlashDeal;
 use App\Models\FlashSaleBanner;
 use App\Models\Order;
@@ -1323,11 +1322,6 @@ class HomeController extends Controller
         return view('pages.testimoni', compact('testimonials', 'activeLayanan'));
     }
 
-    public function kontak()
-    {
-        return view('pages.kontak');
-    }
-
     public function faq()
     {
         return view('pages.faq');
@@ -1343,31 +1337,4 @@ class HomeController extends Controller
         return view('pages.terms');
     }
 
-    public function kontakStore(Request $request)
-    {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|email|max:255',
-            'phone' => 'required|string|max:20',
-            'category' => 'required|string|in:topup,jual-beli-akun,pembayaran,keluhan,saran,lainnya',
-            'message' => 'required|string|max:5000',
-        ]);
-
-        $data = $validated;
-        $data['user_id'] = auth()->check() ? auth()->id() : null;
-
-        ContactInquiry::create($data);
-
-        return redirect()->route('kontak')
-            ->with('success', 'Pesan berhasil dikirim! Tim CS kami akan menghubungi anda segera.');
-    }
-
-    public function myInquiries()
-    {
-        $inquiries = ContactInquiry::where('user_id', auth()->id())
-            ->latest()
-            ->paginate(15);
-
-        return view('pages.my-inquiries', compact('inquiries'));
-    }
 }

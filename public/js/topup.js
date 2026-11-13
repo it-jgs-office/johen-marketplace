@@ -537,22 +537,19 @@ function createTestiCard(t) {
   const game = testimonialGameName(t.game);
   const card = document.createElement('article');
   card.className = 'home-testi-card';
+  card.dataset.game = game;
   card.innerHTML = `
-    <div class="home-testi-card-head">
-      <div class="home-testi-brand">
-        <span>${game}</span>
-      </div>
-      <div class="home-testi-rating" aria-label="Rating 5 dari 5">
-        <span aria-hidden="true">★★★★★</span><span>5.0</span>
-      </div>
-    </div>
-    <p class="home-testi-quote">${t.quote}</p>
-    <div class="home-testi-user">
+    <div class="home-testi-brand"><span>${game}</span></div>
+    <div class="home-testi-avatar-wrap">
       <img class="home-testi-avatar" src="${testimonialAvatar}" alt="Foto profil ${t.name}" loading="lazy">
-      <div>
-        <div class="home-testi-name">${t.name}</div>
-        <div class="home-testi-game">Pembeli terverifikasi</div>
-      </div>
+      <span class="home-testi-verified" aria-label="Pembeli terverifikasi">&#10003;</span>
+    </div>
+    <div class="home-testi-name">${t.name}</div>
+    <div class="home-testi-game">Pembeli terverifikasi</div>
+    <p class="home-testi-quote">${t.quote}</p>
+    <div class="home-testi-footer">
+      <div class="home-testi-rating" aria-label="Rating 5 dari 5"><span aria-hidden="true">&#9733;&#9733;&#9733;&#9733;&#9733;</span></div>
+      <span class="home-testi-profile">Terverifikasi &#10003;</span>
     </div>`;
   return card;
 }

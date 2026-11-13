@@ -116,7 +116,7 @@
 .vc-claim-form input{flex:1;min-width:200px;padding:.7rem .9rem;border-radius:10px;background:var(--surface-2);
   border:1px solid var(--border);color:var(--text);font-family:ui-monospace,Menlo,monospace;letter-spacing:1px;font-size:.9rem;outline:none;}
 .vc-claim-form input:focus{border-color:var(--purple);box-shadow:0 0 0 3px var(--purple-glow);}
-.vc-btn{padding:.7rem 1.3rem;border-radius:10px;background:var(--action-gradient,linear-gradient(135deg,#3b82f6,#60a5fa));
+.vc-btn{padding:.7rem 1.3rem;border-radius:10px;background:var(--action-gradient,linear-gradient(100deg,#2f73e1,#2868d9));
   color:#fff;font-size:.86rem;font-weight:700;transition:filter .15s;}
 .vc-btn:hover{filter:brightness(1.12);}
 

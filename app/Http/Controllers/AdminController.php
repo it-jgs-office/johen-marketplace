@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\ContactReplyMail;
 use App\Models\AccountOrder;
 use App\Models\Brand;
-use App\Models\ContactInquiry;
 use App\Models\Order;
 use App\Models\OrderAdminAction;
 use App\Models\Product;
@@ -19,7 +17,6 @@ use App\Services\MediaStore;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 
 class AdminController extends Controller
@@ -920,70 +917,6 @@ class AdminController extends Controller
             }
             return redirect()->back()->withInput()->withErrors(['error' => 'Gagal menyimpan: ' . $e->getMessage()]);
         }
-    }
-
-    // ---- CONTACT INQUIRIES ----
-    public function contactInquiries()
-    {
-        $inquiries = ContactInquiry::with('user')->latest()->paginate(20);
-        return view('admin.contact-inquiries.index', compact('inquiries'));
-    }
-
-    public function contactInquiriesShow(ContactInquiry $contactInquiry)
-    {
-        $contactInquiry->load('user');
-
-        return view('admin.contact-inquiries.show', ['inquiry' => $contactInquiry]);
-    }
-
-    public function contactInquiriesMarkRead(ContactInquiry $contactInquiry)
-    {
-        $contactInquiry->update(['is_read' => true]);
-
-        if (request()->ajax() || request()->wantsJson()) {
-            return response()->json(['success' => true, 'message' => 'Pesan ditandai sudah dibaca.']);
-        }
-
-        return back()->with('success', 'Pesan ditandai sudah dibaca.');
-    }
-
-    public function contactInquiriesDestroy(ContactInquiry $contactInquiry)
-    {
-        $contactInquiry->delete();
-
-        if (request()->ajax() || request()->wantsJson()) {
-            return response()->json(['success' => true, 'message' => 'Pesan berhasil dihapus.']);
-        }
-
-        return redirect()->route('admin.contact-inquiries')->with('success', 'Pesan berhasil dihapus.');
-    }
-
-    public function contactInquiriesReply(Request $request, ContactInquiry $contactInquiry)
-    {
-        $validator = validator($request->all(), [
-            'reply' => 'required|string|max:10000',
-        ]);
-
-        if ($validator->fails()) {
-            if ($request->ajax() || $request->wantsJson()) {
-                return response()->json(['errors' => $validator->errors()->messages()], 422);
-            }
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
-
-        Mail::to($contactInquiry->email)->send(new ContactReplyMail($contactInquiry, $validator->validated()['reply']));
-
-        $contactInquiry->update([
-            'is_read' => true,
-            'admin_reply' => $validator->validated()['reply'],
-            'responded_at' => now(),
-        ]);
-
-        if ($request->ajax() || $request->wantsJson()) {
-            return response()->json(['success' => true, 'message' => 'Balasan berhasil dikirim ke ' . $contactInquiry->email]);
-        }
-
-        return back()->with('success', 'Balasan berhasil dikirim ke ' . $contactInquiry->email);
     }
 
     public function settings()

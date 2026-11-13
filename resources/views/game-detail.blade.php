@@ -151,7 +151,7 @@
       untuk ketersediaan produk, harga, dan estimasi proses top up.
     </p>
     <div class="gd-empty-actions" style="display:flex;gap:.75rem;justify-content:center;flex-wrap:wrap;margin-top:1.5rem">
-      <a class="btn btn-solid" href="{{ route('kontak') }}">Hubungi Customer Service</a>
+      <a class="btn btn-solid" href="#live-chat" data-open-live-chat>Buka Live Chat CS</a>
       <a class="btn btn-outline" href="{{ route('jual-beli-akun') }}">Lihat Stock Akun</a>
     </div>
   </div>
@@ -486,7 +486,7 @@
       <div class="gd-card">
         <div class="gd-help-section">
           <strong>Butuh Bantuan?</strong>
-          <p>Kamu Bisa Hubungi Admin <a href="{{ route('kontak') }}" class="gd-help-link">Disini</a></p>
+          <p>Butuh bantuan? <a href="#live-chat" class="gd-help-link" data-open-live-chat>Buka Live Chat</a></p>
         </div>
       </div>
       <div class="gd-card gd-summary-card gd-summary-desktop-only" id="summaryCard">

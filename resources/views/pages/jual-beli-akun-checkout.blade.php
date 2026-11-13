@@ -282,7 +282,7 @@
   --gd-panel-raised: #eef6ff;
   --gd-field: #ffffff;
   --gd-border: #bfdbfe;
-  --gd-signal: #60a5fa;
+  --gd-signal: #2f73e1;
 }
 .jco-topup-pay .jco-pay-row { cursor: pointer; }
 .jco-topup-pay .jco-pay-radio-input {
@@ -292,7 +292,7 @@
   opacity: 0;
   pointer-events: none;
 }
-[data-theme="light"] .jco-topup-pay .gd-pay-card-amount { color: #3b82f6; }
+[data-theme="light"] .jco-topup-pay .gd-pay-card-amount { color: #2765d9; }
 [data-theme="light"] .jco-topup-pay .gd-pay-row.selected .gd-pay-t { color: #0f2f66; }
 
 /* Header */
@@ -379,7 +379,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  background: linear-gradient(100deg, #2f73e1, #2868d9);
   color: #fff;
   font-size: .78rem;
   font-weight: 700;
@@ -468,7 +468,7 @@
   overflow: hidden;
   border-color: rgba(59, 130, 246, .34);
   background:
-    linear-gradient(135deg, rgba(96, 165, 250, .09), transparent 48%),
+    linear-gradient(135deg, rgba(47, 115, 225, .11), transparent 48%),
     var(--surface, #1a1a2e);
 }
 .jco-email-section::after {
@@ -481,7 +481,7 @@
   background: linear-gradient(90deg, transparent, #38bdf8);
 }
 .jco-email-section .jco-section-num {
-  background: linear-gradient(135deg, #60a5fa, #3b82f6);
+  background: linear-gradient(100deg, #2f73e1, #2868d9);
 }
 .jco-email-layout {
   display: grid;
@@ -492,7 +492,7 @@
 .jco-email-field {
   min-width: 0;
   padding: 1rem;
-  border: 1px solid rgba(96, 165, 250, .22);
+  border: 1px solid rgba(47, 115, 225, .3);
   border-radius: 12px;
   background: color-mix(in srgb, var(--bg-soft, #10182d) 88%, #0b4f7c);
 }
@@ -527,8 +527,8 @@
   padding: .62rem .8rem;
   border: 1px solid rgba(59, 130, 246, .45);
   border-radius: 9px;
-  background: rgba(96, 165, 250, .12);
-  color: #60a5fa;
+  background: rgba(47, 115, 225, .14);
+  color: #2f73e1;
   font-size: .76rem;
   font-weight: 700;
   cursor: pointer;
@@ -629,7 +629,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  background: linear-gradient(100deg, #2f73e1, #2868d9);
   color: #fff;
   font-size: .7rem;
   font-weight: 700;
@@ -677,18 +677,18 @@
   padding: .85rem 1.5rem;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  background: linear-gradient(100deg, #2f73e1, #2868d9);
   color: #fff;
   font-weight: 700;
   font-size: .95rem;
   cursor: pointer;
   transition: transform .2s, box-shadow .2s;
-  box-shadow: 0 4px 20px -4px rgba(96, 165, 250, .45);
+  box-shadow: 0 4px 20px -4px rgba(47, 115, 225, .45);
   font-family: var(--font-body, inherit);
 }
 .jco-submit:hover {
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px -4px rgba(96, 165, 250, .6);
+  box-shadow: 0 8px 30px -4px rgba(47, 115, 225, .6);
 }
 .jco-submit:active {
   transform: translateY(0);

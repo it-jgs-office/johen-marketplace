@@ -20,25 +20,21 @@
     @foreach($testimonials as $t)
     @php
       $testiGame = preg_replace('/^(Top Up|Joki Rank|Jual Akun|Stock Akun)\s*-\s*/i', '', $t['game']);
-      $testiRating = max(0, min(5, (int) ($t['rating'] ?? 5)));
     @endphp
-    <article class="home-testi-card testi-page-card">
-      <div class="home-testi-card-head">
-        <div class="home-testi-brand"><span>{{ $testiGame ?: $t['game'] }}</span></div>
-        <div class="home-testi-rating" aria-label="Rating {{ $testiRating }} dari 5">
-          <span aria-hidden="true">
-            @for($i = 1; $i <= 5; $i++)<span class="{{ $i > $testiRating ? 'is-empty' : '' }}">★</span>@endfor
-          </span>
-          <span>{{ number_format($testiRating, 1) }}</span>
-        </div>
+    <article class="home-testi-card testi-page-card" data-game="{{ $testiGame ?: $t['game'] }}">
+      <div class="home-testi-brand"><span>{{ $testiGame ?: $t['game'] }}</span></div>
+      <div class="home-testi-avatar-wrap">
+        <x-user-avatar :name="$t['name']" :src="$t['avatar_url'] ?? null" :size="74" class="home-testi-avatar" />
+        <span class="home-testi-verified" aria-label="Pembeli terverifikasi">&#10003;</span>
       </div>
+      <div class="home-testi-name">{{ $t['name'] }}</div>
+      <div class="home-testi-game">Pembeli terverifikasi</div>
       <p class="home-testi-quote">{{ $t['quote'] }}</p>
-      <div class="home-testi-user">
-        <img class="home-testi-avatar" src="{{ asset('assets/icon/icon-testimoni.png') }}" alt="Foto profil {{ $t['name'] }}" loading="lazy">
-        <div class="testi-page-user-copy">
-          <div class="home-testi-name">{{ $t['name'] }}</div>
-          <div class="home-testi-game">Pembeli terverifikasi</div>
+      <div class="home-testi-footer">
+        <div class="home-testi-rating" aria-label="Rating 5 dari 5">
+          <span aria-hidden="true">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
         </div>
+        <span class="home-testi-profile">Terverifikasi &#10003;</span>
       </div>
       <div class="testi-page-time">{{ $t['date'] }}</div>
     </article>
@@ -61,11 +57,11 @@
 .testi-filter-btn:hover{border-color:var(--purple-light);color:var(--purple-light)}
 .testi-filter-btn.active{background:var(--purple);color:#fff;border-color:var(--purple);box-shadow:0 0 16px -4px rgba(157,92,245,.3)}
 .testi-page-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:.85rem;}
-.testi-page-card{width:auto;min-height:238px;height:100%;padding:1rem;}
+.testi-page-card{width:auto;min-height:290px;height:100%;}
 .testi-page-card .home-testi-rating{margin-right:0;}
 .testi-page-card .home-testi-quote{flex:1;}
 .testi-page-user-copy{min-width:0;}
-.testi-page-time{position:relative;z-index:1;margin:0 0 0 3.05rem;padding-top:.55rem;border-top:1px solid rgba(104,125,153,.2);color:#6b7b90;font-size:.62rem;line-height:1.3;}
+.testi-page-time{position:relative;z-index:1;margin-top:.45rem;color:#c5d8ff;font-size:.58rem;line-height:1.3;text-align:right;}
 
 @media (max-width: 640px) {
   .testi-page{padding:2rem max(.65rem,var(--layout-gutter)) 3rem}

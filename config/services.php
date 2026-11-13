@@ -1,5 +1,7 @@
 <?php
 
+$jbaApiBaseUrl = rtrim((string) env('JBA_API_BASE_URL', 'https://johengaming.id/api'), '/');
+
 return [
 
     /*
@@ -77,7 +79,11 @@ return [
     ],
 
     'jba_api' => [
-        'base_url' => rtrim((string) env('JBA_API_BASE_URL', 'https://johengaming.id/api'), '/'),
+        'base_url' => $jbaApiBaseUrl,
+        'live_chat_admin_url' => rtrim((string) env(
+            'JBA_LIVE_CHAT_ADMIN_URL',
+            preg_replace('#/api$#', '', $jbaApiBaseUrl).'/johen-admin-secret/live-chat'
+        ), '/'),
         'clients' => [
             'johen' => [
                 'key' => env('JBA_API_KEY_JOHEN'),

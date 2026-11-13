@@ -11,7 +11,8 @@
 
 @push('styles')
 <style>
-.dark-meteor-field{display:none;position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:1}
+.dark-meteor-field{display:none;position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.dark-meteor-field~*{position:relative;z-index:1}
 html:not([data-theme="light"]) .dark-meteor-field{display:block}
 .dark-meteor-field span{position:absolute;top:var(--meteor-y);left:var(--meteor-x);width:var(--meteor-size);height:clamp(24px,4vw,56px);border-radius:999px;opacity:var(--meteor-opacity);filter:drop-shadow(0 0 3px rgba(0,207,255,.55));transform:translateY(-20vh) rotate(-18deg);transform-origin:bottom;background:linear-gradient(transparent,rgba(0,207,255,.08) 24%,rgba(67,199,244,.62) 72%,#fff);animation:dark-meteor-fall var(--meteor-duration) linear var(--meteor-delay) infinite;will-change:transform}
 .dark-meteor-field span::after{content:"";position:absolute;width:calc(var(--meteor-size) * 3.1);height:calc(var(--meteor-size) * 3.1);right:50%;bottom:-1px;border-radius:50%;background:#fff;transform:translateX(50%);box-shadow:0 0 4px rgba(255,255,255,.78),0 0 8px rgba(0,207,255,.55)}
@@ -494,15 +495,15 @@ window.__loadMoreReset();
 .home-journal__head>a:hover{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 16%,transparent);transform:translateX(2px)}
 .home-journal__head>a:focus-visible,.home-journal__card a:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
 .home-journal__grid{grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(.75rem,1.2vw,1rem)}
-.home-journal__card{display:flex;min-width:0;min-height:100%;flex-direction:column;border-color:color-mix(in srgb,var(--accent) 12%,var(--border));box-shadow:0 14px 30px -26px rgba(0,0,0,.85)}
-.home-journal__card:hover{box-shadow:0 22px 36px -28px rgba(0,0,0,.95)}
+.home-journal__card{display:flex;min-width:0;min-height:100%;flex-direction:column;border:1px solid rgba(169,211,255,.55);background:linear-gradient(165deg,#2765d9 0%,#174bb8 48%,#0c318b 100%);box-shadow:0 12px 24px -16px rgba(2,18,68,.75)}
+.home-journal__card:hover{border-color:rgba(218,238,255,.92);box-shadow:0 18px 30px -17px rgba(1,17,61,.9)}
 .home-journal__image{position:relative;aspect-ratio:16/8;border-bottom:1px solid color-mix(in srgb,var(--accent) 15%,var(--border))}
 .home-journal__image::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 55%,rgba(1,16,43,.26));pointer-events:none}
 .home-journal__body{display:flex;min-width:0;flex:1;flex-direction:column;padding:.85rem .9rem .95rem}
-.home-journal__body small{display:block;line-height:1.2}
+.home-journal__body small{display:block;color:#d8e7ff;line-height:1.2}
 .home-journal__body h3{margin:.5rem 0 .55rem}
-.home-journal__body h3 a{display:-webkit-box;overflow:hidden;-webkit-box-orient:vertical;-webkit-line-clamp:2;font-size:.92rem;line-height:1.4}
-.home-journal__body p{-webkit-line-clamp:2;font-size:.74rem;line-height:1.55}
+.home-journal__body h3 a{display:-webkit-box;overflow:hidden;color:#fff;-webkit-box-orient:vertical;-webkit-line-clamp:2;font-size:.92rem;line-height:1.4}
+.home-journal__body p{color:#e4edff;-webkit-line-clamp:2;font-size:.74rem;line-height:1.55}
 @media(max-width:960px){.home-journal__grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
 @media(max-width:640px){.home-journal{padding-top:2.8rem;padding-bottom:1.4rem}.home-journal__head{flex-direction:column;align-items:stretch;gap:.8rem;margin-bottom:1.1rem;padding-bottom:.85rem}.home-journal__head h2{font-size:1.55rem}.home-journal__head>a{width:100%;min-height:42px}.home-journal__grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:.65rem}.home-journal__card{border-radius:13px}.home-journal__image{aspect-ratio:16/9}.home-journal__body{padding:.7rem}.home-journal__body small{font-size:.56rem;letter-spacing:.045em}.home-journal__body h3{margin:.38rem 0 0}.home-journal__body h3 a{font-size:.78rem;line-height:1.35}.home-journal__body p{display:none}}
 </style>
@@ -531,29 +532,29 @@ window.__loadMoreReset();
 
 <!-- ===== TESTIMONIALS ===== -->
 <section class="testi-section home-testi-section">
-  <h2>APA KATA MEREKA?</h2>
-  <p class="testi-sub">Ribuan orang telah mempercayai Top Up mereka di Johen Gaming</p>
+  <h2>TESTIMONI PELANGGAN</h2>
+  <p class="testi-sub">Cerita langsung dari gamer yang telah bertransaksi di Johen Gaming.</p>
   <div class="home-testi-wall" aria-label="Testimoni pelanggan Johen Gaming">
     <div class="home-testi-lane-wrap">
       <div class="home-testi-lane" id="testiTrack">
         <div class="home-testi-lane-group">
           @foreach($homeTestimonials as $testimonial)
-            <article class="home-testi-card">
-              <div class="home-testi-card-head">
-                <div class="home-testi-brand">
-                  <span>{{ preg_replace('/^Top Up\s*-\s*/', '', $testimonial['game']) }}</span>
-                </div>
-                <div class="home-testi-rating" aria-label="Rating {{ $testimonial['rating'] }} dari 5">
-                  <span aria-hidden="true">★★★★★</span><span>{{ number_format((float) $testimonial['rating'], 1) }}</span>
-                </div>
+            <article class="home-testi-card" data-game="{{ preg_replace('/^Top Up\s*-\s*/', '', $testimonial['game']) }}">
+              <div class="home-testi-brand">
+                <span>{{ preg_replace('/^Top Up\s*-\s*/', '', $testimonial['game']) }}</span>
               </div>
+              <div class="home-testi-avatar-wrap">
+                <x-user-avatar :name="$testimonial['name']" :src="$testimonial['avatar_url'] ?? null" :size="74" class="home-testi-avatar" />
+                <span class="home-testi-verified" aria-label="Pembeli terverifikasi">&#10003;</span>
+              </div>
+              <div class="home-testi-name">{{ $testimonial['name'] }}</div>
+              <div class="home-testi-game">Pembeli terverifikasi</div>
               <p class="home-testi-quote">{{ $testimonial['quote'] }}</p>
-              <div class="home-testi-user">
-                <x-user-avatar :name="$testimonial['name']" :src="$testimonial['avatar_url'] ?? null" :size="37" class="home-testi-avatar" />
-                <div>
-                  <div class="home-testi-name">{{ $testimonial['name'] }}</div>
-                  <div class="home-testi-game">Pembeli terverifikasi</div>
+              <div class="home-testi-footer">
+                <div class="home-testi-rating" aria-label="Rating 5 dari 5">
+                  <span aria-hidden="true">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
                 </div>
+                <span class="home-testi-profile">Terverifikasi &#10003;</span>
               </div>
             </article>
           @endforeach

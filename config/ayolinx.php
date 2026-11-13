@@ -22,6 +22,6 @@ return [
     'is_production' => (bool) env('AYOLINX_IS_PRODUCTION', false),
     'timeout' => (int) env('AYOLINX_TIMEOUT', 20),
     'expiry_minutes' => (int) env('AYOLINX_EXPIRY_MINUTES', 60),
-    'qris_channel' => env('AYOLINX_QRIS_CHANNEL', 'BNC_QRIS'),
+    'qris_channel' => env('AYOLINX_QRIS_CHANNEL', 'ALTO_QRIS'),
     'channel_id' => (int) env('AYOLINX_CHANNEL_ID', 13),
 ];

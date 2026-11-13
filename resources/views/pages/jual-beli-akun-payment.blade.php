@@ -329,8 +329,8 @@
 .jpay-money-value { font-family: var(--font-display); font-size: 1.5rem; font-weight: 800; color: var(--text); letter-spacing: .02em; word-break: break-all; line-height: 1.2; }
 .jpay-money-note { font-size: .7rem; color: var(--text-dim); }
 .jpay-copy-big { margin-top: .35rem; }
-.jpay-pay-btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; width: 100%; padding: .85rem 1.5rem; border: none; border-radius: 12px; background: linear-gradient(135deg, #3b82f6, #60a5fa); color: #fff; font-weight: 700; font-size: .95rem; cursor: pointer; transition: transform .2s, box-shadow .2s; box-shadow: 0 4px 20px -4px rgba(96,165,250,.45); font-family: var(--font-body); text-decoration: none; box-sizing: border-box; }
-.jpay-pay-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px -4px rgba(96,165,250,.6); }
+.jpay-pay-btn { display: inline-flex; align-items: center; justify-content: center; gap: .5rem; width: 100%; padding: .85rem 1.5rem; border: none; border-radius: 12px; background: linear-gradient(100deg, #2f73e1, #2868d9); color: #fff; font-weight: 700; font-size: .95rem; cursor: pointer; transition: transform .2s, box-shadow .2s; box-shadow: 0 4px 20px -4px rgba(47,115,225,.45); font-family: var(--font-body); text-decoration: none; box-sizing: border-box; }
+.jpay-pay-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 30px -4px rgba(47,115,225,.6); }
 .jpay-pay-btn:active { transform: translateY(0); }
 .jpay-simulation-form { display: grid; gap: .45rem; margin-bottom: 1rem; }
 .jpay-simulation-note { color: var(--text-mute); font-size: .7rem; line-height: 1.45; text-align: center; }
@@ -388,7 +388,7 @@
 .jpay-status-dot { display: inline-flex; align-items: center; gap: .3rem; font-size: .78rem; }
 .jpay-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
 .jpay-dot.pending { background: #fbbf24; box-shadow: 0 0 6px rgba(251,191,36,.5); }
-.jpay-dot.processing { background: #60a5fa; box-shadow: 0 0 6px rgba(96,165,250,.5); }
+.jpay-dot.processing { background: #2f73e1; box-shadow: 0 0 6px rgba(47,115,225,.5); }
 .jpay-dot.success { background: #34d399; box-shadow: 0 0 6px rgba(52,211,153,.5); }
 .jpay-dot.failed { background: #f87171; box-shadow: 0 0 6px rgba(248,113,113,.5); }
 

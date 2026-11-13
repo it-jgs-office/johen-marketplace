@@ -14,7 +14,7 @@
 <div class="card-glass p-4 mb-5" style="display:flex;align-items:flex-start;gap:.75rem">
     <i class="fas fa-info-circle" style="color:var(--accent);margin-top:0.2rem"></i>
     <div style="font-size:0.82rem;color:var(--text-muted);line-height:1.6">
-        Popup modal iklan ini muncul saat pengunjung pertama kali membuka website.
+        Popup modal iklan ini hanya muncul saat pengunjung membuka atau me-refresh beranda.
         Banner <b>portrait</b> tampil memanjang (kolom), dan banner <b>landscape</b> tampil melebar.
         Jika lebih dari satu banner aktif, pengunjung dapat berpindah antar slide.
         Gunakan jadwal (mulai/selesai) untuk banner promo khusus event.

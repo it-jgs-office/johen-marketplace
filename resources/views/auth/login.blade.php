@@ -84,12 +84,14 @@ document.getElementById('successModal')?.addEventListener('click', function(e) {
         @endif
     </div>
 
-    <div class="form-group" style="margin-top:1rem">
-        <div class="g-recaptcha" data-sitekey="{{ config('recaptcha.site_key') }}" data-theme="dark"></div>
-        @error('g-recaptcha-response')
-            <div class="error-text"><i class="fas fa-exclamation-circle"></i> {{ $message }}</div>
-        @enderror
-    </div>
+    @if(config('recaptcha.enabled'))
+        <div class="form-group" style="margin-top:1rem">
+            <div class="g-recaptcha" data-sitekey="{{ config('recaptcha.site_key') }}" data-theme="dark"></div>
+            @error('g-recaptcha-response')
+                <div class="error-text"><i class="fas fa-exclamation-circle"></i> {{ $message }}</div>
+            @enderror
+        </div>
+    @endif
 
     <button type="submit" class="btn-primary" id="loginBtn">
         <span class="spinner"></span>
@@ -111,7 +113,9 @@ document.getElementById('successModal')?.addEventListener('click', function(e) {
 </div>
 
 @push('scripts')
+@if(config('recaptcha.enabled'))
 <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+@endif
 <script>
 function togglePass(btn) {
     const input = btn.closest('.input-wrap').querySelector('input');

@@ -335,8 +335,8 @@
 
 <style>
 :root {
-  --jba-accent: #60a5fa;
-  --jba-accent-glow: rgba(96, 165, 250, .35);
+  --jba-accent: #2f73e1;
+  --jba-accent-glow: rgba(47, 115, 225, .4);
 }
 .jba-page {
   width: 100%;
@@ -391,9 +391,9 @@
   margin: 0 calc(0px - var(--layout-gutter)) 1rem;
   padding: 0 .7rem;
   overflow: hidden;
-  border: 1px solid #60a5fa;
+  border: 1px solid #a9d3ff;
   border-radius: 0;
-  background: #3b82f6;
+  background: linear-gradient(100deg, #2f73e1, #2868d9);
   color: #dbeafe;
 }
 .jba-transfer-marquee-icon {
@@ -1047,15 +1047,15 @@
 }
 .jba-card-game[data-game-label="mlbb"]{--game-label-color:#38bdf8}
 .jba-card-game[data-game-label="pubg"]{--game-label-color:#f59e0b}
-.jba-card-game[data-game-label="efootball"]{--game-label-color:#3b82f6}
-.jba-card-game[data-game-label="fcm"]{--game-label-color:#60a5fa}
+.jba-card-game[data-game-label="efootball"]{--game-label-color:#2765d9}
+.jba-card-game[data-game-label="fcm"]{--game-label-color:#2f73e1}
 .jba-card-game[data-game-label="ff"]{--game-label-color:#fb7185}
 .jba-card-game[data-game-label="roblox"]{--game-label-color:#a3a3a3}
 .jba-card-game[data-game-label="valorant"]{--game-label-color:#ff4655}
 [data-theme="light"] .jba-card-game[data-game-label="mlbb"]{--game-label-color:#0369a1}
 [data-theme="light"] .jba-card-game[data-game-label="pubg"]{--game-label-color:#b45309}
-[data-theme="light"] .jba-card-game[data-game-label="efootball"]{--game-label-color:#1d4ed8}
-[data-theme="light"] .jba-card-game[data-game-label="fcm"]{--game-label-color:#1d4ed8}
+[data-theme="light"] .jba-card-game[data-game-label="efootball"]{--game-label-color:#174bb8}
+[data-theme="light"] .jba-card-game[data-game-label="fcm"]{--game-label-color:#174bb8}
 [data-theme="light"] .jba-card-game[data-game-label="ff"]{--game-label-color:#be123c}
 [data-theme="light"] .jba-card-game[data-game-label="roblox"]{--game-label-color:#475569}
 [data-theme="light"] .jba-card-game[data-game-label="valorant"]{--game-label-color:#be123c}
@@ -1098,7 +1098,7 @@
 .jba-card-price {
   font-size: 1.02rem;
   font-weight: 700;
-  color: #60a5fa;
+  color: #2f73e1;
 }
 .jba-card-save {
   display: inline-flex;
@@ -1185,7 +1185,7 @@
   height: 54px;
   place-items: center;
   padding: .45rem .7rem;
-  border: 1px solid rgba(96, 165, 250, .25);
+  border: 1px solid rgba(47, 115, 225, .32);
   border-radius: 11px;
   background: #10275b;
   cursor: pointer;
@@ -1199,10 +1199,10 @@
   object-position: center;
 }
 .jba-pubg-seller-card[data-pubg-seller="Johen PUBG"] img { transform: translateX(6px); }
-.jba-pubg-seller-card:hover { border-color: #60a5fa; }
+.jba-pubg-seller-card:hover { border-color: #2f73e1; }
 .jba-pubg-seller-card.jba-is-active {
   border-color: #38bdf8;
-  background: #3b82f6;
+  background: #2765d9;
   box-shadow: 0 0 0 2px rgba(56, 189, 248, .18);
 }
 .jba-pubg-seller-card:focus-visible { outline: 2px solid #93c5fd; outline-offset: 3px; }
@@ -2068,25 +2068,21 @@
           @foreach($testimonials as $t)
             @php
               $testiGame = preg_replace('/^(Top Up|Joki Rank|Jual Akun|Stock Akun)\s*-\s*/i', '', $t['game']);
-              $testiRating = max(0, min(5, (int) ($t['rating'] ?? 5)));
             @endphp
-            <article class="home-testi-card">
-              <div class="home-testi-card-head">
-                <div class="home-testi-brand"><span>{{ $testiGame ?: $t['game'] }}</span></div>
-                <div class="home-testi-rating" aria-label="Rating {{ $testiRating }} dari 5">
-                  <span aria-hidden="true">
-                    @for($i = 1; $i <= 5; $i++)<span class="{{ $i > $testiRating ? 'is-empty' : '' }}">★</span>@endfor
-                  </span>
-                  <span>{{ number_format($testiRating, 1) }}</span>
-                </div>
+            <article class="home-testi-card" data-game="{{ $testiGame ?: $t['game'] }}">
+              <div class="home-testi-brand"><span>{{ $testiGame ?: $t['game'] }}</span></div>
+              <div class="home-testi-avatar-wrap">
+                <x-user-avatar :name="$t['name']" :src="$t['avatar_url'] ?? null" :size="74" class="home-testi-avatar" />
+                <span class="home-testi-verified" aria-label="Pembeli terverifikasi">&#10003;</span>
               </div>
+              <div class="home-testi-name">{{ $t['name'] }}</div>
+              <div class="home-testi-game">Pembeli terverifikasi</div>
               <p class="home-testi-quote">{{ $t['quote'] }}</p>
-              <div class="home-testi-user">
-                <img class="home-testi-avatar" src="{{ asset('assets/icon/icon-testimoni.png') }}" alt="Foto profil {{ $t['name'] }}" loading="lazy">
-                <div>
-                  <div class="home-testi-name">{{ $t['name'] }}</div>
-                  <div class="home-testi-game">Pembeli terverifikasi</div>
+              <div class="home-testi-footer">
+                <div class="home-testi-rating" aria-label="Rating 5 dari 5">
+                  <span aria-hidden="true">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
                 </div>
+                <span class="home-testi-profile">Terverifikasi &#10003;</span>
               </div>
             </article>
           @endforeach

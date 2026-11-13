@@ -40,10 +40,6 @@
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10Z"/><path d="m12 6 1.2 2.4 2.7.4-2 1.9.5 2.7-2.4-1.3-2.4 1.3.5-2.7-2-1.9 2.7-.4L12 6Z"/></svg>
                 Ulasan Saya
             </a>
-            <a href="{{ route('my-inquiries') }}" class="{{ request()->routeIs('my-inquiries') ? 'is-active' : '' }}" @if(request()->routeIs('my-inquiries')) aria-current="page" @endif>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/></svg>
-                Riwayat Pesan
-            </a>
         @endif
     </nav>
 

@@ -28,16 +28,22 @@ class LoginRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
+        $rules = [
             'username' => ['required', 'string'],
             'password' => ['required', 'string'],
-            'g-recaptcha-response' => ['required', 'string'],
         ];
+
+        if (config('recaptcha.enabled')) {
+            $rules['g-recaptcha-response'] = ['required', 'string'];
+        }
+
+        return $rules;
     }
 
     public function authenticate(): void
     {
-        if (! app(RecaptchaService::class)->passes($this->string('g-recaptcha-response')->toString(), $this->ip())) {
+        if (config('recaptcha.enabled')
+            && ! app(RecaptchaService::class)->passes($this->string('g-recaptcha-response')->toString(), $this->ip())) {
             throw ValidationException::withMessages([
                 'g-recaptcha-response' => 'Silakan centang verifikasi reCAPTCHA terlebih dahulu.',
             ]);

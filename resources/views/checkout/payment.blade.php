@@ -248,7 +248,7 @@
                     </div>
                     <div class="pd-help">
                         <p class="pd-help-text">Pembayaran sudah masuk tapi item belum masuk? Kirim kode transaksi ini ke CS kami.</p>
-                        <a href="{{ route('kontak') }}" class="btn btn-outline btn-full">Hubungi CS</a>
+                        <a href="#live-chat" class="btn btn-outline btn-full" data-open-live-chat>Live Chat CS</a>
                     </div>
                 </div>
             </div>

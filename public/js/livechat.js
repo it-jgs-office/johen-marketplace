@@ -1693,37 +1693,38 @@
     if (state.pollingTimer) { clearInterval(state.pollingTimer); state.pollingTimer = null; }
   }
 
-  function toggle() {
-    state.isOpen = !state.isOpen;
+  function open() {
+    if (state.isOpen) return;
+
+    state.isOpen = true;
     const popup = document.getElementById('lc-popup');
     const overlay = document.getElementById('lc-overlay');
-    if (state.isOpen) {
-      popup?.classList.add('active');
-      overlay?.classList.add('active');
-      popup?.setAttribute('aria-hidden', 'false');
-      overlay?.setAttribute('aria-hidden', 'false');
-      document.body.style.overflow = 'hidden';
-      if (IS_GUEST) {
-        if (hasGuestContact()) {
-          openChannel(CS_SLUG).catch(function () {});
-        } else {
-          renderGuestContactForm();
-        }
-      } else if (state.view === 'panel') {
-        fetchChannels();
-      } else if (state.view === 'chat' && state.conversation) {
-        fetchMessages();
-        startPolling();
+    popup?.classList.add('active');
+    overlay?.classList.add('active');
+    popup?.setAttribute('aria-hidden', 'false');
+    overlay?.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    if (IS_GUEST) {
+      if (hasGuestContact()) {
+        openChannel(CS_SLUG).catch(function () {});
+      } else {
+        renderGuestContactForm();
       }
-    } else {
-      popup?.classList.remove('active');
-      overlay?.classList.remove('active');
-      popup?.setAttribute('aria-hidden', 'true');
-      overlay?.setAttribute('aria-hidden', 'true');
-      document.body.style.overflow = '';
-      closeAllMenus();
-      stopPolling();
+    } else if (state.view === 'panel') {
+      fetchChannels();
+    } else if (state.view === 'chat' && state.conversation) {
+      fetchMessages();
+      startPolling();
     }
+  }
+
+  function toggle() {
+    if (state.isOpen) {
+      close();
+      return;
+    }
+
+    open();
   }
 
   function close() {
@@ -1889,7 +1890,7 @@
   }
 
   window.LiveChat = {
-    toggle, close, openChannel, backToList, onKeydown, autoResize, chooseGame,
+    toggle, open, close, openChannel, backToList, onKeydown, autoResize, chooseGame,
     sendText, onFileSelect, cancelMediaEditor, setActiveIndex, navMedia, removeMediaItem, updateActiveCaption,
     replyTo, cancelReply, deleteMsg, scrollToMsg, showMenu, updateBadge, openImage, openGallery, showReactions, toggleStar, showDeleteOptions, hideForMe, closeMenus: closeAllMenus, playVideoMessage,
     toggleAttachMenu, attachAction, closeAttachMenu,

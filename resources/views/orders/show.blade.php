@@ -37,9 +37,9 @@
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
         Kembali
       </a>
-      <a href="{{ route('kontak') }}" class="dt-btn-outline">
+      <a href="#live-chat" class="dt-btn-outline" data-open-live-chat>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 14h3a2 2 0 012 2v3a2 2 0 01-2 2H5a2 2 0 01-2-2v-7a9 9 0 0118 0v7a2 2 0 01-2 2h-1a2 2 0 01-2-2v-3a2 2 0 012-2h3"/></svg>
-        Butuh Bantuan?
+        Live Chat CS
       </a>
     </div>
   </div>
@@ -288,8 +288,8 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
           </a>
           <div class="dt-divider"></div>
-          <a href="{{ route('kontak') }}" class="dt-faq-item">
-            <span>Cara Menghubungi Admin</span>
+          <a href="#live-chat" class="dt-faq-item" data-open-live-chat>
+            <span>Buka Live Chat Admin</span>
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 18 6-6-6-6"/></svg>
           </a>
         </div>

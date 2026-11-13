@@ -1,10 +1,10 @@
 @extends('admin.layouts.app')
 
-@section('title', 'Kelola Akun')
+@section('title', 'Kelola Akun User')
 
 @section('content')
 <div class="mb-6">
-    <h2 class="text-lg font-semibold">Kelola Akun</h2>
+    <h2 class="text-lg font-semibold">Kelola Akun User</h2>
     <p style="margin-top:.25rem;font-size:.82rem;color:var(--text-muted)">Daftar akun pengguna marketplace.</p>
 </div>
 

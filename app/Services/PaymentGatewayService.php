@@ -41,7 +41,7 @@ class PaymentGatewayService
         $code = $this->normalizeMethodCode($method);
 
         return match ($code) {
-            'qris' => ['gateway_type' => 'invoice', 'category' => 'qris', 'ayolinx_channel' => (string) config('ayolinx.qris_channel', 'BNC_QRIS')],
+            'qris' => ['gateway_type' => 'invoice', 'category' => 'qris', 'ayolinx_channel' => (string) config('ayolinx.qris_channel', 'ALTO_QRIS')],
             'dana' => ['gateway_type' => 'invoice', 'category' => 'ewallet', 'ayolinx_channel' => 'EMONEY_DANA_SNAP'],
             'bca_va' => ['gateway_type' => 'invoice', 'category' => 'va', 'ayolinx_channel' => 'VIRTUAL_ACCOUNT_BCA'],
             'bni_va' => ['gateway_type' => 'invoice', 'category' => 'va', 'ayolinx_channel' => 'VIRTUAL_ACCOUNT_BNI'],

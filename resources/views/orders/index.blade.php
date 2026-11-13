@@ -172,7 +172,7 @@
   if (str_starts_with($ordWaDigits, '0')) {
       $ordWaDigits = '62' . substr($ordWaDigits, 1);
   }
-  $ordWaHref = $ordWaDigits ? 'https://wa.me/' . $ordWaDigits : route('kontak');
+  $ordWaHref = $ordWaDigits ? 'https://wa.me/' . $ordWaDigits : '#live-chat';
 @endphp
 <div class="ord-page">
   @include('profile.partials.account-navigation')
@@ -182,7 +182,7 @@
       <h1 class="ord-title">PESANAN SAYA</h1>
       <p class="ord-subtitle">Pantau status top up dan lanjutkan pembayaran yang belum selesai.</p>
     </div>
-    <a href="{{ $ordWaHref }}" class="ord-help-btn" target="_blank" rel="noopener">
+    <a href="{{ $ordWaHref }}" class="ord-help-btn" @if($ordWaDigits) target="_blank" rel="noopener" @else data-open-live-chat @endif>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><path d="M8 10h.01M12 10h.01M16 10h.01"/></svg>
       Butuh Bantuan?
     </a>
@@ -502,7 +502,7 @@
       </div>
     </div>
     <div class="ord-help-actions">
-      <a href="{{ $ordWaHref }}" class="ord-help-btn-sm primary" target="_blank" rel="noopener">
+      <a href="{{ $ordWaHref }}" class="ord-help-btn-sm primary" @if($ordWaDigits) target="_blank" rel="noopener" @else data-open-live-chat @endif>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
         Chat Admin
       </a>

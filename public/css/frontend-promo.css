@@ -33,8 +33,8 @@
 .frontend-promo .cta-logo-link:hover .cta-logo{transform:scale(1.06);}
 .frontend-promo .cta-card h2{position:relative;z-index:1;margin:0 0 .5rem;color:#fff;font-size:1.4rem;font-weight:800;text-shadow:0 2px 14px rgba(0,0,0,.55);}
 .frontend-promo .cta-card p{position:relative;z-index:1;max-width:500px;margin:0 auto 1.5rem;color:rgba(255,255,255,.82);font-size:.92rem;text-shadow:0 1px 8px rgba(0,0,0,.55);}
-.frontend-promo .cta-btn{position:relative;z-index:1;display:inline-flex;align-items:center;gap:.55rem;padding:.7rem 1.6rem;border-radius:999px;background:var(--action-gradient,linear-gradient(135deg,#3b82f6,#60a5fa));color:#fff;font-size:.9rem;font-weight:700;text-decoration:none;box-shadow:0 4px 20px -4px var(--action-glow,rgba(96,165,250,.5));transition:transform .25s ease,box-shadow .25s ease;}
-.frontend-promo .cta-btn:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 12px 32px -6px var(--purple-glow,rgba(96,165,250,.5));}
+.frontend-promo .cta-btn{position:relative;z-index:1;display:inline-flex;align-items:center;gap:.55rem;padding:.7rem 1.6rem;border-radius:999px;background:var(--action-gradient,linear-gradient(100deg,#2f73e1,#2868d9));color:#fff;font-size:.9rem;font-weight:700;text-decoration:none;box-shadow:0 4px 20px -4px var(--action-glow,rgba(47,115,225,.5));transition:transform .25s ease,box-shadow .25s ease;}
+.frontend-promo .cta-btn:hover{transform:translateY(-3px) scale(1.02);box-shadow:0 12px 32px -6px var(--purple-glow,rgba(47,115,225,.5));}
 .frontend-promo .cta-btn:focus-visible,.frontend-promo .cta-logo-link:focus-visible{outline:2px solid #fff;outline-offset:4px;}
 .frontend-promo .payment-marquee-section{width:100%;margin:0;padding:0;background:#fff;color:#0f172a;}
 .frontend-promo .payment-marquee-section[hidden]{display:none;}

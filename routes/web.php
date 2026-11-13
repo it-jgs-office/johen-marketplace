@@ -92,8 +92,10 @@ Route::get('/testimoni', [HomeController::class, 'testimoni'])->name('testimoni'
 Route::get('/faq', [HomeController::class, 'faq'])->name('faq');
 Route::get('/kebijakan-privasi', [HomeController::class, 'privacy'])->name('privacy');
 Route::get('/syarat-ketentuan', [HomeController::class, 'terms'])->name('terms');
-Route::get('/hubungi-kami', [HomeController::class, 'kontak'])->name('kontak');
-Route::post('/hubungi-kami', [HomeController::class, 'kontakStore']);
+Route::get('/hubungi-kami', fn () => redirect()->route('home', [
+    'chat' => 1,
+    'channel' => 'johen-cs',
+]))->name('kontak');
 Route::get('/leaderboard', [HomeController::class, 'leaderboard'])->name('leaderboard');
 Route::get('/leaderboard/{period}', [HomeController::class, 'leaderboardDetail'])->name('leaderboard.detail');
 Route::get('/api/leaderboard', [HomeController::class, 'leaderboardApi'])->name('api.leaderboard');
@@ -111,8 +113,6 @@ Route::middleware('auth:web,admin')->group(function () {
     Route::get('/orders', [OrderController::class, 'myOrders'])->name('orders.my');
     Route::get('/johen-point', [JohenPointController::class, 'index'])->name('points.index')->middleware('auth:web');
     Route::get('/ulasan-saya', [ReviewController::class, 'index'])->name('reviews.my')->middleware('auth:web');
-    Route::get('/pesan-saya', [HomeController::class, 'myInquiries'])->name('my-inquiries');
-
     Route::get('/vouchers', [VoucherController::class, 'index'])->name('vouchers.index');
     Route::post('/vouchers/claim', [VoucherController::class, 'claim'])->name('vouchers.claim');
 });
@@ -246,6 +246,9 @@ Route::middleware(['auth:admin', 'admin'])->prefix('johen-admin-secret')->name('
     Route::get('/users/{user}/edit', [AdminController::class, 'usersEdit'])->name('users.edit');
     Route::put('/users/{user}', [AdminController::class, 'usersUpdate'])->name('users.update');
 
+    Route::get('/live-chat', fn () => redirect()->away((string) config('services.jba_api.live_chat_admin_url')))
+        ->name('live-chat');
+
     Route::get('/settings', [AdminController::class, 'settings'])->name('settings');
     Route::post('/settings', [AdminController::class, 'settingsUpdate'])->name('settings.update');
 
@@ -253,12 +256,6 @@ Route::middleware(['auth:admin', 'admin'])->prefix('johen-admin-secret')->name('
     Route::post('/two-factor/{user}/setup', [TwoFactorController::class, 'setup'])->name('two-factor.setup');
     Route::post('/two-factor/{user}/confirm', [TwoFactorController::class, 'confirm'])->name('two-factor.confirm');
     Route::delete('/two-factor/{user}', [TwoFactorController::class, 'destroy'])->name('two-factor.destroy');
-
-    Route::get('/contact-inquiries', [AdminController::class, 'contactInquiries'])->name('contact-inquiries');
-    Route::get('/contact-inquiries/{contactInquiry}', [AdminController::class, 'contactInquiriesShow'])->name('contact-inquiries.show');
-    Route::patch('/contact-inquiries/{contactInquiry}/mark-read', [AdminController::class, 'contactInquiriesMarkRead'])->name('contact-inquiries.mark-read');
-    Route::post('/contact-inquiries/{contactInquiry}/reply', [AdminController::class, 'contactInquiriesReply'])->name('contact-inquiries.reply');
-    Route::delete('/contact-inquiries/{contactInquiry}', [AdminController::class, 'contactInquiriesDestroy'])->name('contact-inquiries.destroy');
 
     Route::get('/digiflazz/test', [AdminController::class, 'digiflazzTest'])->name('digiflazz.test');
 });
