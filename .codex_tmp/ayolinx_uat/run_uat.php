@@ -41,15 +41,16 @@ $mask = static function (string $value): string {
 };
 
 $newId = static fn (string $prefix): string => substr($prefix.'-'.bin2hex(random_bytes(12)), 0, 36);
+$newExternalId = static fn (): string => now('Asia/Jakarta')->format('ymdHis').(string) random_int(100000000000, 999999999999);
 
 $call = static function (
     string $path,
     array $body,
     array $options = []
-) use ($invokePrivate, $token, $baseUrl, $clientKey, $channelId, $timeout, $mask, $newId): array {
+) use ($invokePrivate, $token, $baseUrl, $clientKey, $channelId, $timeout, $mask, $newExternalId): array {
     $requestToken = (string) ($options['token'] ?? $token);
     $timestamp = (string) $invokePrivate('timestamp');
-    $externalId = (string) ($options['external_id'] ?? $newId('uat'));
+    $externalId = (string) ($options['external_id'] ?? $newExternalId());
     $partnerId = (string) ($options['partner_id'] ?? $clientKey);
     $bodyJson = json_encode($body, JSON_UNESCAPED_SLASHES);
     if ($bodyJson === false) {
@@ -164,7 +165,7 @@ $results['transfer_va']['11.3'] = $call($vaPath, $vaMissing);
 $vaInvalid = $vaBody;
 $vaInvalid['totalAmount']['value'] = 'invalid';
 $results['transfer_va']['11.4'] = $call($vaPath, $vaInvalid);
-$vaExternalId = $newId('va-duplicate');
+$vaExternalId = $newExternalId();
 $results['transfer_va']['11.14'] = $call($vaPath, $vaBody, ['external_id' => $vaExternalId]);
 $results['transfer_va']['11.5'] = $call($vaPath, $vaBody, ['external_id' => $vaExternalId]);
 $results['transfer_va']['11.10'] = $blocked('Inbound VA payment endpoint must be provided by the merchant; the project does not expose /v1.0/transfer-va/payment.');
@@ -191,7 +192,7 @@ $results['qr_mpm']['18.3'] = $call($qrPath, $qrMissing);
 $qrInvalid = $qrBody;
 $qrInvalid['amount']['value'] = 'invalid';
 $results['qr_mpm']['18.4'] = $call($qrPath, $qrInvalid);
-$qrExternalId = $newId('qr-duplicate');
+$qrExternalId = $newExternalId();
 $results['qr_mpm']['18.6'] = $call($qrPath, $qrBody, ['external_id' => $qrExternalId]);
 $results['qr_mpm']['18.5'] = $call($qrPath, $qrBody, ['external_id' => $qrExternalId]);
 $qrInvalidMerchant = $qrBody;

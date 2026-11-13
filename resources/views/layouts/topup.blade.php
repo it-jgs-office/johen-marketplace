@@ -394,7 +394,7 @@
     </div>
     <h2 id="pwaInstallGuideTitle">Install App</h2>
     <div data-pwa-install-ios>
-      <p>Tambahkan Johen Gaming Marketplace ke layar utama iPhone melalui Safari:</p>
+      <p>Pasang Johen Gaming Marketplace di iPhone atau iPad melalui Safari:</p>
       <ol>
         <li>Buka halaman ini di Safari.</li>
         <li>Ketuk tombol Bagikan di bilah Safari.</li>
@@ -403,7 +403,7 @@
       </ol>
     </div>
     <div data-pwa-install-fallback hidden>
-      <p>Jika prompt install browser tidak muncul, gunakan menu browser:</p>
+      <p>Di desktop dan Android, tombol Install App akan membuka konfirmasi browser. Jika prompt tidak muncul, gunakan menu browser:</p>
       <ol>
         <li>Buka menu browser.</li>
         <li>Pilih Instal aplikasi atau Tambahkan ke layar utama.</li>

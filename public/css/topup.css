@@ -34,8 +34,8 @@
   --font-display:'Sora',sans-serif;
   --font-body:'Inter',sans-serif;
   --shadow-purple:var(--theme-shadow-primary,0 8px 30px -8px color-mix(in srgb,var(--purple) 55%,transparent));
-  --header-bg:linear-gradient(100deg,rgba(23,75,184,.95),rgba(12,49,139,.96));
-  --header-bg-scrolled:linear-gradient(100deg,rgba(18,54,108,.98),rgba(8,31,77,.98));
+  --header-bg:linear-gradient(100deg,rgba(23,75,184,.84),rgba(12,49,139,.86));
+  --header-bg-scrolled:linear-gradient(100deg,rgba(18,54,108,.91),rgba(8,31,77,.92));
   --nav-active-text:var(--theme-text-on-primary,#fff);
   --bg-card:var(--theme-card-bg,#102f5f);
 }
@@ -3218,7 +3218,17 @@ main:has(.cta-section) + .site-footer{margin-top:0;}
 .home-testi-rating{display:inline-flex;align-items:center;flex:none;margin:0;color:#ffdc31;font-size:.66rem;letter-spacing:.12em;text-shadow:0 1px 3px rgba(0,0,0,.2);}
 .home-testi-rating .is-empty{opacity:.3;}
 .home-testi-profile{overflow:hidden;color:#f1f6ff;font-size:.55rem;font-weight:800;text-overflow:ellipsis;white-space:nowrap;}
-@media(max-width:640px){.home-testi-lane-wrap,#jbaTestiSection .home-testi-lane-wrap{padding-right:.5rem;padding-left:.5rem;}.home-testi-card,.home-testi-card:nth-child(3n+2),.home-testi-card:nth-child(3n){width:min(76vw,232px);height:286px;min-height:286px;}}
+@media(max-width:640px){
+  .home-testi-lane-wrap,#jbaTestiSection .home-testi-lane-wrap{padding-right:.5rem;padding-left:.5rem;}
+  .home-testi-lane-group{gap:.65rem;}
+  .home-testi-card,.home-testi-card:nth-child(3n+2),.home-testi-card:nth-child(3n){width:min(58vw,190px);height:240px;min-height:240px;padding:.6rem .65rem;}
+  .home-testi-card::before{top:66px;font-size:1.55rem;}
+  .home-testi-avatar-wrap{width:70px;height:70px;margin:.05rem auto .1rem;box-shadow:0 0 0 6px rgba(73,139,250,.13);}
+  .home-testi-avatar{width:58px!important;height:58px!important;flex-basis:58px!important;}
+  .home-testi-verified{right:1px;bottom:3px;width:16px;height:16px;font-size:.53rem;}
+  .home-testi-quote{font-size:.64rem;line-height:1.4;}
+  .home-testi-footer{padding-top:.42rem;}
+}
 @media(prefers-reduced-motion:reduce){.home-testi-card,.home-testi-card:hover{transform:none;}}
 
 /* Main canvas follows johengaming.id's dark navy background. */
@@ -3227,8 +3237,8 @@ body,main,#sitePageContent{background-color:#020d2e;}
 /* Two-row navbar layout inspired by the supplied reference. */
 .site-header,
 .site-header.scrolled{
-  background-color:#174bb8;
-  background-image:none;
+  background-color:rgba(11,43,106,.48);
+  background-image:linear-gradient(100deg,rgba(23,75,184,.48),rgba(8,36,99,.5));
 }
 @media (min-width:861px){
   .site-header{
@@ -3241,27 +3251,32 @@ body,main,#sitePageContent{background-color:#020d2e;}
     --surface-2:#1f5fc6;
     --surface-3:#0c318b;
     --nav-active-text:#fff;
-    min-height:112px;
-    background:#174bb8;
+    min-height:128px;
+    background:linear-gradient(100deg,rgba(23,75,184,.48),rgba(8,36,99,.5));
     border:0;
     border-bottom:0;
     border-radius:0;
     box-shadow:0 10px 24px -20px rgba(2,13,46,.72);
-    backdrop-filter:none;
-    -webkit-backdrop-filter:none;
+    backdrop-filter:blur(18px) saturate(125%);
+    -webkit-backdrop-filter:blur(18px) saturate(125%);
   }
   .site-header.scrolled{
-    background:#174bb8;
+    background:linear-gradient(100deg,rgba(18,54,108,.72),rgba(8,31,77,.74));
     box-shadow:0 12px 26px -20px rgba(2,13,46,.78);
   }
   .header-inner{
     display:grid;
     grid-template-columns:auto minmax(0,1fr) auto auto auto;
-    grid-template-rows:60px 44px;
-    gap:0 1rem;
-    min-height:112px;
+    grid-template-rows:68px 44px;
+    gap:6px 1rem;
+    min-height:128px;
     padding:4px var(--layout-gutter);
   }
+  .header-inner::before{
+    content:'';position:absolute;z-index:0;top:74px;right:0;bottom:4px;left:0;
+    border-top:1px solid rgba(191,219,254,.16);border-bottom:1px solid rgba(191,219,254,.16);background:rgba(3,20,60,.22);
+  }
+  .header-inner>*{position:relative;z-index:1;}
   .site-header .logo{
     grid-column:1;
     grid-row:1;
@@ -3269,7 +3284,7 @@ body,main,#sitePageContent{background-color:#020d2e;}
   }
   .site-header .logo-img{
     width:auto;
-    height:54px;
+    height:68px;
   }
   .site-header .search-wrap{
     grid-column:2 / -1;
@@ -3316,7 +3331,7 @@ body,main,#sitePageContent{background-color:#020d2e;}
     font-size:clamp(.67rem,.78vw,.8rem);
   }
   .site-header .main-nav a::before{
-    background:#2765d9;
+    background:#2563eb;
     box-shadow:none;
   }
   .site-header .main-nav a:hover,
@@ -3329,29 +3344,30 @@ body,main,#sitePageContent{background-color:#020d2e;}
     box-shadow:none;
   }
   .site-header .main-nav a.active::before{
-    background:#0c318b;
+    background:#1d4ed8;
     box-shadow:inset 0 0 0 1px rgba(169,211,255,.42);
   }
   .site-header .pwa-install-header-btn{
     grid-column:3;
     grid-row:2;
     align-self:center;
-    background:#2765d9;
+    background:#2563eb;
     color:#fff;
   }
+  .site-header .pwa-install-header-btn:hover{background:#1d4ed8;}
   .site-header .nav-cart-btn{
     grid-column:4;
     grid-row:2;
     align-self:center;
     width:38px;
     height:38px;
-    background:#2765d9;
+    background:#2563eb;
     color:#d8e7ff;
   }
   .site-header .nav-cart-btn:hover,
   .site-header .nav-cart-btn.active{
     border-color:rgba(218,238,255,.72);
-    background:#0c318b;
+    background:#1d4ed8;
     color:#fff;
   }
   .site-header .auth-buttons,
@@ -3372,15 +3388,15 @@ body,main,#sitePageContent{background-color:#020d2e;}
   }
   .site-header .auth-buttons .btn-outline:hover{
     border-color:rgba(218,238,255,.58);
-    background:#2765d9;
+    background:#1d4ed8;
   }
   .site-header .auth-buttons .btn-solid{
     background:#fff!important;
     color:#174bb8;
     box-shadow:none;
   }
-  .site-header .auth-avatar{background:#0c318b;}
-  .site-header .auth-dropdown-toggle{background:#2765d9;}
-  main{padding-top:112px;}
+  .site-header .auth-avatar{background:#1d4ed8;}
+  .site-header .auth-dropdown-toggle{background:#2563eb;}
+  main{padding-top:128px;}
 }
 

@@ -3,7 +3,7 @@
         "environment": "sandbox",
         "base_host": "sandbox.ayolinx.id",
         "authenticated": true,
-        "executed_at": "2026-11-09 17:00:57+07:00"
+        "executed_at": "2026-11-13 11:17:06+07:00"
     },
     "transfer_va": {
         "11.1": {
@@ -14,18 +14,18 @@
                 "headers": {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer [REDACTED]",
-                    "X-TIMESTAMP": "2026-11-09T17:00:57+07:00",
+                    "X-TIMESTAMP": "2026-11-13T11:17:06+07:00",
                     "X-SIGNATURE": "[REDACTED]",
                     "X-PARTNER-ID": "SC7e\u202646f1",
-                    "X-EXTERNAL-ID": "uat-44667347f33de436ab5fecdd",
+                    "X-EXTERNAL-ID": "261113111706655957003239",
                     "CHANNEL-ID": "H2H"
                 },
                 "body": {
                     "partnerServiceId": "98829172",
-                    "customerNo": "30000000347246441952",
-                    "virtualAccountNo": "6189018870832663",
+                    "customerNo": "30000000302663993640",
+                    "virtualAccountNo": "5560524972565908",
                     "virtualAccountName": "Johen UAT Customer",
-                    "trxId": "920364045954",
+                    "trxId": "673436298605",
                     "virtualAccountTrxType": "C",
                     "totalAmount": {
                         "value": "11500.00",
@@ -52,18 +52,18 @@
                 "headers": {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer [REDACTED]",
-                    "X-TIMESTAMP": "2026-11-09T17:00:58+07:00",
+                    "X-TIMESTAMP": "2026-11-13T11:17:07+07:00",
                     "X-SIGNATURE": "[REDACTED]",
                     "X-PARTNER-ID": "SC7e\u202646f1",
-                    "X-EXTERNAL-ID": "uat-8bd635f58efc35a0301ac461",
+                    "X-EXTERNAL-ID": "261113111707333614751011",
                     "CHANNEL-ID": "H2H"
                 },
                 "body": {
                     "partnerServiceId": "98829172",
-                    "customerNo": "30000000347246441952",
-                    "virtualAccountNo": "6189018870832663",
+                    "customerNo": "30000000302663993640",
+                    "virtualAccountNo": "5560524972565908",
                     "virtualAccountName": "Johen UAT Customer",
-                    "trxId": "920364045954",
+                    "trxId": "673436298605",
                     "virtualAccountTrxType": "C",
                     "totalAmount": {
                         "value": "11500.00",
@@ -90,17 +90,17 @@
                 "headers": {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer [REDACTED]",
-                    "X-TIMESTAMP": "2026-11-09T17:00:58+07:00",
+                    "X-TIMESTAMP": "2026-11-13T11:17:08+07:00",
                     "X-SIGNATURE": "[REDACTED]",
                     "X-PARTNER-ID": "SC7e\u202646f1",
-                    "X-EXTERNAL-ID": "uat-2d99db3ffde62e212d026847",
+                    "X-EXTERNAL-ID": "261113111708447511131094",
                     "CHANNEL-ID": "H2H"
                 },
                 "body": {
                     "partnerServiceId": "98829172",
-                    "virtualAccountNo": "6189018870832663",
+                    "virtualAccountNo": "5560524972565908",
                     "virtualAccountName": "Johen UAT Customer",
-                    "trxId": "920364045954",
+                    "trxId": "673436298605",
                     "virtualAccountTrxType": "C",
                     "totalAmount": {
                         "value": "11500.00",
@@ -127,18 +127,18 @@
                 "headers": {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer [REDACTED]",
-                    "X-TIMESTAMP": "2026-11-09T17:00:59+07:00",
+                    "X-TIMESTAMP": "2026-11-13T11:17:08+07:00",
                     "X-SIGNATURE": "[REDACTED]",
                     "X-PARTNER-ID": "SC7e\u202646f1",
-                    "X-EXTERNAL-ID": "uat-e0a321fedebd80f53a63f89f",
+                    "X-EXTERNAL-ID": "261113111708807882771092",
                     "CHANNEL-ID": "H2H"
                 },
                 "body": {
                     "partnerServiceId": "98829172",
-                    "customerNo": "30000000347246441952",
-                    "virtualAccountNo": "6189018870832663",
+                    "customerNo": "30000000302663993640",
+                    "virtualAccountNo": "5560524972565908",
                     "virtualAccountName": "Johen UAT Customer",
-                    "trxId": "920364045954",
+                    "trxId": "673436298605",
                     "virtualAccountTrxType": "C",
                     "totalAmount": {
                         "value": "invalid",
@@ -165,18 +165,18 @@
                 "headers": {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer [REDACTED]",
-                    "X-TIMESTAMP": "2026-11-09T17:01:00+07:00",
+                    "X-TIMESTAMP": "2026-11-13T11:17:09+07:00",
                     "X-SIGNATURE": "[REDACTED]",
                     "X-PARTNER-ID": "SC7e\u202646f1",
-                    "X-EXTERNAL-ID": "va-duplicate-faead9917190a9ea9999055",
+                    "X-EXTERNAL-ID": "261113111709580711731149",
                     "CHANNEL-ID": "H2H"
                 },
                 "body": {
                     "partnerServiceId": "98829172",
-                    "customerNo": "30000000347246441952",
-                    "virtualAccountNo": "6189018870832663",
+                    "customerNo": "30000000302663993640",
+                    "virtualAccountNo": "5560524972565908",
                     "virtualAccountName": "Johen UAT Customer",
-                    "trxId": "920364045954",
+                    "trxId": "673436298605",
                     "virtualAccountTrxType": "C",
                     "totalAmount": {
                         "value": "11500.00",
@@ -194,11 +194,11 @@
                     "responseMessage": "Success",
                     "virtualAccountData": {
                         "partnerServiceId": "98829172",
-                        "customerNo": "30000000347246441952",
-                        "virtualAccountNo": "9882107423127511",
+                        "customerNo": "30000000302663993640",
+                        "virtualAccountNo": "9882107423127559",
                         "virtualAccountName": "Johen UAT Customer",
                         "virtualAccountTrxType": "C",
-                        "trxId": "920364045954",
+                        "trxId": "673436298605",
                         "totalAmount": {
                             "value": "11500.00",
                             "currency": "IDR"
@@ -206,7 +206,7 @@
                         "additionalInfo": {
                             "channel": "VIRTUAL_ACCOUNT_BNI"
                         },
-                        "expiredDate": "2026-11-10T17:01:01+07:00"
+                        "expiredDate": "2026-11-14T11:17:12+07:00"
                     }
                 }
             }
@@ -219,18 +219,18 @@
                 "headers": {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer [REDACTED]",
-                    "X-TIMESTAMP": "2026-11-09T17:01:01+07:00",
+                    "X-TIMESTAMP": "2026-11-13T11:17:11+07:00",
                     "X-SIGNATURE": "[REDACTED]",
                     "X-PARTNER-ID": "SC7e\u202646f1",
-                    "X-EXTERNAL-ID": "va-duplicate-faead9917190a9ea9999055",
+                    "X-EXTERNAL-ID": "261113111709580711731149",
                     "CHANNEL-ID": "H2H"
                 },
                 "body": {
                     "partnerServiceId": "98829172",
-                    "customerNo": "30000000347246441952",
-                    "virtualAccountNo": "6189018870832663",
+                    "customerNo": "30000000302663993640",
+                    "virtualAccountNo": "5560524972565908",
                     "virtualAccountName": "Johen UAT Customer",
-                    "trxId": "920364045954",
+                    "trxId": "673436298605",
                     "virtualAccountTrxType": "C",
                     "totalAmount": {
                         "value": "11500.00",
@@ -269,14 +269,14 @@
                 "headers": {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer [REDACTED]",
-                    "X-TIMESTAMP": "2026-11-09T17:01:01+07:00",
+                    "X-TIMESTAMP": "2026-11-13T11:17:12+07:00",
                     "X-SIGNATURE": "[REDACTED]",
                     "X-PARTNER-ID": "SC7e\u202646f1",
-                    "X-EXTERNAL-ID": "uat-e7d4d4de4bf6853aa99e0a09",
+                    "X-EXTERNAL-ID": "261113111712623182221324",
                     "CHANNEL-ID": "H2H"
                 },
                 "body": {
-                    "originalPartnerReferenceNo": "920364045954",
+                    "originalPartnerReferenceNo": "673436298605",
                     "additionalInfo": {
                         "channel": "VIRTUAL_ACCOUNT_BNI"
                     }
@@ -288,14 +288,14 @@
                     "responseCode": "2002800",
                     "responseMessage": "Success",
                     "virtualAccountData": {
-                        "originalReferenceNo": "hf9XyQMu3LmEd4fEVeqviagm",
-                        "originalPartnerReferenceNo": "920364045954",
+                        "originalReferenceNo": "ZwEoDchtUgPk94fSitJqctPZ",
+                        "originalPartnerReferenceNo": "673436298605",
                         "amount": {
                             "currency": "IDR",
                             "value": "11500.00"
                         },
                         "latestTransactionStatus": "03",
-                        "finishedTime": "2026-11-09T17:01:03+07:00",
+                        "finishedTime": "2026-11-13T11:17:15+07:00",
                         "serviceCode": "51",
                         "additionalInfo": {
                             "channel": "VIRTUAL_ACCOUNT_BNI",
@@ -316,20 +316,20 @@
                 "headers": {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer [REDACTED]",
-                    "X-TIMESTAMP": "2026-11-09T17:01:02+07:00",
+                    "X-TIMESTAMP": "2026-11-13T11:17:13+07:00",
                     "X-SIGNATURE": "[REDACTED]",
                     "X-PARTNER-ID": "SC7e\u202646f1",
-                    "X-EXTERNAL-ID": "uat-a2722076aa8bfe376beeba3f",
+                    "X-EXTERNAL-ID": "261113111713772382217596",
                     "CHANNEL-ID": "H2H"
                 },
                 "body": {
-                    "partnerReferenceNo": "qr-d38824d7ef3292178386e3ec",
+                    "partnerReferenceNo": "qr-076362a5ada41971512d7b3f",
                     "amount": {
                         "currency": "IDR",
                         "value": "10001.00"
                     },
                     "additionalInfo": {
-                        "channel": "BNC_QRIS"
+                        "channel": "ALTO_QRIS"
                     }
                 }
             },
@@ -349,20 +349,20 @@
                 "headers": {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer [REDACTED]",
-                    "X-TIMESTAMP": "2026-11-09T17:01:02+07:00",
+                    "X-TIMESTAMP": "2026-11-13T11:17:14+07:00",
                     "X-SIGNATURE": "[REDACTED]",
                     "X-PARTNER-ID": "SC7e\u202646f1",
-                    "X-EXTERNAL-ID": "uat-95eacb55cb71450b5c12043d",
+                    "X-EXTERNAL-ID": "261113111714571824481426",
                     "CHANNEL-ID": "H2H"
                 },
                 "body": {
-                    "partnerReferenceNo": "qr-d38824d7ef3292178386e3ec",
+                    "partnerReferenceNo": "qr-076362a5ada41971512d7b3f",
                     "amount": {
                         "currency": "IDR",
                         "value": "10001.00"
                     },
                     "additionalInfo": {
-                        "channel": "BNC_QRIS"
+                        "channel": "ALTO_QRIS"
                     }
                 }
             },
@@ -382,10 +382,10 @@
                 "headers": {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer [REDACTED]",
-                    "X-TIMESTAMP": "2026-11-09T17:01:03+07:00",
+                    "X-TIMESTAMP": "2026-11-13T11:17:15+07:00",
                     "X-SIGNATURE": "[REDACTED]",
                     "X-PARTNER-ID": "SC7e\u202646f1",
-                    "X-EXTERNAL-ID": "uat-2497bfc1017184d4ecd58560",
+                    "X-EXTERNAL-ID": "261113111715924606544020",
                     "CHANNEL-ID": "H2H"
                 },
                 "body": {
@@ -394,7 +394,7 @@
                         "value": "10001.00"
                     },
                     "additionalInfo": {
-                        "channel": "BNC_QRIS"
+                        "channel": "ALTO_QRIS"
                     }
                 }
             },
@@ -414,28 +414,28 @@
                 "headers": {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer [REDACTED]",
-                    "X-TIMESTAMP": "2026-11-09T17:01:03+07:00",
+                    "X-TIMESTAMP": "2026-11-13T11:17:15+07:00",
                     "X-SIGNATURE": "[REDACTED]",
                     "X-PARTNER-ID": "SC7e\u202646f1",
-                    "X-EXTERNAL-ID": "uat-a5873bc1e5f3474f112a8834",
+                    "X-EXTERNAL-ID": "261113111715407748743819",
                     "CHANNEL-ID": "H2H"
                 },
                 "body": {
-                    "partnerReferenceNo": "qr-d38824d7ef3292178386e3ec",
+                    "partnerReferenceNo": "qr-076362a5ada41971512d7b3f",
                     "amount": {
                         "currency": "IDR",
                         "value": "invalid"
                     },
                     "additionalInfo": {
-                        "channel": "BNC_QRIS"
+                        "channel": "ALTO_QRIS"
                     }
                 }
             },
             "response": {
                 "http_status": 500,
                 "body": {
-                    "responseCode": 5002501,
-                    "responseMessage": "Internal Server Error"
+                    "responseCode": 5002502,
+                    "responseMessage": "Channel Error"
                 }
             }
         },
@@ -447,28 +447,28 @@
                 "headers": {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer [REDACTED]",
-                    "X-TIMESTAMP": "2026-11-09T17:01:04+07:00",
+                    "X-TIMESTAMP": "2026-11-13T11:17:16+07:00",
                     "X-SIGNATURE": "[REDACTED]",
                     "X-PARTNER-ID": "SC7e\u202646f1",
-                    "X-EXTERNAL-ID": "qr-duplicate-21296616e0cb751d85f0d55",
+                    "X-EXTERNAL-ID": "261113111716658906910668",
                     "CHANNEL-ID": "H2H"
                 },
                 "body": {
-                    "partnerReferenceNo": "qr-d38824d7ef3292178386e3ec",
+                    "partnerReferenceNo": "qr-076362a5ada41971512d7b3f",
                     "amount": {
                         "currency": "IDR",
                         "value": "10001.00"
                     },
                     "additionalInfo": {
-                        "channel": "BNC_QRIS"
+                        "channel": "ALTO_QRIS"
                     }
                 }
             },
             "response": {
                 "http_status": 500,
                 "body": {
-                    "responseCode": 5002501,
-                    "responseMessage": "Internal Server Error"
+                    "responseCode": 5002502,
+                    "responseMessage": "Channel Error"
                 }
             }
         },
@@ -480,20 +480,20 @@
                 "headers": {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer [REDACTED]",
-                    "X-TIMESTAMP": "2026-11-09T17:01:05+07:00",
+                    "X-TIMESTAMP": "2026-11-13T11:17:17+07:00",
                     "X-SIGNATURE": "[REDACTED]",
                     "X-PARTNER-ID": "SC7e\u202646f1",
-                    "X-EXTERNAL-ID": "qr-duplicate-21296616e0cb751d85f0d55",
+                    "X-EXTERNAL-ID": "261113111716658906910668",
                     "CHANNEL-ID": "H2H"
                 },
                 "body": {
-                    "partnerReferenceNo": "qr-d38824d7ef3292178386e3ec",
+                    "partnerReferenceNo": "qr-076362a5ada41971512d7b3f",
                     "amount": {
                         "currency": "IDR",
                         "value": "10001.00"
                     },
                     "additionalInfo": {
-                        "channel": "BNC_QRIS"
+                        "channel": "ALTO_QRIS"
                     }
                 }
             },
@@ -513,20 +513,20 @@
                 "headers": {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer [REDACTED]",
-                    "X-TIMESTAMP": "2026-11-09T17:01:05+07:00",
+                    "X-TIMESTAMP": "2026-11-13T11:17:18+07:00",
                     "X-SIGNATURE": "[REDACTED]",
                     "X-PARTNER-ID": "CKSa\u2026hant",
-                    "X-EXTERNAL-ID": "uat-17b2e7e768adeb8755acb2a2",
+                    "X-EXTERNAL-ID": "261113111718777434868119",
                     "CHANNEL-ID": "H2H"
                 },
                 "body": {
-                    "partnerReferenceNo": "qr-invalid-merchant-d03955991e907f4e",
+                    "partnerReferenceNo": "qr-invalid-merchant-1bc66e42989ca667",
                     "amount": {
                         "currency": "IDR",
                         "value": "10001.00"
                     },
                     "additionalInfo": {
-                        "channel": "BNC_QRIS"
+                        "channel": "ALTO_QRIS"
                     }
                 }
             },
@@ -546,39 +546,25 @@
                 "headers": {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer [REDACTED]",
-                    "X-TIMESTAMP": "2026-11-09T17:01:05+07:00",
+                    "X-TIMESTAMP": "2026-11-13T11:17:19+07:00",
                     "X-SIGNATURE": "[REDACTED]",
                     "X-PARTNER-ID": "SC7e\u202646f1",
-                    "X-EXTERNAL-ID": "uat-e41ec56442199f44c9140f45",
+                    "X-EXTERNAL-ID": "261113111719954519878887",
                     "CHANNEL-ID": "H2H"
                 },
                 "body": {
-                    "originalPartnerReferenceNo": "qr-d38824d7ef3292178386e3ec",
+                    "originalPartnerReferenceNo": "qr-076362a5ada41971512d7b3f",
                     "serviceCode": "51",
                     "additionalInfo": {
-                        "channel": "BNC_QRIS"
+                        "channel": "ALTO_QRIS"
                     }
                 }
             },
             "response": {
-                "http_status": 200,
+                "http_status": 500,
                 "body": {
-                    "responseCode": "2005100",
-                    "responseMessage": "Successful",
-                    "originalReferenceNo": "a6da7c500fca4e9d8b271c3df89afaff",
-                    "originalPartnerReferenceNo": "qr-d38824d7ef3292178386e3ec",
-                    "amount": {
-                        "currency": "IDR",
-                        "value": "10001.00"
-                    },
-                    "latestTransactionStatus": "06",
-                    "finishedTime": "2026-11-09T17:01:07+07:00",
-                    "serviceCode": "51",
-                    "additionalInfo": {
-                        "channel": "BNC_QRIS",
-                        "paymentNtb": "",
-                        "RRN": ""
-                    }
+                    "responseCode": 5005503,
+                    "responseMessage": "Query Transaction Not Found"
                 }
             }
         },
@@ -590,17 +576,17 @@
                 "headers": {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer [REDACTED]",
-                    "X-TIMESTAMP": "2026-11-09T17:01:06+07:00",
+                    "X-TIMESTAMP": "2026-11-13T11:17:20+07:00",
                     "X-SIGNATURE": "[REDACTED]",
                     "X-PARTNER-ID": "SC7e\u202646f1",
-                    "X-EXTERNAL-ID": "uat-abe16cb7994150b1d5f81210",
+                    "X-EXTERNAL-ID": "261113111720393668798687",
                     "CHANNEL-ID": "H2H"
                 },
                 "body": {
-                    "originalPartnerReferenceNo": "qr-not-found-fb5406898bb13476d3b974f",
+                    "originalPartnerReferenceNo": "qr-not-found-ae57ab5e7df8b8bdb35686a",
                     "serviceCode": "51",
                     "additionalInfo": {
-                        "channel": "BNC_QRIS"
+                        "channel": "ALTO_QRIS"
                     }
                 }
             },
@@ -632,16 +618,16 @@
                 "headers": {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer [REDACTED]",
-                    "X-TIMESTAMP": "2026-11-09T17:01:06+07:00",
+                    "X-TIMESTAMP": "2026-11-13T11:17:21+07:00",
                     "X-SIGNATURE": "[REDACTED]",
                     "X-PARTNER-ID": "SC7e\u202646f1",
-                    "X-EXTERNAL-ID": "uat-77ae04a0ebd8de66b1496c71",
+                    "X-EXTERNAL-ID": "261113111721220141861531",
                     "CHANNEL-ID": "H2H"
                 },
                 "body": {
-                    "originalPartnerReferenceNo": "qr-d38824d7ef3292178386e3ec",
+                    "originalPartnerReferenceNo": "qr-076362a5ada41971512d7b3f",
                     "additionalInfo": {
-                        "channel": "BNC_QRIS"
+                        "channel": "ALTO_QRIS"
                     },
                     "reason": "UAT cancellation test"
                 }
@@ -662,16 +648,16 @@
                 "headers": {
                     "Content-Type": "application/json",
                     "Authorization": "Bearer [REDACTED]",
-                    "X-TIMESTAMP": "2026-11-09T17:01:07+07:00",
+                    "X-TIMESTAMP": "2026-11-13T11:17:22+07:00",
                     "X-SIGNATURE": "[REDACTED]",
                     "X-PARTNER-ID": "SC7e\u202646f1",
-                    "X-EXTERNAL-ID": "uat-44cf651008334bfc87908aa7",
+                    "X-EXTERNAL-ID": "261113111722270850127649",
                     "CHANNEL-ID": "H2H"
                 },
                 "body": {
-                    "originalPartnerReferenceNo": "qr-d38824d7ef3292178386e3ec",
+                    "originalPartnerReferenceNo": "qr-076362a5ada41971512d7b3f",
                     "additionalInfo": {
-                        "channel": "BNC_QRIS"
+                        "channel": "ALTO_QRIS"
                     },
                     "reason": "UAT cancellation test"
                 }

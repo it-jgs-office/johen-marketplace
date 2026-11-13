@@ -128,13 +128,19 @@
             installPrompt = null;
             updateInstallButtons();
             try {
-                var promptResult = prompt.prompt();
-                if (promptResult && typeof promptResult.catch === 'function') {
-                    promptResult.catch(function () {
+                Promise.resolve(prompt.prompt())
+                    .then(function () { return prompt.userChoice; })
+                    .then(function (choice) {
+                        // Jika prompt ditutup, tombol tetap tersedia agar pengguna
+                        // dapat membuka panduan pemasangan dari menu browser.
+                        if (choice && choice.outcome !== 'accepted') updateInstallButtons();
+                    })
+                    .catch(function () {
+                        updateInstallButtons();
                         openGuide(isIos ? 'ios' : 'fallback');
                     });
-                }
             } catch (error) {
+                updateInstallButtons();
                 openGuide(isIos ? 'ios' : 'fallback');
             }
             return;
