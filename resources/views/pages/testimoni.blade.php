@@ -45,29 +45,42 @@
 <style>
 .testi-page {
   width: 100%;
-  max-width: var(--layout-max);
+  max-width: 1520px;
   margin: 0 auto;
-  padding: 3rem var(--layout-gutter) 5rem;
+  padding: 3.5rem var(--layout-gutter) 5rem;
 }
-.testi-page-hero{text-align:center;margin-bottom:1.5rem}
-.testi-page-hero h1{font-size:1.5rem;font-weight:700;letter-spacing:-.02em;margin-bottom:.4rem}
-.testi-page-hero p{color:var(--text-mute);font-size:.88rem;max-width:600px;margin:0 auto}
-.testi-page-filters{display:flex;gap:.5rem;justify-content:center;margin-bottom:1.5rem;flex-wrap:wrap}
+.testi-page-hero{text-align:center;margin-bottom:1.75rem}
+.testi-page-hero h1{margin-bottom:.5rem;color:#fff;font-size:clamp(1.55rem,2.2vw,2rem);font-weight:800;letter-spacing:-.035em}
+.testi-page-hero p{max-width:620px;margin:0 auto;color:#c5d8ff;font-size:.9rem;line-height:1.6}
+.testi-page-filters{display:flex;gap:.6rem;justify-content:center;margin-bottom:2rem;flex-wrap:wrap}
 .testi-filter-btn{display:inline-flex;padding:.42rem 1rem;border-radius:999px;font-size:.78rem;font-weight:700;border:1px solid var(--border-strong);color:var(--text-dim);text-decoration:none;transition:all .16s ease;background:var(--surface)}
 .testi-filter-btn:hover{border-color:var(--purple-light);color:var(--purple-light)}
 .testi-filter-btn.active{background:var(--purple);color:#fff;border-color:var(--purple);box-shadow:0 0 16px -4px rgba(157,92,245,.3)}
-.testi-page-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(100%,280px),1fr));gap:.85rem;}
-.testi-page-card{width:auto;min-height:290px;height:100%;}
+.testi-page-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:1rem;align-items:stretch;}
+.testi-page-grid>.home-testi-card.testi-page-card{width:100%;max-width:none;height:310px;min-height:310px;}
 .testi-page-card .home-testi-rating{margin-right:0;}
 .testi-page-card .home-testi-quote{flex:1;}
 .testi-page-user-copy{min-width:0;}
 .testi-page-time{position:relative;z-index:1;margin-top:.45rem;color:#c5d8ff;font-size:.58rem;line-height:1.3;text-align:right;}
 
-@media (max-width: 640px) {
-  .testi-page{padding:2rem max(.65rem,var(--layout-gutter)) 3rem}
+@media (max-width: 1400px) {
+  .testi-page-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
+}
+@media (max-width: 1080px) {
+  .testi-page-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+}
+@media (max-width: 760px) {
+  .testi-page{padding:2.5rem max(.85rem,var(--layout-gutter)) 3.5rem}
   .testi-page-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:.5rem}
-  .testi-page-card{min-width:0;min-height:190px;padding:.65rem}
+  .testi-page-grid>.home-testi-card.testi-page-card{min-width:0;height:270px;min-height:270px;padding:.65rem}
   .testi-page-time{margin-left:0;padding-top:.4rem}
+}
+@media (max-width: 520px) {
+  .testi-page{padding-right:.85rem;padding-left:.85rem}
+  .testi-page-filters{gap:.4rem;margin-bottom:1.4rem}
+  .testi-filter-btn{padding:.4rem .72rem;font-size:.7rem}
+  .testi-page-grid{grid-template-columns:1fr;gap:.75rem}
+  .testi-page-grid>.home-testi-card.testi-page-card{height:285px;min-height:285px}
 }
 </style>
 

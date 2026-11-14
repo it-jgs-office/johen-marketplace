@@ -1,0 +1,33 @@
+{
+    "executed_at": "2026-11-13 15:26:41+07:00",
+    "request": {
+        "method": "POST",
+        "url": "https://sandbox.ayolinx.id/v1.0/qr/qr-mpm-generate",
+        "headers": {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer [REDACTED]",
+            "X-TIMESTAMP": "2026-11-13T15:26:40+07:00",
+            "X-SIGNATURE": "[REDACTED]",
+            "X-PARTNER-ID": "SC7e\u202646f1",
+            "X-EXTERNAL-ID": "261113152640349248853854",
+            "CHANNEL-ID": "H2H"
+        },
+        "body": {
+            "partnerReferenceNo": "qr-1c0a35e1f60d7c9b15f32f3a",
+            "amount": {
+                "currency": "IDR",
+                "value": "10001.00"
+            },
+            "additionalInfo": {
+                "channel": "ALTO_QRIS"
+            }
+        }
+    },
+    "response": {
+        "http_status": 500,
+        "body": {
+            "responseCode": 4000703,
+            "responseMessage": "Qris mandatory parameters configuration error."
+        }
+    }
+}

@@ -11,9 +11,10 @@
 
 @push('styles')
 <style>
-.dark-meteor-field{display:none;position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.dark-meteor-field{display:block;position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:0}
 .dark-meteor-field~*{position:relative;z-index:1}
-html:not([data-theme="light"]) .dark-meteor-field{display:block}
+#sitePageContent{--bg:#020d2e;--bg-soft:#0a2247;--surface:#102f5f;--surface-2:#12366c;--surface-3:#174bb8;--text:#fff;--text-dim:#d8e7ff;--text-mute:#a9c2e8;background:#020d2e;color:#fff}
+#sitePageContent .hero-peek-carousel{background:#123d81;box-shadow:none}
 .dark-meteor-field span{position:absolute;top:var(--meteor-y);left:var(--meteor-x);width:var(--meteor-size);height:clamp(24px,4vw,56px);border-radius:999px;opacity:var(--meteor-opacity);filter:drop-shadow(0 0 3px rgba(0,207,255,.55));transform:translateY(-20vh) rotate(-18deg);transform-origin:bottom;background:linear-gradient(transparent,rgba(0,207,255,.08) 24%,rgba(67,199,244,.62) 72%,#fff);animation:dark-meteor-fall var(--meteor-duration) linear var(--meteor-delay) infinite;will-change:transform}
 .dark-meteor-field span::after{content:"";position:absolute;width:calc(var(--meteor-size) * 3.1);height:calc(var(--meteor-size) * 3.1);right:50%;bottom:-1px;border-radius:50%;background:#fff;transform:translateX(50%);box-shadow:0 0 4px rgba(255,255,255,.78),0 0 8px rgba(0,207,255,.55)}
 @keyframes dark-meteor-fall{from{transform:translateY(-18vh) rotate(-18deg)}to{transform:translate3d(var(--meteor-drift),58vh,0) rotate(-18deg)}}
